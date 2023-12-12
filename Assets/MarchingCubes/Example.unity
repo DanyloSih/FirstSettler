@@ -230,10 +230,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   material: {fileID: 2100000, guid: fb8a03accb87f7a4abc7af51618a72be, type: 2}
-  mode: 0
-  seed: 0
+  mode: 1
+  seed: 27
   smoothNormals: 0
   drawNormals: 0
+  _width: 32
+  _height: 32
+  _depth: 32
 --- !u!1 &1866038435
 GameObject:
   m_ObjectHideFlags: 0
