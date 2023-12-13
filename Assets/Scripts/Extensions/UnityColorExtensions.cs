@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Improvehit.Extensions
+namespace FirstSettler.Extensions
 {
     public static class UnityColorExtensions
     {

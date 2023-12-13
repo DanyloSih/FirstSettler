@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System;
 using System.Collections.Generic;
-using Improvehit.Extensions;
+using FirstSettler.Extensions;
 
 namespace Common.Unity.Drawing
 {
