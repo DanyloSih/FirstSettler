@@ -61,9 +61,8 @@ namespace MarchingCubesProject
         private void UpdateMesh(MeshData meshData, List<Vector3> normals, Vector3 position)
         {
             var mesh = _currentMeshComponents.MeshFilter.mesh;
-            mesh.vertices = meshData.GetCopyOfCashedVerticesWithTargetLength();
-            mesh.triangles = meshData.GetCopyOfCashedTrianglesWithTargetLength();
-            //mesh.uv = meshData.GetCopyOfCashedUVWithTargetLength();
+            mesh.SetVertices(meshData.CashedVertices, 0, meshData.VerticesTargetLength);
+            mesh.SetTriangles(meshData.CashedTriangles, 0, meshData.TrianglesTargetLength, 0);
 
             if (normals.Count > 0)
                 mesh.SetNormals(normals);
@@ -133,7 +132,7 @@ namespace MarchingCubesProject
         {
             Mesh mesh = new Mesh();
             mesh.indexFormat = IndexFormat.UInt32;
-           
+
             GameObject go = new GameObject("Mesh");
             go.transform.parent = transform;
             var filter =  go.AddComponent<MeshFilter>();
