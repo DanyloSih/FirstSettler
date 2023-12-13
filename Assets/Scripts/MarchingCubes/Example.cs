@@ -6,36 +6,30 @@ using Common.Unity.Drawing;
 
 namespace MarchingCubesProject
 {
-    public enum MARCHING_MODE {  CUBES, TETRAHEDRON };
-
     public class Example : MonoBehaviour
     {
         [SerializeField] private Material material;
-        [SerializeField] private MARCHING_MODE mode = MARCHING_MODE.CUBES;
         [SerializeField] private int seed = 0;
         [SerializeField] private bool smoothNormals = false;
         [SerializeField] private int _width;
         [SerializeField] private int _height;
         [SerializeField] private int _depth;
 
-        private List<Vector3> _verts = new List<Vector3>();
         private List<Vector3> _normals = new List<Vector3>();
-        private List<int> _indices = new List<int>();
         private Marching _marching;
         private FractalNoise _fractal;
         private Vector3 _meshPosition;
         private VoxelArray _voxels;
         private (MeshFilter MeshFilter, MeshCollider MeshCollider) _currentMeshComponents;
+        private MeshData _meshData;
 
         protected void OnEnable()
         {
+            InitializeMeshData();
             UpdateNoise();
             UpdateVoxelArray();
-            if (mode == MARCHING_MODE.TETRAHEDRON)
-                _marching = new MarchingTertrahedron();
-            else
-                _marching = new MarchingCubes();
 
+            _marching = new MarchingCubes();
             _marching.Surface = 0.0f;
 
             if (_currentMeshComponents.MeshFilter != null)
@@ -46,17 +40,30 @@ namespace MarchingCubesProject
             _currentMeshComponents = CreateMesh32();
         }
 
+        private void InitializeMeshData()
+        {
+            int maxVerticesInCube = 15;
+            int maxTrianglesInCube = 15;
+            int maxUVInCube = 15;
+            int cubesCount = _width * _height * _depth;
+            _meshData = new MeshData(
+                maxVerticesInCube * cubesCount, 
+                maxTrianglesInCube * cubesCount, 
+                maxUVInCube * cubesCount);
+        }
+
         private void Update()
         {
             CreateNormals();
-            UpdateMesh(_verts, _normals, _indices, _meshPosition);
+            UpdateMesh(_meshData, _normals, _meshPosition);
         }
 
-        private void UpdateMesh(List<Vector3> verts, List<Vector3> normals, List<int> indices, Vector3 position)
+        private void UpdateMesh(MeshData meshData, List<Vector3> normals, Vector3 position)
         {
             var mesh = _currentMeshComponents.MeshFilter.mesh;
-            mesh.SetVertices(verts);
-            mesh.SetTriangles(indices, 0);
+            mesh.vertices = meshData.GetCopyOfCashedVerticesWithTargetLength();
+            mesh.triangles = meshData.GetCopyOfCashedTrianglesWithTargetLength();
+            //mesh.uv = meshData.GetCopyOfCashedUVWithTargetLength();
 
             if (normals.Count > 0)
                 mesh.SetNormals(normals);
@@ -77,21 +84,17 @@ namespace MarchingCubesProject
 
         private void CreateNormals()
         {
-            _verts.Clear();
-            _indices.Clear();
-            _normals.Clear();
-
-            _marching.Generate(_voxels, _verts, _indices);
+            _meshData = _marching.GenerateMeshData(_voxels, _meshData);
 
             //Create the normals from the voxel.
 
             if (smoothNormals)
             {
-                for (int i = 0; i < _verts.Count; i++)
+                for (int i = 0; i < _meshData.VerticesTargetLength; i++)
                 {
                     //Presumes the vertex is in local space where
                     //the min value is 0 and max is width/height/depth.
-                    Vector3 p = _verts[i];
+                    Vector3 p = _meshData.CashedVertices[i];
 
                     float u = p.x / (_width - 1.0f);
                     float v = p.y / (_height - 1.0f);

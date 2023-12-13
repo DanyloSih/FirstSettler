@@ -1,8 +1,4 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using UnityEngine;
 
 namespace MarchingCubesProject
 {
@@ -19,8 +15,10 @@ namespace MarchingCubesProject
             WindingOrder = new int[] { 0, 1, 2 };
         }
 
-        public virtual void Generate(VoxelArray voxels, IList<Vector3> verts, IList<int> indices)
+        public virtual MeshData GenerateMeshData(VoxelArray voxels, MeshData cashedMeshData)
         {
+            MeshData localMeshData = cashedMeshData;
+            cashedMeshData.ResetAllTargetLengths();
             UpdateWindingOrder();
             int width = voxels.Width;
             int height = voxels.Height;
@@ -39,8 +37,10 @@ namespace MarchingCubesProject
 
                 ApplyVertexOffsets(voxels, x, y, z, _cube);
 
-                March(x, y, z, _cube, verts, indices);
+                localMeshData = March(x, y, z, _cube, localMeshData);
             }
+
+            return localMeshData;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -60,8 +60,7 @@ namespace MarchingCubesProject
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected abstract void March(float x, float y, float z, float[] cube, IList<Vector3> vertList, IList<int> indexList);
+        protected abstract MeshData March(float x, float y, float z, float[] cube, MeshData meshData);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected float GetOffset(float v1, float v2)

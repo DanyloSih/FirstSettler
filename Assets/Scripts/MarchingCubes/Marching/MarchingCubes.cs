@@ -9,15 +9,15 @@ namespace MarchingCubesProject
     public class MarchingCubes : Marching
     {
 
-        private Vector3[] EdgeVertex { get; set; }
+		private Vector3[] _edgeVertex;
 
         public MarchingCubes(float surface = 0.0f) : base(surface)
         {
-            EdgeVertex = new Vector3[12];
+            _edgeVertex = new Vector3[12];
         }
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected override void March(float x, float y, float z, float[] cube, IList<Vector3> vertList, IList<int> indexList)
+        protected override MeshData March(float x, float y, float z, float[] cube, MeshData cashedMeshData)
         {
             int i, j, vert, idx;
             int flagIndex = 0;
@@ -30,7 +30,7 @@ namespace MarchingCubesProject
             int edgeFlags = CubeEdgeFlags[flagIndex];
 
             if (edgeFlags == 0) 
-				return;
+				return cashedMeshData;
 
             for (i = 0; i < 12; i++)
             {
@@ -38,9 +38,9 @@ namespace MarchingCubesProject
                 {
                     offset = GetOffset(cube[EdgeConnection[i, 0]], cube[EdgeConnection[i, 1]]);
 
-                    EdgeVertex[i].x = x + (VertexOffset[EdgeConnection[i, 0], 0] + offset * EdgeDirection[i, 0]);
-                    EdgeVertex[i].y = y + (VertexOffset[EdgeConnection[i, 0], 1] + offset * EdgeDirection[i, 1]);
-                    EdgeVertex[i].z = z + (VertexOffset[EdgeConnection[i, 0], 2] + offset * EdgeDirection[i, 2]);
+                    _edgeVertex[i].x = x + (VertexOffset[EdgeConnection[i, 0], 0] + offset * EdgeDirection[i, 0]);
+                    _edgeVertex[i].y = y + (VertexOffset[EdgeConnection[i, 0], 1] + offset * EdgeDirection[i, 1]);
+                    _edgeVertex[i].z = z + (VertexOffset[EdgeConnection[i, 0], 2] + offset * EdgeDirection[i, 2]);
                 }
             }
 
@@ -48,15 +48,19 @@ namespace MarchingCubesProject
             {
                 if (TriangleConnectionTable[flagIndex, 3 * i] < 0) break;
 
-                idx = vertList.Count;
+                idx = cashedMeshData.VerticesTargetLength;
 
                 for (j = 0; j < 3; j++)
                 {
                     vert = TriangleConnectionTable[flagIndex, 3 * i + j];
-                    indexList.Add(idx + WindingOrder[j]);
-                    vertList.Add(EdgeVertex[vert]);
+                    cashedMeshData.CashedTriangles[cashedMeshData.TrianglesTargetLength] = idx + WindingOrder[j];
+					cashedMeshData.TrianglesTargetLength++;
+                    cashedMeshData.CashedVertices[cashedMeshData.VerticesTargetLength] = _edgeVertex[vert];
+					cashedMeshData.VerticesTargetLength++;
                 }
             }
+
+			return cashedMeshData;
         }
 
 		/// <summary>
