@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System;
 using System.Collections.Generic;
-
+using Improvehit.Extensions;
 
 namespace Common.Unity.Drawing
 {
@@ -107,7 +107,7 @@ namespace Common.Unity.Drawing
             foreach (var v in vertices)
             {
                 Vertices.Add(v);
-                Colors.Add(DefaultColor);
+                Colors.Add(new Color().Randomize());
             }
 
             foreach (var n in normals)

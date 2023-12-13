@@ -1,7 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace MarchingCubesProject
@@ -16,28 +16,24 @@ namespace MarchingCubesProject
             EdgeVertex = new Vector3[12];
         }
 
-        /// <summary>
-        /// MarchCube performs the Marching Cubes algorithm on a single cube
-        /// </summary>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected override void March(float x, float y, float z, float[] cube, IList<Vector3> vertList, IList<int> indexList)
         {
             int i, j, vert, idx;
             int flagIndex = 0;
             float offset = 0.0f;
 
-            //Find which vertices are inside of the surface and which are outside
-            for (i = 0; i < 8; i++) if (cube[i] <= Surface) flagIndex |= 1 << i;
+            for (i = 0; i < 8; i++) 
+				if (cube[i] <= Surface) 
+					flagIndex |= 1 << i;
 
-            //Find which edges are intersected by the surface
             int edgeFlags = CubeEdgeFlags[flagIndex];
 
-            //If the cube is entirely inside or outside of the surface, then there will be no intersections
-            if (edgeFlags == 0) return;
+            if (edgeFlags == 0) 
+				return;
 
-            //Find the point of intersection of the surface with each edge
             for (i = 0; i < 12; i++)
             {
-                //if there is an intersection on this edge
                 if ((edgeFlags & (1 << i)) != 0)
                 {
                     offset = GetOffset(cube[EdgeConnection[i, 0]], cube[EdgeConnection[i, 1]]);
@@ -48,7 +44,6 @@ namespace MarchingCubesProject
                 }
             }
 
-            //Save the triangles that were found. There can be up to five per cube
             for (i = 0; i < 5; i++)
             {
                 if (TriangleConnectionTable[flagIndex, 3 * i] < 0) break;

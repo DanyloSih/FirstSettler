@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
-
 using ProceduralNoiseProject;
 using Common.Unity.Drawing;
-using UnityEditor.PackageManager;
 
 namespace MarchingCubesProject
 {
@@ -18,20 +14,18 @@ namespace MarchingCubesProject
         [SerializeField] private MARCHING_MODE mode = MARCHING_MODE.CUBES;
         [SerializeField] private int seed = 0;
         [SerializeField] private bool smoothNormals = false;
-        [SerializeField] private bool drawNormals = false;
         [SerializeField] private int _width;
         [SerializeField] private int _height;
         [SerializeField] private int _depth;
 
-        private NormalRenderer _normalRenderer;
         private List<Vector3> _verts = new List<Vector3>();
         private List<Vector3> _normals = new List<Vector3>();
         private List<int> _indices = new List<int>();
         private Marching _marching;
-        private MeshFilter _currentMeshFilter;
         private FractalNoise _fractal;
         private Vector3 _meshPosition;
         private VoxelArray _voxels;
+        private (MeshFilter MeshFilter, MeshCollider MeshCollider) _currentMeshComponents;
 
         protected void OnEnable()
         {
@@ -44,24 +38,23 @@ namespace MarchingCubesProject
 
             _marching.Surface = 0.0f;
 
-            if (_currentMeshFilter != null)
+            if (_currentMeshComponents.MeshFilter != null)
             {
-                Destroy(_currentMeshFilter.gameObject);
+                Destroy(_currentMeshComponents.MeshFilter.gameObject);
             }
 
-            _currentMeshFilter = CreateMesh32();
+            _currentMeshComponents = CreateMesh32();
         }
 
         private void Update()
         {
-            
             CreateNormals();
-            UpdateMesh(_currentMeshFilter, _verts, _normals, _indices, _meshPosition);
+            UpdateMesh(_verts, _normals, _indices, _meshPosition);
         }
 
-        private void UpdateMesh(MeshFilter meshFilter, List<Vector3> verts, List<Vector3> normals, List<int> indices, Vector3 position)
+        private void UpdateMesh(List<Vector3> verts, List<Vector3> normals, List<int> indices, Vector3 position)
         {
-            var mesh = meshFilter.mesh;
+            var mesh = _currentMeshComponents.MeshFilter.mesh;
             mesh.SetVertices(verts);
             mesh.SetTriangles(indices, 0);
 
@@ -71,7 +64,10 @@ namespace MarchingCubesProject
                 mesh.RecalculateNormals();
 
             mesh.RecalculateBounds();
-            meshFilter.transform.localPosition = position;
+
+            _currentMeshComponents.MeshCollider.sharedMesh = null;
+            _currentMeshComponents.MeshCollider.sharedMesh = mesh;
+            _currentMeshComponents.MeshFilter.transform.localPosition = position;
         }
         private void UpdateNoise()
         {
@@ -89,28 +85,23 @@ namespace MarchingCubesProject
 
             //Create the normals from the voxel.
 
-            //if (smoothNormals)
-            //{
-            //    for (int i = 0; i < _verts.Count; i++)
-            //    {
-            //        //Presumes the vertex is in local space where
-            //        //the min value is 0 and max is width/height/depth.
-            //        Vector3 p = _verts[i];
+            if (smoothNormals)
+            {
+                for (int i = 0; i < _verts.Count; i++)
+                {
+                    //Presumes the vertex is in local space where
+                    //the min value is 0 and max is width/height/depth.
+                    Vector3 p = _verts[i];
 
-            //        float u = p.x / (_width - 1.0f);
-            //        float v = p.y / (_height - 1.0f);
-            //        float w = p.z / (_depth - 1.0f);
+                    float u = p.x / (_width - 1.0f);
+                    float v = p.y / (_height - 1.0f);
+                    float w = p.z / (_depth - 1.0f);
 
-            //        Vector3 n = voxels.GetNormal(u, v, w);
+                    Vector3 n = _voxels.GetNormal(u, v, w);
 
-            //        _normals.Add(n);
-            //    }
-
-            //    _normalRenderer = new NormalRenderer();
-            //    _normalRenderer.DefaultColor = Color.red;
-            //    _normalRenderer.Length = 0.25f;
-            //    _normalRenderer.Load(_verts, _normals);
-            //}
+                    _normals.Add(n);
+                }
+            }
 
             _meshPosition = new Vector3(-_width / 2, -_height / 2, -_depth / 2);
         }
@@ -135,7 +126,7 @@ namespace MarchingCubesProject
             return _voxels;
         }
 
-        private MeshFilter CreateMesh32()
+        private (MeshFilter, MeshCollider) CreateMesh32()
         {
             Mesh mesh = new Mesh();
             mesh.indexFormat = IndexFormat.UInt32;
@@ -144,10 +135,11 @@ namespace MarchingCubesProject
             go.transform.parent = transform;
             var filter =  go.AddComponent<MeshFilter>();
             go.AddComponent<MeshRenderer>();
+            var meshCollider = go.AddComponent<MeshCollider>();
             go.GetComponent<Renderer>().material = material;
             go.GetComponent<MeshFilter>().mesh = mesh;
             
-            return filter;
+            return (filter, meshCollider);
         }
     }
 }

@@ -1,78 +1,50 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace MarchingCubesProject
 {
     public abstract class Marching
     {
-        /// <summary>
-        /// The surface value in the voxels. Normally set to 0. 
-        /// </summary>
         public float Surface { get; set; }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        private float[] Cube { get; set; }
-
-        /// <summary>
-        /// Winding order of triangles use 2,1,0 or 0,1,2
-        /// </summary>
         protected int[] WindingOrder { get; private set; }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="surface"></param>
-        public Marching(float surface)
+        private float[] _cube = new float[8];
+
+        protected Marching(float surface)
         {
             Surface = surface;
-            Cube = new float[8];
             WindingOrder = new int[] { 0, 1, 2 };
         }
 
         public virtual void Generate(VoxelArray voxels, IList<Vector3> verts, IList<int> indices)
         {
+            UpdateWindingOrder();
             int width = voxels.Width;
             int height = voxels.Height;
-            int depth = voxels.Depth;
 
-            UpdateWindingOrder();
+            int widthMinusOne = width - 1;
+            int heightMinusOne = height - 1;
+            int depthMinusOne = voxels.Depth - 1;
 
-            int x, y, z, i;
-            int ix, iy, iz;
-            for (x = 0; x < width - 1; x++)
+            int totalVertices = widthMinusOne * heightMinusOne * depthMinusOne;
+
+            for (int i = 0; i < totalVertices; i++)
             {
-                for (y = 0; y < height - 1; y++)
-                {
-                    for (z = 0; z < depth - 1; z++)
-                    {
-                        //Get the values in the 8 neighbours which make up a cube
-                        for (i = 0; i < 8; i++)
-                        {
-                            ix = x + VertexOffset[i, 0];
-                            iy = y + VertexOffset[i, 1];
-                            iz = z + VertexOffset[i, 2];
+                int x = i % widthMinusOne;
+                int y = (i / widthMinusOne) % heightMinusOne;
+                int z = i / (widthMinusOne * heightMinusOne);
 
-                            Cube[i] = voxels[ix, iy, iz];
-                        }
+                ApplyVertexOffsets(voxels, x, y, z, _cube);
 
-                        //Perform algorithm
-                        March(x, y, z, Cube, verts, indices);
-                    }
-                }
+                March(x, y, z, _cube, verts, indices);
             }
-
         }
 
-        /// <summary>
-        /// Update the winding order. 
-        /// This determines how the triangles in the mesh are orientated.
-        /// </summary>
-        protected virtual void UpdateWindingOrder()
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        protected void UpdateWindingOrder()
         {
             if (Surface > 0.0f)
             {
@@ -88,32 +60,33 @@ namespace MarchingCubesProject
             }
         }
 
-         /// <summary>
-        /// MarchCube performs the Marching algorithm on a single cube
-        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected abstract void March(float x, float y, float z, float[] cube, IList<Vector3> vertList, IList<int> indexList);
 
-        /// <summary>
-        /// GetOffset finds the approximate point of intersection of the surface
-        /// between two points with the values v1 and v2
-        /// </summary>
-        protected virtual float GetOffset(float v1, float v2)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        protected float GetOffset(float v1, float v2)
         {
             float delta = v2 - v1;
             return (delta == 0.0f) ? Surface : (Surface - v1) / delta;
         }
 
-        /// <summary>
-        /// VertexOffset lists the positions, relative to vertex0, 
-        /// of each of the 8 vertices of a cube.
-        /// vertexOffset[8][3]
-        /// </summary>
         protected static readonly int[,] VertexOffset = new int[,]
-	    {
-	        {0, 0, 0},{1, 0, 0},{1, 1, 0},{0, 1, 0},
-	        {0, 0, 1},{1, 0, 1},{1, 1, 1},{0, 1, 1}
-	    };
+        {
+            {0, 0, 0}, {1, 0, 0}, {1, 1, 0}, {0, 1, 0},
+            {0, 0, 1}, {1, 0, 1}, {1, 1, 1}, {0, 1, 1}
+        };
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void ApplyVertexOffsets(VoxelArray voxels, int x, int y, int z, float[] cube)
+        {
+            cube[0] = voxels[x, y, z];
+            cube[1] = voxels[x + 1, y, z];
+            cube[2] = voxels[x + 1, y + 1, z];
+            cube[3] = voxels[x, y + 1, z];
+            cube[4] = voxels[x, y, z + 1];
+            cube[5] = voxels[x + 1, y, z + 1];
+            cube[6] = voxels[x + 1, y + 1, z + 1];
+            cube[7] = voxels[x, y + 1, z + 1];
+        }
     }
-
 }

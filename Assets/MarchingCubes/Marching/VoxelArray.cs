@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace MarchingCubesProject
@@ -9,19 +10,19 @@ namespace MarchingCubesProject
     /// </summary>
     public class VoxelArray
     {
-        private float[] _voxels;
+        private readonly float[] _voxels;
         private bool _flipNormals;
 
-        private int _width;
-        private int _height;
-        private int _depth;
+        private readonly int _width;
+        private readonly int _height;
+        private readonly int _depth;
 
-        private int _strideY;
-        private int _strideZ;
+        private readonly int _strideY;
+        private readonly int _strideZ;
 
-        private float _halfWidthMinusOne;
-        private float _halfHeightMinusOne;
-        private float _halfDepthMinusOne;
+        private readonly float _halfWidthMinusOne;
+        private readonly float _halfHeightMinusOne;
+        private readonly float _halfDepthMinusOne;
 
         public VoxelArray(int width, int height, int depth)
         {
@@ -48,13 +49,18 @@ namespace MarchingCubesProject
             get => _flipNormals;
             set => _flipNormals = value;
         }
-
+        public float this[int i]
+        {
+            get => _voxels[i];
+            set => _voxels[i] = value;
+        }
         public float this[int x, int y, int z]
         {
             get => _voxels[x + y * _strideY + z * _strideZ];
             set => _voxels[x + y * _strideY + z * _strideZ] = value;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public float GetVoxel(int x, int y, int z)
         {
             x = Mathf.Clamp(x, 0, _width - 1);
@@ -63,6 +69,7 @@ namespace MarchingCubesProject
             return _voxels[x + y * _strideY + z * _strideZ];
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public float GetVoxel(float u, float v, float w)
         {
             float x = u * _halfWidthMinusOne;
@@ -93,6 +100,7 @@ namespace MarchingCubesProject
             return Lerp(v0, v1, tz);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Vector3 GetNormal(int x, int y, int z)
         {
             var n = GetFirstDerivative(x, y, z);
@@ -100,6 +108,7 @@ namespace MarchingCubesProject
             return _flipNormals ? -n.normalized : n.normalized;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Vector3 GetNormal(float u, float v, float w)
         {
             var n = GetFirstDerivative(u, v, w);
@@ -107,6 +116,7 @@ namespace MarchingCubesProject
             return _flipNormals ? -n.normalized : n.normalized;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Vector3 GetFirstDerivative(int x, int y, int z)
         {
             float dx_p1 = GetVoxel(x + 1, y, z);
@@ -124,6 +134,7 @@ namespace MarchingCubesProject
             return new Vector3(dx, dy, dz);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Vector3 GetFirstDerivative(float u, float v, float w)
         {
             const float h = 0.005f;
@@ -145,11 +156,13 @@ namespace MarchingCubesProject
             return new Vector3(dx, dy, dz);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static float Lerp(float v0, float v1, float t)
         {
             return v0 + (v1 - v0) * t;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static float BLerp(float v00, float v10, float v01, float v11, float tx, float ty)
         {
             return Lerp(Lerp(v00, v10, tx), Lerp(v01, v11, tx), ty);
