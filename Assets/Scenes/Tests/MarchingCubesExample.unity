@@ -229,14 +229,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 885ff46eae570b64faea5ac33a3d9bc7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  material: {fileID: 2100000, guid: fb8a03accb87f7a4abc7af51618a72be, type: 2}
-  mode: 0
+  _materialAssociations: {fileID: 11400000, guid: 666ef968199c91a4182bc98a711d7d8e,
+    type: 2}
+  _materialKeysPack: {fileID: 11400000, guid: 631c7074d19bb1c4fb02331cbab3a658, type: 2}
   seed: 0
-  smoothNormals: 0
-  drawNormals: 1
-  _width: 32
-  _height: 32
-  _depth: 32
+  _width: 16
+  _height: 16
+  _depth: 16
 --- !u!1 &1866038435
 GameObject:
   m_ObjectHideFlags: 0
@@ -272,12 +271,12 @@ Light:
   m_InnerSpotAngle: 21.80208
   m_CookieSize: 10
   m_Shadows:
-    m_Type: 0
+    m_Type: 1
     m_Resolution: -1
     m_CustomResolution: -1
     m_Strength: 1
     m_Bias: 0.05
-    m_NormalBias: 0.4
+    m_NormalBias: 0
     m_NearPlane: 0.2
     m_CullingMatrixOverride:
       e00: 1
