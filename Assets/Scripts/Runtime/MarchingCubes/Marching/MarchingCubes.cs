@@ -6,7 +6,10 @@ namespace MarchingCubesProject
 {
     public class MarchingCubes : Marching
     {
-		private Vector3[] _edgeVertex;
+        public override int MaxTrianglesPerMarch { get => 15; }
+        public override int MaxVerticesPerMarch { get => 15; }
+
+        private Vector3[] _edgeVertex;
 
         private Vector3 _vertex1 = default;
         private Vector3 _vertex2 = default;

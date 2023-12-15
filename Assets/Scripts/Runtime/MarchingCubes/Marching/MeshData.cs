@@ -18,13 +18,13 @@ namespace MarchingCubesProject
         public MeshData(
             int maxVerticesArrayLength,
             int maxUVArrayLength,
-            MaterialKeysPack materialKeysPack)
+            IEnumerable<int> materialKeysHashes)
         {
             CashedVertices = new Vector3[maxVerticesArrayLength];
             CashedUV = new Vector2[maxUVArrayLength];
 
             _materialKeyAndTriangleListAssociations.Clear();
-            foreach (var hash in materialKeysPack.GetMaterialKeyHashes())
+            foreach (var hash in materialKeysHashes)
             {
                 _materialKeyAndTriangleListAssociations.Add(hash, new List<int>());
             }

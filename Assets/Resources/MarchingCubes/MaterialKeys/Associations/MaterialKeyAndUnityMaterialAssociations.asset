@@ -13,9 +13,7 @@ MonoBehaviour:
   m_Name: MaterialKeyAndUnityMaterialAssociations
   m_EditorClassIdentifier: 
   _keyAndMaterialAssociations:
-    list:
-    - Key: {fileID: 11400000, guid: 0341ba40e1383834692bb53bf930b235, type: 2}
-      Value: {fileID: 2100000, guid: fb8a03accb87f7a4abc7af51618a72be, type: 2}
-    - Key: {fileID: 11400000, guid: 85077f5e453a08a49b215a0d14b7adfb, type: 2}
-      Value: {fileID: 2100000, guid: eedb9cdf7c3b68b449941d14fef62a74, type: 2}
-    keyCollision: 0
+  - _materialKey: {fileID: 11400000, guid: 0341ba40e1383834692bb53bf930b235, type: 2}
+    _unityMaterial: {fileID: 2100000, guid: fb8a03accb87f7a4abc7af51618a72be, type: 2}
+  - _materialKey: {fileID: 11400000, guid: 85077f5e453a08a49b215a0d14b7adfb, type: 2}
+    _unityMaterial: {fileID: 2100000, guid: eedb9cdf7c3b68b449941d14fef62a74, type: 2}

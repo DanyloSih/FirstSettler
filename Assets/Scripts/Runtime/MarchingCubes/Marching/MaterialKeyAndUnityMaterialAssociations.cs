@@ -4,12 +4,13 @@ using UnityEngine;
 
 namespace MarchingCubesProject
 {
+
     [CreateAssetMenu(
         fileName = nameof(MaterialKeyAndUnityMaterialAssociations),
         menuName = "FirstSettler/MarchingCubes/" + nameof(MaterialKeyAndUnityMaterialAssociations))]
     public class MaterialKeyAndUnityMaterialAssociations : ScriptableObject
     {
-        [SerializeField] private GenericDictionary<MaterialKey, Material> _keyAndMaterialAssociations;
+        [SerializeField] private List<KeyAndMaterialAssociation> _keyAndMaterialAssociations;
 
         private Dictionary<int, Material> _keyHashAndMaterialAssociations = new Dictionary<int, Material>();
 
@@ -18,7 +19,15 @@ namespace MarchingCubesProject
             _keyHashAndMaterialAssociations.Clear();
             foreach (var item in _keyAndMaterialAssociations)
             {
-                _keyHashAndMaterialAssociations.Add(item.Key.GetHashCode(), item.Value);
+                _keyHashAndMaterialAssociations.Add(item.MaterialKey.GetHashCode(), item.UnityMaterial);
+            }
+        }
+
+        public IEnumerable<int> GetMaterialKeyHashes()
+        {
+            foreach (var item in _keyHashAndMaterialAssociations)
+            {
+                yield return item.Key;    
             }
         }
 
@@ -26,7 +35,12 @@ namespace MarchingCubesProject
             => _keyHashAndMaterialAssociations;
 
         public IEnumerable<Material> GetMaterials()
-            => _keyAndMaterialAssociations.Values;
+        {
+            foreach (var item in _keyAndMaterialAssociations)
+            {
+                yield return item.UnityMaterial;
+            }
+        }
 
         public Material GetMaterialByKeyHash(int materialKeyHash)
         {
@@ -37,18 +51,6 @@ namespace MarchingCubesProject
 
             throw new ArgumentException(
                 $"There no material associated with hash: {materialKeyHash}", $"{nameof(materialKeyHash)}");
-        }
-
-        public Material GetUnityMaterialByMaterialKey(MaterialKey materialKey)
-        {
-            if (_keyAndMaterialAssociations.TryGetValue(materialKey, out var value))
-            {
-                return value;
-            }
-
-            throw new ArgumentException(
-                $"There no material associated with {nameof(MaterialKey)}: " +
-                $"{materialKey.MaterialName}", $"{nameof(materialKey)}");
         }
     }
 }

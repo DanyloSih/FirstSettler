@@ -13,7 +13,20 @@ namespace MarchingCubesProject
 
         public override int GetHashCode()
         {
-            return _materialName.GetHashCode();
+            int hashCode = 0;
+
+            var obj = this;
+
+            try
+            {
+                hashCode = _materialName.GetHashCode();
+            }
+            catch
+            {
+
+            }
+
+            return hashCode;
         }
     }
 }
