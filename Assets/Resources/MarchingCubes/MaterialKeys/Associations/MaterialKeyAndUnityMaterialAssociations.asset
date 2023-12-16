@@ -9,11 +9,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 605a82ccabdc61c4285f9abe431f8bb6, type: 3}
+  m_Script: {fileID: 11500000, guid: 02e3313621b34974eae24bd2929e8c72, type: 3}
   m_Name: MaterialKeyAndUnityMaterialAssociations
   m_EditorClassIdentifier: 
   _keyAndMaterialAssociations:
   - _materialKey: {fileID: 11400000, guid: 0341ba40e1383834692bb53bf930b235, type: 2}
     _unityMaterial: {fileID: 2100000, guid: fb8a03accb87f7a4abc7af51618a72be, type: 2}
-  - _materialKey: {fileID: 11400000, guid: 85077f5e453a08a49b215a0d14b7adfb, type: 2}
+  - _materialKey: {fileID: 11400000, guid: e9bf2c3929b26a54eab43f33ed2b592f, type: 2}
     _unityMaterial: {fileID: 2100000, guid: eedb9cdf7c3b68b449941d14fef62a74, type: 2}

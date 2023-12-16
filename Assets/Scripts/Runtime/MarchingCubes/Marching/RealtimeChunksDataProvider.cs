@@ -2,12 +2,13 @@
 using System.Linq;
 using ProceduralNoiseProject;
 using UnityEngine;
+using World.Data;
+using World.Organization;
 
 namespace MarchingCubesProject
 {
     public class RealtimeChunksDataProvider : MonoBehaviour, IChunksDataProvider
     {
-        [SerializeField] private BasicChunkSettings _basicChunkSettings;
         [SerializeField] private MaterialKeyAndUnityMaterialAssociations _materialAssociations;
         [SerializeField] private float _maxHeight = 256;
         [SerializeField] private float _minHeight;
@@ -19,7 +20,6 @@ namespace MarchingCubesProject
         private int _height;
         private int _depth;
 
-        public BasicChunkSettings BasicChunkSettings { get => _basicChunkSettings; }
         public MaterialKeyAndUnityMaterialAssociations MaterialAssociations { get => _materialAssociations; }
 
         private void UpdateNoise()
@@ -60,11 +60,11 @@ namespace MarchingCubesProject
             return chunkData;
         }
 
-        public ChunkData GetChunkData(int x, int y, int z)
+        public ChunkData GetChunkData(int x, int y, int z, Vector3Int chunkDataSize)
         {
-            _width = _basicChunkSettings.Width;
-            _height = _basicChunkSettings.Height;
-            _depth = _basicChunkSettings.Depth;
+            _width = chunkDataSize.x;
+            _height = chunkDataSize.y;
+            _depth = chunkDataSize.z;
             UpdateNoise();
             return UpdateVoxelArray(x, y, z);
         }
