@@ -35,9 +35,16 @@ namespace MarchingCubesProject.Tools
 
             foreach (var chunkDataVoxel in chunkDataVolumeAndMaterials)
             {
+                Vector3Int localChunkPosition 
+                    = _chunkCoordinatesCalculator.GetLocalChunkPositionByGlobalPoint(
+                        chunkDataVoxel.GlobalChunkDataPoint);
+
+                Vector3Int localChunkDataPoint
+                    = _chunkCoordinatesCalculator.GetLocalChunkDataPointByGlobalPoint(
+                        chunkDataVoxel.GlobalChunkDataPoint);
+
                 List<AffectedNeighborData> affectedNeighborsData
-                    = GetAffectedNeighborsData(
-                        chunkDataVoxel.LocalChunkPosition, chunkDataVoxel.LocalChunkDataPoint);
+                    = GetAffectedNeighborsData(localChunkPosition, localChunkDataPoint);
 
                 foreach (var affectedNeighborData in affectedNeighborsData)
                 {
@@ -70,11 +77,6 @@ namespace MarchingCubesProject.Tools
                     updatingChunk.UpdateMesh();
                 }
             }
-        }
-
-        public void GetChunkDataVolumeAndMaterial(Vector3Int globalChunkDataPoint)
-        {
-
         }
 
         private List<AffectedNeighborData> GetAffectedNeighborsData(

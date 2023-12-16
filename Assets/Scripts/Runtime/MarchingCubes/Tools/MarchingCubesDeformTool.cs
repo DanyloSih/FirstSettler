@@ -50,10 +50,10 @@ namespace MarchingCubesProject.Tools
                 return;
             }
 
-            Deform(chunkRaycastResult.GlobalChunkDataPoint, newVolume, _drawMaterial.GetHashCode());
+            Deform(chunkRaycastResult.GlobalChunkDataPoint, chunkRaycastResult.Scale, newVolume, _drawMaterial.GetHashCode());
         }
 
-        private void Deform(Vector3Int localChunkDataPoint, float volume, int materialHash)
+        private void Deform(Vector3 globalChunkPosition, float scale, float volume, int materialHash)
         {
             List<ChunkDataVolumeAndMaterial> changePoints = new List<ChunkDataVolumeAndMaterial>();
             int halfBrushSize = _brushSize / 2;
@@ -63,9 +63,9 @@ namespace MarchingCubesProject.Tools
                 {
                     for (int z = -halfBrushSize; z <= halfBrushSize; z++)
                     {
-                        var brushPoint = localChunkDataPoint + new Vector3Int(x, y, z);
+                        var brushPoint = globalChunkPosition + new Vector3(x, y, z) * scale;
 
-                        if (Vector3Int.Distance(localChunkDataPoint, brushPoint) <= _brushSize)
+                        if (Vector3.Distance(globalChunkPosition, brushPoint) <= _brushSize)
                         {
                             changePoints.Add(new ChunkDataVolumeAndMaterial(
                                 brushPoint, volume, materialHash));

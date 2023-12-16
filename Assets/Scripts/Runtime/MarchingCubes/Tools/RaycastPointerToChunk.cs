@@ -42,6 +42,7 @@ namespace MarchingCubesProject.Tools
                 result.LocalChunkDataPoint = _chunkCoordinatesCalculator
                     .GetLocalChunkDataPointByGlobalPoint(hit.point);
 
+                result.Scale = _basicChunkSettings.Scale;
                 result.IsChunkHited = true;
 
                 Debug.Log($"hit:{hit.point}, gl_ch_data: {result.GlobalChunkDataPoint}, loc_ch_data: {result.LocalChunkDataPoint}");

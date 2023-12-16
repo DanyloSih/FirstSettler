@@ -9,7 +9,8 @@ namespace MarchingCubesProject.Tools
         public IChunk Chunk;
         public Ray Ray;
         public RaycastHit Hit;
-        public Vector3Int GlobalChunkDataPoint;
-        public Vector3Int LocalChunkDataPoint;
+        public Vector3 GlobalChunkDataPoint;
+        public Vector3 LocalChunkDataPoint;
+        public float Scale;
     }
 }
