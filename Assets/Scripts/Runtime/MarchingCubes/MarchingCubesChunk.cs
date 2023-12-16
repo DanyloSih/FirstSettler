@@ -8,7 +8,7 @@ using World.Data;
 
 namespace MarchingCubesProject
 {
-    public class MarchingCubesBasicChunk : MonoBehaviour, IChunk
+    public class MarchingCubesChunk : MonoBehaviour, IChunk
     {
         private MaterialKeyAndUnityMaterialAssociations _materialAssociations;
         private BasicChunkSettings _basicChunkSettings;
@@ -16,7 +16,6 @@ namespace MarchingCubesProject
         private Dictionary<int, int> _materialKeyAndSubmeshAssociation = new Dictionary<int, int>();
         private List<Vector3> _normals = new List<Vector3>();
         private MarchingAlgorithm _marching;
-        private Vector3 _meshPosition;
         private ChunkData _chunkData;
         private (MeshFilter MeshFilter, MeshCollider MeshCollider) _currentMeshComponents;
         private bool _isBasicDataInitialized;
@@ -51,7 +50,7 @@ namespace MarchingCubesProject
             _chunkPosition = chunkPosition;
             _materialAssociations = materialKeyAndUnityMaterial;
             _basicChunkSettings = basicChunkSettings;
-            ChunkSize = _basicChunkSettings.ChunkSize;
+            ChunkSize = _basicChunkSettings.Size;
             _chunkData = chunkData;
 
             InitializeMeshData();
@@ -85,12 +84,10 @@ namespace MarchingCubesProject
             }
 
             _meshData = _marching.GenerateMeshData(_chunkData, _meshData, Neighbors);
-            _meshPosition = -_basicChunkSettings.ChunkSize / 2;
-            UpdateMesh(_meshData, _normals, _meshPosition);
-            transform.position = Vector3.Scale(_chunkPosition, _basicChunkSettings.ChunkSize);
+            UpdateMesh(_meshData, _normals);
         }
 
-        private void UpdateMesh(MeshData meshData, List<Vector3> normals, Vector3 position)
+        private void UpdateMesh(MeshData meshData, List<Vector3> normals)
         {
             var mesh = _currentMeshComponents.MeshFilter.mesh;
             mesh.Clear();
@@ -105,7 +102,7 @@ namespace MarchingCubesProject
 
             mesh.RecalculateBounds();
 
-            _currentMeshComponents.MeshFilter.transform.localPosition = position;
+            _currentMeshComponents.MeshFilter.transform.localPosition = Vector3.zero;
             _meshColliderUpdated = false;
         }
 
@@ -113,7 +110,7 @@ namespace MarchingCubesProject
         {
             _marching = new MarchingCubesAlgorithm();
             _marching.Surface = 0.0f;
-            Vector3Int size = _basicChunkSettings.ChunkSize;
+            Vector3Int size = _basicChunkSettings.Size;
             int cubesCount = size.x * size.y * size.z;
             _meshData = new MeshData(
                 _marching.MaxVerticesPerMarch * cubesCount,

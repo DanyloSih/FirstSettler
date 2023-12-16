@@ -1,15 +1,17 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 using World.Data;
+using World.Organization;
 
 namespace MarchingCubesProject.Tools
 {
-    public class DeformTool : MonoBehaviour
+    public class MarchingCubesDeformTool : MonoBehaviour
     {
         [SerializeField] private RaycastPointerToChunk _raycastPointerToChunk;
         [SerializeField] private float _deformForce = 0.2f;
         [SerializeField] private int _brushSize = 2;
         [SerializeField] private MaterialKey _drawMaterial;
+        [SerializeField] private MarchingCubesChunksEditor _marchingCubesChunksEditor;
 
         private int _drawMaterialHash;
         private Camera _mainCamera;
@@ -27,24 +29,33 @@ namespace MarchingCubesProject.Tools
         {
             if (Input.GetMouseButtonDown(0))
             {
-                var chunk = _raycastPointerToChunk.CurrentPointedChunk;
-
-                if (chunk == null)
-                {
-                    return;
-                }
-
-                var voxelPosInt = _raycastPointerToChunk.CurrentPointedPositionInChunkData;
-                Deform(chunk, voxelPosInt);
-                chunk.UpdateMesh();
+                ThrowRayAndDeform(Mathf.Abs(_deformForce));
+            }
+            else if (Input.GetMouseButtonDown(1))
+            {
+                ThrowRayAndDeform(0);
+            }
+            else if (Input.GetMouseButtonDown(2))
+            {
+                ThrowRayAndDeform(-Mathf.Abs(_deformForce));
             }
         }
 
-        private void Deform(MarchingCubesBasicChunk chunk, Vector3Int voxelPosInt)
+        private void ThrowRayAndDeform(float newVolume)
         {
-            var chunkSize = chunk.ChunkSize;
+            ChunkRaycastingResult chunkRaycastResult = _raycastPointerToChunk.ThrowRaycast();
 
-            List<Vector3Int> changePoints = new List<Vector3Int>();
+            if (!chunkRaycastResult.IsChunkHited)
+            {
+                return;
+            }
+
+            Deform(chunkRaycastResult.GlobalChunkDataPoint, newVolume, _drawMaterial.GetHashCode());
+        }
+
+        private void Deform(Vector3Int localChunkDataPoint, float volume, int materialHash)
+        {
+            List<ChunkDataVolumeAndMaterial> changePoints = new List<ChunkDataVolumeAndMaterial>();
             int halfBrushSize = _brushSize / 2;
             for (int x = -halfBrushSize; x <= halfBrushSize; x++) 
             {
@@ -52,27 +63,20 @@ namespace MarchingCubesProject.Tools
                 {
                     for (int z = -halfBrushSize; z <= halfBrushSize; z++)
                     {
-                        var brushPoint = voxelPosInt + new Vector3Int(x, y, z);
-                        var clampedBrushPoint = new Vector3Int(
-                            Mathf.Clamp(brushPoint.x, 0, chunkSize.x),
-                            Mathf.Clamp(brushPoint.y, 0, chunkSize.y),
-                            Mathf.Clamp(brushPoint.z, 0, chunkSize.z));
+                        var brushPoint = localChunkDataPoint + new Vector3Int(x, y, z);
 
-                        if (clampedBrushPoint == brushPoint 
-                         && Vector3Int.Distance(voxelPosInt, brushPoint) <= _brushSize)
+                        if (Vector3Int.Distance(localChunkDataPoint, brushPoint) <= _brushSize)
                         {
-                            changePoints.Add(brushPoint);
+                            changePoints.Add(new ChunkDataVolumeAndMaterial(
+                                brushPoint, volume, materialHash));
                         }
                     }
                 }
             }
-            foreach (var changePoint in changePoints)
-            {
-                SetVolume(chunk, changePoint, chunk.ChunkData.GetVolume(changePoint.x, changePoint.y, changePoint.z));
-            }
+            _marchingCubesChunksEditor.SetNewChunkDataVolumeAndMaterial(changePoints);
         }
 
-        private void SetVolume(MarchingCubesBasicChunk chunk, Vector3Int voxelPosInt, float volume)
+        private void SetVolume(IChunk chunk, Vector3Int voxelPosInt, float volume)
         {
             if (volume >= 0 && _drawMaterial != null)
             {

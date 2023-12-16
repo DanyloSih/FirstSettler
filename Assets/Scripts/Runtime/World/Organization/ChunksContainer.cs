@@ -72,9 +72,16 @@ namespace World.Organization
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private int GetIndex(int x, int y, int z)
+        private long GetIndex(int x, int y, int z)
         {
-            return x + y * s_maxChunkID + z * s_maxChunkIDSquared;
+            unchecked 
+            {
+                long hash = 17;
+                hash = hash * 23 + (x < 0 ? uint.MaxValue + x : x).GetHashCode();
+                hash = hash * 23 + (y < 0 ? uint.MaxValue + y : y).GetHashCode();
+                hash = hash * 23 + (z < 0 ? uint.MaxValue + z : z).GetHashCode();
+                return hash;
+            }
         }
     }
 }

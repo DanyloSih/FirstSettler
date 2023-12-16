@@ -1,70 +1,53 @@
 ﻿using UnityEngine;
-using FirstSettler.Common;
+using World.Organization;
+using World.Data;
 
 namespace MarchingCubesProject.Tools
 {
     public class RaycastPointerToChunk : MonoBehaviour
     {
-        [SerializeField] private CommonRaycastPointer _commonRaycastPointer;
+        [SerializeField] private Camera _rayThrowerCamera;
+        [SerializeField] private float _maxRaycastDistance;
+        [SerializeField] private BasicChunkSettings _basicChunkSettings;
 
-        private MeshFilter _currentPointedMeshFilter;
-        private MarchingCubesBasicChunk _currentPointedChunk;
-        private Vector3Int _currentPointedChunkDataPosition;
-
-        public CommonRaycastPointer CommonRaycastPointer { get => _commonRaycastPointer; }
-        public MeshFilter CurrentPointedMeshFilter { get => _currentPointedMeshFilter; }
-        public MarchingCubesBasicChunk CurrentPointedChunk { get => _currentPointedChunk; }
-        /// <summary>
-        /// Coordinates in ChunkData pointed by ray casted 
-        /// from the center of the camera.
-        /// </summary>
-        public Vector3Int CurrentPointedPositionInChunkData { get => _currentPointedChunkDataPosition; }
+        private ChunkCoordinatesCalculator _chunkCoordinatesCalculator;
 
         protected void OnEnable()
         {
-            _commonRaycastPointer.RaycastHitsUpdated += OnRaycastHitsUpdated;
+            _chunkCoordinatesCalculator = new ChunkCoordinatesCalculator(
+                _basicChunkSettings.Size, _basicChunkSettings.Scale);
         }
 
-        protected void OnDisable()
+        public ChunkRaycastingResult ThrowRaycast()
         {
-            _commonRaycastPointer.RaycastHitsUpdated -= OnRaycastHitsUpdated;
-        }
+            var result = new ChunkRaycastingResult(); 
+            var ray = _rayThrowerCamera.ScreenPointToRay(
+                new Vector3(Screen.width / 2, Screen.height / 2, 0));
 
-        private void OnRaycastHitsUpdated(RaycastHit[] hits)
-        {
-            foreach (var hit in hits)
+            result.Ray = ray;
+
+            if (Physics.Raycast(ray, out var hit, _maxRaycastDistance))
             {
-                var chunk = hit.collider.transform.parent.GetComponent<MarchingCubesBasicChunk>();
+                result.Hit = hit;
+                var chunk = hit.collider.transform.parent.GetComponent<MarchingCubesChunk>();
                 if (chunk == null)
                 {
-                    _currentPointedMeshFilter = null;
-                    _currentPointedChunk = null;
-                    return;
+                    return result;
                 }
 
-                var meshFilter = hit.collider.transform.GetComponent<MeshFilter>();
+                result.Chunk = chunk;
+                result.GlobalChunkDataPoint = _chunkCoordinatesCalculator
+                    .GetGlobalChunkDataPointByGlobalPoint(hit.point);
 
-                _currentPointedMeshFilter = meshFilter;
-                _currentPointedChunk = chunk;
+                result.LocalChunkDataPoint = _chunkCoordinatesCalculator
+                    .GetLocalChunkDataPointByGlobalPoint(hit.point);
 
-                var chunkSize = chunk.ChunkSize;
-                var chunkExtendMinusOne = chunkSize / 2;
+                result.IsChunkHited = true;
 
-                Vector3 offset = meshFilter.transform.parent.position - Vector3.one / 2;
-                Vector3 hitOffset = hit.point - offset + chunkExtendMinusOne;
-                Vector3 normalizedHitPoint = new Vector3(
-                        hitOffset.x / chunkSize.x,
-                        hitOffset.y / chunkSize.y,
-                        hitOffset.z / chunkSize.z);
-
-                var voxelPos = Vector3.Scale(chunkSize, normalizedHitPoint);
-                var voxelPosInt = new Vector3Int(
-                    Mathf.FloorToInt(voxelPos.x), 
-                    Mathf.FloorToInt(voxelPos.y), 
-                    Mathf.FloorToInt(voxelPos.z));
-
-                _currentPointedChunkDataPosition = voxelPosInt;
+                Debug.Log($"hit:{hit.point}, gl_ch_data: {result.GlobalChunkDataPoint}, loc_ch_data: {result.LocalChunkDataPoint}");
             }
-        } 
+
+            return result;
+        }
     }
 }

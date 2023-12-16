@@ -21,9 +21,12 @@ namespace World.Organization
         private GameObject _chunkPrefabGO;
         private IChunksDataProvider _chunksDataProvider;
         private Vector3Int _minPoint;
+        private ChunkCoordinatesCalculator _chunkCoordinatesCalculator;
 
         public void OnEnable()
         {
+            _chunkCoordinatesCalculator = new ChunkCoordinatesCalculator(_basicChunkSettings.Size, _basicChunkSettings.Scale);
+
             _activeChunksContainer = _activeChunksContainerHeir.GetValue();
             _chunkPrefabGO = (_chunkPrefabHeir.GetHeirObject() as Component)?.gameObject;
             if (_chunkPrefabGO == null)
@@ -31,7 +34,7 @@ namespace World.Organization
                 throw new ArgumentException($"{nameof(_chunkPrefabHeir)} should be prefab gameObject!");
             }
             _chunksDataProvider = _chunksDataProviderHeir.GetValue();
-            _minPoint = Vector3Int.Scale((_chunksGridSize / 2), -Vector3Int.one);
+            _minPoint = _chunksGridSize / 2;
 
             DestroyOldChunks();
 
@@ -51,18 +54,25 @@ namespace World.Organization
 
         private void FirstInitializationStage()
         {
-            Vector3Int chunkDataSize = _basicChunkSettings.ChunkSize + Vector3Int.one;
-            for (int x = _minPoint.x; x < _chunksGridSize.x; x++)
+            Vector3Int chunkDataSize = _basicChunkSettings.Size + Vector3Int.one;
+            for (int x = -_minPoint.x; x <= _minPoint.x; x++)
             {
-                for (int y = _minPoint.y; y < _chunksGridSize.y; y++)
+                for (int y = -_minPoint.y; y <= _minPoint.y; y++)
                 {
-                    for (int z = _minPoint.z; z < _chunksGridSize.z; z++)
+                    for (int z = -_minPoint.z; z <= _minPoint.z; z++)
                     {
                         var instance = Instantiate(_chunkPrefabGO, _chunksRoot);
                         IChunk chunk = instance.GetComponent(typeof(IChunk)) as IChunk;
                         _chunksList.Add(new (chunk, instance));
                         var chunkData = _chunksDataProvider.GetChunkData(x, y, z, chunkDataSize);
-                        _activeChunksContainer.AddChunk(x, y, z, chunk);
+                        if (!_activeChunksContainer.IsChunkExist(x, y, z))
+                        {
+                            _activeChunksContainer.AddChunk(x, y, z, chunk);
+                        }
+                        else
+                        {
+                            throw new Exception("HASH COLLISSION!");
+                        }
                         chunk.InitializeBasicData(
                             _basicChunkSettings,
                             _chunksDataProvider.MaterialAssociations,
@@ -75,16 +85,21 @@ namespace World.Organization
 
         private void SecondInitializationStage()
         {
-            for (int x = _minPoint.x; x < _chunksGridSize.x; x++)
+            for (int x = -_minPoint.x; x <= _minPoint.x; x++)
             {
-                for (int y = _minPoint.y; y < _chunksGridSize.y; y++)
+                for (int y = -_minPoint.y; y <= _minPoint.y; y++)
                 {
-                    for (int z = _minPoint.z; z < _chunksGridSize.z; z++)
+                    for (int z = -_minPoint.z; z <= _minPoint.z; z++)
                     {
                         IChunk chunk = _activeChunksContainer.GetChunk(x, y, z);
 
                         chunk.InitializeNeighbors(new ChunkNeighbors(x, y, z, _activeChunksContainer));
                         chunk.UpdateMesh();
+                        chunk.RootGameObject.transform.localScale
+                            = Vector3.one * _basicChunkSettings.Scale;
+
+                        chunk.RootGameObject.transform.position 
+                            = _chunkCoordinatesCalculator.GetGlobalChunkPositionByLocal(new Vector3Int(x, y, z));
                     }
                 }
             }
