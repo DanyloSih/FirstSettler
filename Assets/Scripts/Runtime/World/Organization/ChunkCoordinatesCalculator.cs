@@ -31,24 +31,13 @@ namespace World.Organization
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Vector3 GetGlobalChunkPositionByLocal(Vector3Int localPosition, bool useScaledChunkSize = true)
+        public Vector3 GetGlobalChunkPositionByLocal(Vector3Int localPosition)
         {
-            if (useScaledChunkSize)
-            {
-                return new Vector3(
-                    localPosition.x * _scaledChunkSize.x,
-                    localPosition.y * _scaledChunkSize.y,
-                    localPosition.z * _scaledChunkSize.z
-                    );
-            }
-            else
-            {
-                return new Vector3(
-                   localPosition.x * _chunkSize.x,
-                   localPosition.y * _chunkSize.y,
-                   localPosition.z * _chunkSize.z
-                   );
-            }
+            return new Vector3(
+                localPosition.x * _scaledChunkSize.x,
+                localPosition.y * _scaledChunkSize.y,
+                localPosition.z * _scaledChunkSize.z
+                );
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -68,17 +57,14 @@ namespace World.Organization
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Vector3Int GetGlobalChunkDataPointByGlobalPoint(Vector3 globalPoint)
+        public Vector3 GetGlobalChunkDataPointByGlobalPoint(Vector3 globalPoint)
         {
             Vector3Int localChunkPosition = GetLocalChunkPositionByGlobalPoint(globalPoint);
-            Vector3 globalChunkPosition = GetGlobalChunkPositionByLocal(localChunkPosition, false);
-            Vector3Int localChunkDataPoint = GetLocalChunkDataPointByGlobalPoint(globalPoint);
-            Vector3 globalChunkDataPoint = localChunkDataPoint + globalChunkPosition ;
+            Vector3 globalChunkPosition = GetGlobalChunkPositionByLocal(localChunkPosition);
+            Vector3 localChunkDataPoint = GetLocalChunkDataPointByGlobalPoint(globalPoint);
+            Vector3 globalChunkDataPoint = localChunkDataPoint * _scale + globalChunkPosition;
 
-            return new Vector3Int(
-                (int)globalChunkDataPoint.x, 
-                (int)globalChunkDataPoint.y, 
-                (int)globalChunkDataPoint.z);
+            return globalChunkDataPoint;
         }
     }
 }

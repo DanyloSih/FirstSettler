@@ -27,15 +27,15 @@ namespace MarchingCubesProject.Tools
 
         private void Update()
         {
-            if (Input.GetMouseButtonDown(0))
+            if (Input.GetMouseButtonDown(1))
             {
                 ThrowRayAndDeform(Mathf.Abs(_deformForce));
             }
-            else if (Input.GetMouseButtonDown(1))
+            else if (Input.GetMouseButtonDown(2))
             {
                 ThrowRayAndDeform(0);
             }
-            else if (Input.GetMouseButtonDown(2))
+            else if (Input.GetMouseButtonDown(0))
             {
                 ThrowRayAndDeform(-Mathf.Abs(_deformForce));
             }
@@ -74,24 +74,6 @@ namespace MarchingCubesProject.Tools
                 }
             }
             _marchingCubesChunksEditor.SetNewChunkDataVolumeAndMaterial(changePoints);
-        }
-
-        private void SetVolume(IChunk chunk, Vector3Int voxelPosInt, float volume)
-        {
-            if (volume >= 0 && _drawMaterial != null)
-            {
-                chunk.ChunkData.SetMaterialHash(
-                    voxelPosInt.x,
-                    voxelPosInt.y,
-                    voxelPosInt.z,
-                    _drawMaterialHash);
-            }
-
-            chunk.ChunkData.SetVolume(
-                voxelPosInt.x,
-                voxelPosInt.y,
-                voxelPosInt.z,
-                Mathf.Clamp01(volume + _deformForce));
         }
     }
 }

@@ -15,6 +15,7 @@ namespace MarchingCubesProject.Tools
 
         private ChunkCoordinatesCalculator _chunkCoordinatesCalculator;
         private Vector3Int _chunkScaledSize;
+        private Vector3Int _chunkSize;
         private IChunksContainer _chunksContainer;
 
         private void Awake()
@@ -25,6 +26,7 @@ namespace MarchingCubesProject.Tools
                 _basicChunkSettings.Scale);
 
             _chunkScaledSize = _basicChunkSettings.ScaledSize;
+            _chunkSize = _basicChunkSettings.Size;
         }
 
         public void SetNewChunkDataVolumeAndMaterial(
@@ -90,14 +92,14 @@ namespace MarchingCubesProject.Tools
 
             for (int i = 0; i < 3; i++)
             {
-                if (localChunkDataPoint[i] == _chunkScaledSize[i])
+                if (localChunkDataPoint[i] == _chunkSize[i])
                     affectMask[i] = 1;
                 else if (localChunkDataPoint[i] == 0)
                     affectMask[i] = -1;
 
                 if (affectMask[i] != 0)
                 {
-                    newChunkDataPoint[i] = affectMask[i] == -1 ? _chunkScaledSize[i] : 0;
+                    newChunkDataPoint[i] = affectMask[i] == -1 ? _chunkSize[i] : 0;
                     newLocalChunkPosition[i] = localChunkPosition[i] + affectMask[i];
                 }
             }
