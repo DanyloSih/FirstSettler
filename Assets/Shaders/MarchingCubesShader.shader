@@ -3,8 +3,8 @@ Shader "Custom/MarchingCubesShader"
     Properties {
         _MainTex ("Texture", 2D) = "white" {}
         _Color ("Color", Color) = (1,1,1,1)
-		_ShadowColor ("Shadow Color", Color) = (1,1,1,1)
-        _ShadingForce ("Shading Force", Range(0.0, 1.0)) = 0.5
+		_ShadowColor ("Shadow Color", Color) = (0,0,0,0)
+        _ShadingForce ("Shading Force", Range(0.0, 1.0)) = 0.8
     }
 
     CGINCLUDE

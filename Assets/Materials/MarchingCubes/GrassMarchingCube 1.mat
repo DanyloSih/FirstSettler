@@ -86,15 +86,17 @@ Material:
     - _Mode: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.02
+    - _RimPower: 3.58
     - _ShadeIntensity: 0
     - _ShadeStrength: 1
-    - _ShadingForce: 0.614
+    - _ShadingForce: 0.6
     - _ShadowStrength: 1
     - _Shininess: 0.01
     - _SmoothnessTextureChannel: 0
     - _SoftParticlesEnabled: 0
     - _SoftParticlesFarFadeDistance: 1
     - _SoftParticlesNearFadeDistance: 0
+    - _SpecPow: 10.8
     - _SpecularHighlights: 1
     - _SrcBlend: 1
     - _Stencil: 0
@@ -107,12 +109,16 @@ Material:
     - _ZWrite: 1
     m_Colors:
     - _CameraFadeParams: {r: 0, g: Infinity, b: 0, a: 0}
-    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _Color: {r: 0.18551417, g: 0.6886792, b: 0, a: 1}
     - _Color6: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _LightColor: {r: 1, g: 1, b: 1, a: 1}
     - _LightDir: {r: 1, g: 1, b: 1, a: 1}
+    - _MainColor: {r: 0.254717, g: 0, b: 0, a: 1}
+    - _RimColor: {r: 1, g: 1, b: 1, a: 1}
     - _ShadeColor: {r: 1, g: 0, b: 0, a: 1}
+    - _ShadowColor: {r: 0, g: 0, b: 0, a: 1}
     - _SoftParticleFadeParams: {r: 0, g: 0, b: 0, a: 0}
+    - _SpecColor: {r: 0.6320754, g: 0.6320754, b: 0.6320754, a: 1}
     - _SpecularColor: {r: 1, g: 0.97547174, b: 0.97547174, a: 1}
   m_BuildTextureStacks: []
