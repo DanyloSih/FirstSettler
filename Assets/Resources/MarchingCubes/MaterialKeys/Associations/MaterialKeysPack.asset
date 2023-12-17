@@ -15,3 +15,5 @@ MonoBehaviour:
   _materialKeys:
   - {fileID: 11400000, guid: 0341ba40e1383834692bb53bf930b235, type: 2}
   - {fileID: 11400000, guid: e9bf2c3929b26a54eab43f33ed2b592f, type: 2}
+  - {fileID: 11400000, guid: 9d30c910376146d4ba8e5b57749b308d, type: 2}
+  - {fileID: 11400000, guid: 89588cd44524c6649bb1e0f85c7a7a35, type: 2}

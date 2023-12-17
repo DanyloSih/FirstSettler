@@ -4,7 +4,6 @@ using UnityEngine;
 
 namespace World.Data
 {
-
     [CreateAssetMenu(
         fileName = nameof(MaterialKeyAndUnityMaterialAssociations),
         menuName = "FirstSettler/MarchingCubes/" + nameof(MaterialKeyAndUnityMaterialAssociations))]

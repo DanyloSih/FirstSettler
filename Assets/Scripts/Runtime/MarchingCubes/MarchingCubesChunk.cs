@@ -30,6 +30,9 @@ namespace MarchingCubesProject
 
         private bool _isNeighborsInitialized;
         private Coroutine _updatePhysicsCoroutine;
+        private List<Material> _currentMaterials;
+        private int _filledSubmeshesCount;
+        private Renderer _meshRenderer;
 
         public void InitializeBasicData(
             BasicChunkSettings basicChunkSettings, 
@@ -102,15 +105,20 @@ namespace MarchingCubesProject
         private IEnumerator UpdatePhysicsProcess()
         {
             yield return new WaitForFixedUpdate();
-            _currentMeshComponents.MeshCollider.sharedMesh = null;
-            _currentMeshComponents.MeshCollider.sharedMesh
-                = _currentMeshComponents.MeshFilter.sharedMesh;
+
+            if (_filledSubmeshesCount > 0)
+            {
+                _currentMeshComponents.MeshCollider.sharedMesh = null;
+                _currentMeshComponents.MeshCollider.sharedMesh
+                    = _currentMeshComponents.MeshFilter.sharedMesh;
+            }     
 
             _updatePhysicsCoroutine = null;
         }
 
         private void InitializeMeshData()
         {
+            _currentMaterials = new List<Material>();
             _marching = new MarchingCubesAlgorithm();
             _marching.Surface = 0.0f;
             Vector3Int size = _basicChunkSettings.Size;
@@ -123,20 +131,25 @@ namespace MarchingCubesProject
 
         private void InitializeTriangles(MeshData meshData, Mesh mesh)
         {
-            mesh.subMeshCount = meshData.GetMaterialKeyHashAndTriangleListAssociations().Count();
+            mesh.subMeshCount = meshData.GetMaterialKeyHashAndTriangleListAssociations()
+                .Where(x => x.Value.Count > 2).Count();
+            _currentMaterials.Clear();
+            _filledSubmeshesCount = 0;
+            int submeshOffset = 0;
             foreach (var item in meshData.GetMaterialKeyHashAndTriangleListAssociations())
             {
                 List<int> triangles = item.Value;
-                if (triangles.Count == 0)
+                if (triangles.Count < 3)
                 {
+                    submeshOffset--;
                     continue;
                 }
-
+                _currentMaterials.Add(_materialAssociations.GetMaterialByKeyHash(item.Key));
+                _filledSubmeshesCount++;
                 int minTriangleValue = triangles.Min();
                 if (_materialKeyAndSubmeshAssociation.TryGetValue(item.Key, out var submeshId))
                 {
-                    //mesh.SetSubMesh(submeshId, new SubMeshDescriptor(minTriangleValue, triangles.Count));
-                    mesh.SetTriangles(triangles, 0, triangles.Count, submeshId);
+                    mesh.SetTriangles(triangles, 0, triangles.Count, submeshId + submeshOffset);
                 }
                 else
                 {
@@ -144,35 +157,30 @@ namespace MarchingCubesProject
                         $"There no {nameof(submeshId)} associated with hash: {item.Key}");
                 }
             }
+
+            _meshRenderer.materials = _currentMaterials.ToArray();
         }
 
         private (MeshFilter, MeshCollider) CreateMesh32()
         {
-            List<Material> materials = new List<Material>();
-            List<SubMeshDescriptor> descriptors = new List<SubMeshDescriptor>();
             _materialKeyAndSubmeshAssociation.Clear();
             int submeshCounter = 0;
             foreach (var item in _materialAssociations.GetMaterialKeyHashAndMaterialAssociations())
             {
                 _materialKeyAndSubmeshAssociation.Add(item.Key, submeshCounter);
-                materials.Add(item.Value);
                 submeshCounter++;
             }
 
             Mesh mesh = new Mesh();
             mesh.Clear();
-            mesh.subMeshCount = materials.Count;
             mesh.indexFormat = IndexFormat.UInt32;
 
             GameObject go = new GameObject("Mesh");
             go.transform.parent = transform;
             var filter = go.AddComponent<MeshFilter>();
             var meshCollider = go.AddComponent<MeshCollider>();
-            go.AddComponent<MeshRenderer>();
-            Renderer renderer = go.GetComponent<Renderer>();
+            _meshRenderer = go.AddComponent<MeshRenderer>();
             filter.mesh = mesh;
-            filter.mesh.subMeshCount = materials.Count;
-            renderer.materials = materials.ToArray();
 
             return (filter, meshCollider);
         }

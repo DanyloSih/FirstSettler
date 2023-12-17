@@ -1,7 +1,6 @@
 ﻿using System;
-using World.Data;
 
-namespace MarchingCubesProject
+namespace World.Data
 {
     [Serializable]
     public struct HeightAndMaterialKeyAssociation

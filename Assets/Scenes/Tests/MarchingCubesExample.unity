@@ -800,17 +800,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _maxHeight: 32
-  _heightOffset: -16
+  _minHeight: -16
   _octaves: 3
   _frequency: 0.6
   _seed: 0
   _materialAssociations: {fileID: 11400000, guid: 666ef968199c91a4182bc98a711d7d8e,
     type: 2}
-  _heightAndMaterialKeyAssociations:
-  - Height: 10000
-    MaterialKey: {fileID: 11400000, guid: 0341ba40e1383834692bb53bf930b235, type: 2}
-  - Height: -5
-    MaterialKey: {fileID: 11400000, guid: e9bf2c3929b26a54eab43f33ed2b592f, type: 2}
+  _heightAssociations: {fileID: 11400000, guid: 1247a779be5a5f3448531b07ef66707c,
+    type: 2}
 --- !u!4 &1117199048
 Transform:
   m_ObjectHideFlags: 0
