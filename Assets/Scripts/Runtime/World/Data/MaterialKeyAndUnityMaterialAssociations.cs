@@ -52,5 +52,10 @@ namespace World.Data
             throw new ArgumentException(
                 $"There no material associated with hash: {materialKeyHash}", $"{nameof(materialKeyHash)}");
         }
+
+        public bool IsAssociationExist(int materialKeyHash)
+        {
+            return _keyHashAndMaterialAssociations.ContainsKey(materialKeyHash);
+        }
     }
 }

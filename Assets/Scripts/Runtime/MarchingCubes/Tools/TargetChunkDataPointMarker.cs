@@ -1,0 +1,32 @@
+﻿using UnityEngine;
+
+namespace MarchingCubesProject.Tools
+{
+    public class TargetChunkDataPointMarker : MonoBehaviour
+    {
+        [SerializeField] private Transform _markerTransform;
+        [SerializeField] private RaycastPointerToChunk _raycastPointerToChunk;
+
+        protected void OnEnable()
+        {
+            _markerTransform.gameObject.SetActive(true);
+        }
+
+        protected void OnDisable()
+        {
+            _markerTransform.gameObject.SetActive(false);
+        }
+
+        protected void Update()
+        {
+            ChunkRaycastingResult chunkRaycastResult = _raycastPointerToChunk.ThrowRaycast();
+
+            if (!chunkRaycastResult.IsChunkHited)
+            {
+                return;
+            }
+
+            _markerTransform.position = chunkRaycastResult.GlobalChunkDataPoint;
+        }
+    }
+}

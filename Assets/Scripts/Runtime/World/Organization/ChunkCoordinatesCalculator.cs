@@ -21,13 +21,23 @@ namespace World.Organization
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Vector3Int GetLocalChunkPositionByGlobalPoint(Vector3 globalPoint)
+        public Vector3 GetGlobalChunkDataPointByGlobalPoint(Vector3 globalPoint)
         {
-            return new Vector3Int(
-                Mathf.FloorToInt(globalPoint.x / _scaledChunkSize.x),
-                Mathf.FloorToInt(globalPoint.y / _scaledChunkSize.y),
-                Mathf.FloorToInt(globalPoint.z / _scaledChunkSize.z)
-                );
+            Vector3Int localChunkPosition = GetLocalChunkPositionByGlobalPoint(globalPoint);
+            Vector3 globalChunkPosition = GetGlobalChunkPositionByLocal(localChunkPosition);
+            Vector3 localChunkDataPoint = GetLocalChunkDataPointByGlobalPoint(globalPoint);
+            Vector3 globalChunkDataPoint = localChunkDataPoint * _scale + globalChunkPosition;
+
+            return globalChunkDataPoint;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Vector3 GetGlobalChunkDataPointByLocalChunkAndPoint(
+            Vector3Int localChunkPosition, Vector3Int localChunkDataPoint)
+        {
+            Vector3 globalChunkPosition = GetGlobalChunkPositionByLocal(localChunkPosition);
+            Vector3 globalChunkDataPoint = ((Vector3)localChunkDataPoint) * _scale + globalChunkPosition;
+            return globalChunkDataPoint;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -37,6 +47,16 @@ namespace World.Organization
                 localPosition.x * _scaledChunkSize.x,
                 localPosition.y * _scaledChunkSize.y,
                 localPosition.z * _scaledChunkSize.z
+                );
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Vector3Int GetLocalChunkPositionByGlobalPoint(Vector3 globalPoint)
+        {
+            return new Vector3Int(
+                Mathf.FloorToInt(globalPoint.x / _scaledChunkSize.x),
+                Mathf.FloorToInt(globalPoint.y / _scaledChunkSize.y),
+                Mathf.FloorToInt(globalPoint.z / _scaledChunkSize.z)
                 );
         }
 
@@ -54,17 +74,6 @@ namespace World.Organization
                 Mathf.FloorToInt(Mathf.Clamp(localOffset.y, 0, _chunkSize.y)),
                 Mathf.FloorToInt(Mathf.Clamp(localOffset.z, 0, _chunkSize.z))
                 );
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Vector3 GetGlobalChunkDataPointByGlobalPoint(Vector3 globalPoint)
-        {
-            Vector3Int localChunkPosition = GetLocalChunkPositionByGlobalPoint(globalPoint);
-            Vector3 globalChunkPosition = GetGlobalChunkPositionByLocal(localChunkPosition);
-            Vector3 localChunkDataPoint = GetLocalChunkDataPointByGlobalPoint(globalPoint);
-            Vector3 globalChunkDataPoint = localChunkDataPoint * _scale + globalChunkPosition;
-
-            return globalChunkDataPoint;
         }
     }
 }

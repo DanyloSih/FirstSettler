@@ -5,6 +5,7 @@ using System;
 using System.Linq;
 using World.Organization;
 using World.Data;
+using System.Collections;
 
 namespace MarchingCubesProject
 {
@@ -20,7 +21,6 @@ namespace MarchingCubesProject
         private (MeshFilter MeshFilter, MeshCollider MeshCollider) _currentMeshComponents;
         private bool _isBasicDataInitialized;
         private MeshData _meshData;
-        private bool _meshColliderUpdated = true;
 
         public Vector3Int ChunkPosition { get => _chunkPosition; }
         public ChunkData ChunkData { get => _chunkData; }
@@ -29,17 +29,7 @@ namespace MarchingCubesProject
         public Vector3Int ChunkSize { get; private set; }
 
         private bool _isNeighborsInitialized;
-
-        private void FixedUpdate()
-        {
-            if (!_meshColliderUpdated)
-            {
-                _currentMeshComponents.MeshCollider.sharedMesh = null;
-                _currentMeshComponents.MeshCollider.sharedMesh
-                    = _currentMeshComponents.MeshFilter.sharedMesh;
-                _meshColliderUpdated = true;
-            }
-        }
+        private Coroutine _updatePhysicsCoroutine;
 
         public void InitializeBasicData(
             BasicChunkSettings basicChunkSettings, 
@@ -103,7 +93,20 @@ namespace MarchingCubesProject
             mesh.RecalculateBounds();
 
             _currentMeshComponents.MeshFilter.transform.localPosition = Vector3.zero;
-            _meshColliderUpdated = false;
+            if (_updatePhysicsCoroutine == null)
+            {
+                _updatePhysicsCoroutine = StartCoroutine(UpdatePhysicsProcess());
+            }
+        }
+
+        private IEnumerator UpdatePhysicsProcess()
+        {
+            yield return new WaitForFixedUpdate();
+            _currentMeshComponents.MeshCollider.sharedMesh = null;
+            _currentMeshComponents.MeshCollider.sharedMesh
+                = _currentMeshComponents.MeshFilter.sharedMesh;
+
+            _updatePhysicsCoroutine = null;
         }
 
         private void InitializeMeshData()

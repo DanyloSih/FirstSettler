@@ -30,7 +30,7 @@ namespace MarchingCubesProject.Tools
         }
 
         public void SetNewChunkDataVolumeAndMaterial(
-            IEnumerable<ChunkDataVolumeAndMaterial> chunkDataVolumeAndMaterials, 
+            IEnumerable<ChunkDataPoint> chunkDataVolumeAndMaterials, 
             bool updateMeshes = true)
         {
             List<IChunk> updatingChunks = new List<IChunk>();
@@ -79,6 +79,49 @@ namespace MarchingCubesProject.Tools
                     updatingChunk.UpdateMesh();
                 }
             }
+        }
+
+        public ChunkDataPoint GetChunkDataPoint(Vector3 globalChunkDataPoint)
+        {
+            Vector3Int localChunkPosition = _chunkCoordinatesCalculator
+                .GetLocalChunkPositionByGlobalPoint(globalChunkDataPoint);
+
+            Vector3Int localChunkDataPoint = _chunkCoordinatesCalculator
+                .GetLocalChunkDataPointByGlobalPoint(globalChunkDataPoint);
+
+            IChunk chunk = _chunksContainer.GetChunk(
+                localChunkPosition.x, localChunkPosition.y, localChunkPosition.z);
+
+            if (chunk != null)
+            {
+                float volume = chunk.ChunkData.GetVolume(
+               localChunkDataPoint.x, localChunkDataPoint.y, localChunkDataPoint.z);
+                int materialHash = chunk.ChunkData.GetMaterialHash(
+                    localChunkDataPoint.x, localChunkDataPoint.y, localChunkDataPoint.z);
+
+                return new ChunkDataPoint(globalChunkDataPoint, volume, materialHash);
+            }
+            else
+            {
+                return new ChunkDataPoint();
+            }
+           
+        }
+
+        public ChunkDataPoint GetChunkDataPoint(Vector3Int localChunkPosition, Vector3Int localChunkDataPoint)
+        {
+            Vector3 globalChunkPos = _chunkCoordinatesCalculator
+                .GetGlobalChunkDataPointByLocalChunkAndPoint(localChunkPosition, localChunkDataPoint);
+
+            IChunk chunk = _chunksContainer.GetChunk(
+                localChunkPosition.x, localChunkPosition.y, localChunkPosition.z);
+
+            float volume = chunk.ChunkData.GetVolume(
+                localChunkDataPoint.x, localChunkDataPoint.y, localChunkDataPoint.z);
+            int materialHash = chunk.ChunkData.GetMaterialHash(
+                localChunkDataPoint.x, localChunkDataPoint.y, localChunkDataPoint.z);
+
+            return new ChunkDataPoint(globalChunkPos, volume, materialHash);
         }
 
         private List<AffectedNeighborData> GetAffectedNeighborsData(

@@ -76,10 +76,10 @@ namespace World.Organization
         {
             unchecked 
             {
-                long hash = 17;
-                hash = hash * 23 + (x < 0 ? uint.MaxValue + x : x).GetHashCode();
-                hash = hash * 23 + (y < 0 ? uint.MaxValue + y : y).GetHashCode();
-                hash = hash * 23 + (z < 0 ? uint.MaxValue + z : z).GetHashCode();
+                long hash = 54;
+                hash = hash * 228 + x.GetHashCode();
+                hash = hash * 228 + y.GetHashCode();
+                hash = hash * 228 + z.GetHashCode();
                 return hash;
             }
         }

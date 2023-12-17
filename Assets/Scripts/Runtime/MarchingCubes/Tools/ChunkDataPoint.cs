@@ -2,13 +2,13 @@
 
 namespace MarchingCubesProject.Tools
 {
-    public struct ChunkDataVolumeAndMaterial
+    public struct ChunkDataPoint
     {
         private Vector3 _globalChunkDataPoint;
         private float _volume;
         private int _materialHash;
 
-        public ChunkDataVolumeAndMaterial(Vector3 globalChunkDataPoint, float volume, int materialHash)
+        public ChunkDataPoint(Vector3 globalChunkDataPoint, float volume, int materialHash)
         {
             _globalChunkDataPoint = globalChunkDataPoint;
             _volume = volume;
