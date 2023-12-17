@@ -11,6 +11,9 @@ namespace MarchingCubesProject
 {
     public class MarchingCubesChunk : MonoBehaviour, IChunk
     {
+        [SerializeField] private string _chunkNameFormat = "MarchingCubesChunk: x({0}) y({1}) z({2})";
+        [SerializeField] private string _meshNameFormat = "Mesh: x({0}) y({1}) z({2})";
+
         private MaterialKeyAndUnityMaterialAssociations _materialAssociations;
         private BasicChunkSettings _basicChunkSettings;
         private Vector3Int _chunkPosition;
@@ -33,6 +36,7 @@ namespace MarchingCubesProject
         private List<Material> _currentMaterials;
         private int _filledSubmeshesCount;
         private Renderer _meshRenderer;
+        private string _meshName;
 
         public void InitializeBasicData(
             BasicChunkSettings basicChunkSettings, 
@@ -40,7 +44,10 @@ namespace MarchingCubesProject
             Vector3Int chunkPosition, 
             ChunkData chunkData)
         {
+
             _chunkPosition = chunkPosition;
+            InitializeNames(chunkPosition);
+
             _materialAssociations = materialKeyAndUnityMaterial;
             _basicChunkSettings = basicChunkSettings;
             ChunkSize = _basicChunkSettings.Size;
@@ -129,6 +136,21 @@ namespace MarchingCubesProject
                 _materialAssociations.GetMaterialKeyHashes());
         }
 
+        private void InitializeNames(Vector3Int chunkPosition)
+        {
+            name = string.Format(
+                _chunkNameFormat,
+                chunkPosition.x.ToString(),
+                chunkPosition.y.ToString(),
+                chunkPosition.z.ToString());
+
+            _meshName = string.Format(
+                _meshNameFormat,
+                chunkPosition.x.ToString(),
+                chunkPosition.y.ToString(),
+                chunkPosition.z.ToString());
+        }
+
         private void InitializeTriangles(MeshData meshData, Mesh mesh)
         {
             mesh.subMeshCount = meshData.GetMaterialKeyHashAndTriangleListAssociations()
@@ -174,8 +196,8 @@ namespace MarchingCubesProject
             Mesh mesh = new Mesh();
             mesh.Clear();
             mesh.indexFormat = IndexFormat.UInt32;
-
-            GameObject go = new GameObject("Mesh");
+            mesh.name = _meshName;
+            GameObject go = new GameObject(_meshName);
             go.transform.parent = transform;
             var filter = go.AddComponent<MeshFilter>();
             var meshCollider = go.AddComponent<MeshCollider>();

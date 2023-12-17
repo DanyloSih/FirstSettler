@@ -12,6 +12,7 @@ namespace MarchingCubesProject
         [SerializeField] private int _octaves;
         [SerializeField] private float _frequency;
         [SerializeField] private int _seed = 0;
+        [SerializeField] private Vector3Int _chunksOffset;
         [SerializeField] private MaterialKeyAndUnityMaterialAssociations _materialAssociations;
         [SerializeField] private MaterialKeyAndHeightAssociations _heightAssociations;
        
@@ -35,18 +36,18 @@ namespace MarchingCubesProject
             for (int y = 0; y < _height; y++)
             {
                 float v = y / (_height - 1.0f);
-                float globalY = y + yOffset * _height;
+                float globalY = y + yOffset * (_height - 1.0f);
                 var hash = _heightAssociations.GetMaterialKeyHashByHeight(globalY);
 
                 for (int x = 0; x < _width; x++)
                 {
                     float u = x / (_width - 1.0f);
-                    float globalX = x + xOffset * _width;
+                    float globalX = x + xOffset * (_width - 1.0f);
 
                     for (int z = 0; z < _depth; z++)
                     {
                         float w = z / (_depth - 1.0f);
-                        float globalZ = z + zOffset * _depth;
+                        float globalZ = z + zOffset * (_depth - 1.0f);
 
                         var heightThreshold = (1 + _fractal.Sample2D(u + xOffset, w + zOffset)) / 2 * _maxHeight + _minHeight;
                         float currentVolume = globalY < heightThreshold ? 1 : 0;
@@ -66,7 +67,7 @@ namespace MarchingCubesProject
             _height = chunkDataSize.y;
             _depth = chunkDataSize.z;
             UpdateNoise();
-            return UpdateVoxelArray(x, y, z);
+            return UpdateVoxelArray(_chunksOffset.x + x, _chunksOffset.y + y, _chunksOffset.z + z);
         }
     }
 }

@@ -54,7 +54,7 @@ namespace World.Organization
 
         private void FirstInitializationStage()
         {
-            Vector3Int chunkDataSize = _basicChunkSettings.Size + Vector3Int.one;
+            Vector3Int chunkDataSize = _basicChunkSettings.Size + new Vector3Int(1, 1, 1) * 1;
             for (int x = -_minPoint.x; x <= _minPoint.x; x++)
             {
                 for (int y = -_minPoint.y; y <= _minPoint.y; y++)
