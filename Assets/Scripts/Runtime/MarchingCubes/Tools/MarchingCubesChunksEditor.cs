@@ -60,9 +60,14 @@ namespace MarchingCubesProject.Tools
                     }
 
                     Vector3Int dataPoint = affectedNeighborData.AffectedLocalChunkDataPoint;
+                    var voxelData = new VoxelData() {
+                        Volume = chunkDataVoxel.Volume,
+                        MaterialHash = chunkDataVoxel.MaterialHash
+                    };
+
                     affectedChunk.ChunkData.SetVoxelData(
-                        dataPoint.x, dataPoint.y, dataPoint.z, 
-                        new VoxelData(chunkDataVoxel.Volume, chunkDataVoxel.MaterialHash));
+                        dataPoint.x, dataPoint.y, dataPoint.z, voxelData
+                        );
 
                     if (!updatingChunks.Contains(affectedChunk))
                     {

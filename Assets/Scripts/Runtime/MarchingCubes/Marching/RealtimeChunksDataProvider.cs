@@ -1,4 +1,5 @@
 ﻿using System.Linq;
+using System.Threading.Tasks;
 using ProceduralNoiseProject;
 using UnityEngine;
 using World.Data;
@@ -28,21 +29,38 @@ namespace MarchingCubesProject
         public MultidimensionalArray<VoxelData> Voxels
             => _voxels = _voxels ?? new MultidimensionalArray<VoxelData>(512, 512, 512);
 
-        private void Awake()
+        public Task LoadRegion()
         {
-            //int mat = _materialAssociations.GetMaterialKeyHashes().ElementAt(0);
-            //var kernelId = _generationComputeShader.FindKernel("CSMain");
-            //var voxels = Voxels;
-            //int dataSize = sizeof(int) + sizeof(float);
-            //_voxelsBuffer = new ComputeBuffer(dataSize, _voxels.FullLength);
-            //_voxelsBuffer.SetData(_voxels.RawData);
+            var kernelId = _generationComputeShader.FindKernel("CSMain");
+            var voxels = Voxels;
+            int dataSize = sizeof(int) + sizeof(float);
+            _voxelsBuffer = new ComputeBuffer(voxels.FullLength, dataSize);
+            int mat = _heightAssociations.GetMaterialKeyHashByHeight(0);
+            _voxelsBuffer.SetData(voxels.RawData);
 
-            //_generationComputeShader.SetBuffer(kernelId, "Result", _voxelsBuffer);
-            //_generationComputeShader.SetFloat("Width", _voxels.Width);
-            //_generationComputeShader.SetFloat("Height", _voxels.Height);
-            //_generationComputeShader.SetFloat("Depth", _voxels.Depth);
-            //_generationComputeShader.SetInt("MaterialHash", mat);
-            //_generationComputeShader.Dispatch(kernelId, 1024 / 8, 1024 / 8, 1024 / 8);
+            _generationComputeShader.SetInt("MatHash", mat);
+            _generationComputeShader.SetBuffer(kernelId, "Result", _voxelsBuffer);
+            _generationComputeShader.SetInt("RegionWidth", voxels.Width);
+            _generationComputeShader.SetInt("RegionHeight", voxels.Height);
+            _generationComputeShader.SetInt("RegionDepth", voxels.Depth);
+            _generationComputeShader.SetInt("RegionPositionX", -voxels.Width / 2);
+            _generationComputeShader.SetInt("RegionPositionY", -voxels.Height / 2);
+            _generationComputeShader.SetInt("RegionPositionZ", -voxels.Depth / 2);
+            _generationComputeShader.Dispatch(kernelId, voxels.Width / 8, voxels.Height / 8, voxels.Depth / 8);
+            _voxelsBuffer.GetData(voxels.RawData);
+            _voxelsBuffer.Dispose();
+            return Task.CompletedTask;
+        }
+
+        public ChunkData GetChunkData(int x, int y, int z, Vector3Int chunkDataSize)
+        {
+            UpdateNoise();
+
+            return UpdateVoxelArray(
+                _chunksOffset.x + x,
+                _chunksOffset.y + y,
+                _chunksOffset.z + z,
+                chunkDataSize);
         }
 
         private void UpdateNoise()
@@ -69,41 +87,19 @@ namespace MarchingCubesProject
                 new MultidimensionalArrayRegion<VoxelData>(
                     voxels, chunkDataSize, offset));
 
-            for (int y = 0; y < height; y++)
-            {
-                float v = y / (height - 1.0f);
-                float globalY = y + yOffset * (height - 1.0f);
-                var hash = _heightAssociations.GetMaterialKeyHashByHeight(globalY);
-
-                for (int x = 0; x < width; x++)
-                {
-                    float u = x / (width - 1.0f);
-                    float globalX = x + xOffset * (width - 1.0f);
-
-                    for (int z = 0; z < depth; z++)
-                    {
-                        float w = z / (depth - 1.0f);
-                        float globalZ = z + zOffset * (depth - 1.0f);
-
-                        var heightThreshold = (1 + _fractal.Sample2D(u + xOffset, w + zOffset)) / 2 * _maxHeight + _minHeight;
-                        float currentVolume = globalY < heightThreshold ? 1 : 0;
-                        chunkData.SetVoxelData(x, y, z, new VoxelData(currentVolume, hash));
-                    }
-                }
-            }
+            //var hash = _heightAssociations.GetMaterialKeyHashByHeight(0);
+            //for (int y = 0; y < height; y++)
+            //{
+            //    for (int x = 0; x < width; x++)
+            //    {
+            //        for (int z = 0; z < depth; z++)
+            //        {
+            //            chunkData.SetVoxelData(x, y, z, new VoxelData(1, hash));
+            //        }
+            //    }
+            //}
 
             return chunkData;
-        }
-
-        public ChunkData GetChunkData(int x, int y, int z, Vector3Int chunkDataSize)
-        {
-            UpdateNoise();
-
-            return UpdateVoxelArray(
-                _chunksOffset.x + x, 
-                _chunksOffset.y + y, 
-                _chunksOffset.z + z, 
-                chunkDataSize);
         }
     }
 }

@@ -630,7 +630,7 @@ MonoBehaviour:
     _isFolded: 1
   _basicChunkSettings: {fileID: 11400000, guid: fef79431f067b8346aaa6fbb3ebd2d14,
     type: 2}
-  _chunksGridSize: {x: 10, y: 3, z: 10}
+  _chunksGridSize: {x: 29, y: 2, z: 29}
   references:
     version: 2
     RefIds:

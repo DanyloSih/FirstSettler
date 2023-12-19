@@ -24,7 +24,7 @@ namespace World.Organization
         private ChunkCoordinatesCalculator _chunkCoordinatesCalculator;
         private MeshDataBuffer _meshDataBuffer;
 
-        public void OnEnable()
+        public async void OnEnable()
         {
             _chunkCoordinatesCalculator = new ChunkCoordinatesCalculator(_basicChunkSettings.Size, _basicChunkSettings.Scale);
 
@@ -49,7 +49,7 @@ namespace World.Organization
                 _chunksDataProvider.MaterialAssociations.GetMaterialKeyHashes());
 
             DestroyOldChunks();
-
+            await _chunksDataProvider.LoadRegion();
             InitializeChunks();
         }
 
