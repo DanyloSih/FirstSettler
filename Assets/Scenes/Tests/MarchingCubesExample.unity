@@ -800,6 +800,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e5cdbee10dee09b4abe25b0f5ac215d0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _generationComputeShader: {fileID: 7200000, guid: e16d5ec2db706554c963533d6fcdf2de,
+    type: 3}
   _maxHeight: 32
   _minHeight: -16
   _octaves: 3

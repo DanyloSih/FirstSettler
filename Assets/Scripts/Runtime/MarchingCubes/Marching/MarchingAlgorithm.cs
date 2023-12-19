@@ -91,7 +91,7 @@ namespace MarchingCubesProject
                 int z = i / (width * height);
 
                 ApplyVertexOffsets(chunkData, x, y, z, _cube);
-                var voxelHash = chunkData.GetMaterialHash(x, y, z);
+                int voxelHash = chunkData.GetVoxelData(x, y, z).MaterialHash;
                 localMeshData = March(x, y, z, _cube, localMeshData, voxelHash);
             }
         }
@@ -99,14 +99,14 @@ namespace MarchingCubesProject
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ApplyVertexOffsets(ChunkData chunkData, int x, int y, int z, float[] cube)
         {
-            cube[0] = chunkData.GetVolume(x, y, z);
-            cube[1] = chunkData.GetVolume(x + 1, y, z);
-            cube[2] = chunkData.GetVolume(x + 1, y + 1, z);
-            cube[3] = chunkData.GetVolume(x, y + 1, z);
-            cube[4] = chunkData.GetVolume(x, y, z + 1);
-            cube[5] = chunkData.GetVolume(x + 1, y, z + 1);
-            cube[6] = chunkData.GetVolume(x + 1, y + 1, z + 1);
-            cube[7] = chunkData.GetVolume(x, y + 1, z + 1);
+            cube[0] = chunkData.GetVoxelData(x, y, z).Volume;
+            cube[1] = chunkData.GetVoxelData(x + 1, y, z).Volume;
+            cube[2] = chunkData.GetVoxelData(x + 1, y + 1, z).Volume;
+            cube[3] = chunkData.GetVoxelData(x, y + 1, z).Volume;
+            cube[4] = chunkData.GetVoxelData(x, y, z + 1).Volume;
+            cube[5] = chunkData.GetVoxelData(x + 1, y, z + 1).Volume;
+            cube[6] = chunkData.GetVoxelData(x + 1, y + 1, z + 1).Volume;
+            cube[7] = chunkData.GetVoxelData(x, y + 1, z + 1).Volume;
         }
     }
 }

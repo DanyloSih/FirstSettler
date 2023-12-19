@@ -60,10 +60,9 @@ namespace MarchingCubesProject.Tools
                     }
 
                     Vector3Int dataPoint = affectedNeighborData.AffectedLocalChunkDataPoint;
-                    affectedChunk.ChunkData.SetVolume(
-                        dataPoint.x, dataPoint.y, dataPoint.z, chunkDataVoxel.Volume);
-                    affectedChunk.ChunkData.SetMaterialHash(
-                        dataPoint.x, dataPoint.y, dataPoint.z, chunkDataVoxel.MaterialHash);
+                    affectedChunk.ChunkData.SetVoxelData(
+                        dataPoint.x, dataPoint.y, dataPoint.z, 
+                        new VoxelData(chunkDataVoxel.Volume, chunkDataVoxel.MaterialHash));
 
                     if (!updatingChunks.Contains(affectedChunk))
                     {
@@ -94,12 +93,9 @@ namespace MarchingCubesProject.Tools
 
             if (chunk != null)
             {
-                float volume = chunk.ChunkData.GetVolume(
-               localChunkDataPoint.x, localChunkDataPoint.y, localChunkDataPoint.z);
-                int materialHash = chunk.ChunkData.GetMaterialHash(
+                var voxelData = chunk.ChunkData.GetVoxelData(
                     localChunkDataPoint.x, localChunkDataPoint.y, localChunkDataPoint.z);
-
-                return new ChunkDataPoint(globalChunkDataPoint, volume, materialHash);
+                return new ChunkDataPoint(globalChunkDataPoint, voxelData.Volume, voxelData.MaterialHash);
             }
             else
             {
@@ -116,12 +112,10 @@ namespace MarchingCubesProject.Tools
             IChunk chunk = _chunksContainer.GetChunk(
                 localChunkPosition.x, localChunkPosition.y, localChunkPosition.z);
 
-            float volume = chunk.ChunkData.GetVolume(
-                localChunkDataPoint.x, localChunkDataPoint.y, localChunkDataPoint.z);
-            int materialHash = chunk.ChunkData.GetMaterialHash(
-                localChunkDataPoint.x, localChunkDataPoint.y, localChunkDataPoint.z);
+            var voxelData = chunk.ChunkData.GetVoxelData(
+                    localChunkDataPoint.x, localChunkDataPoint.y, localChunkDataPoint.z);
 
-            return new ChunkDataPoint(globalChunkPos, volume, materialHash);
+            return new ChunkDataPoint(globalChunkPos, voxelData.Volume, voxelData.MaterialHash);
         }
 
         private List<AffectedNeighborData> GetAffectedNeighborsData(

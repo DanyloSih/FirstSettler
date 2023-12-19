@@ -1,0 +1,31 @@
+#pragma kernel CSMain
+
+struct VoxelData
+{
+    float Volume;
+    int MaterialHash;
+};
+
+RWStructuredBuffer<VoxelData> Result;
+float Width;
+float Height;
+float Depth;
+int MaterialHash;
+
+
+[numthreads(8,8,8)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    float index = id.x + id.y * Width + id.z * Width * Height;
+    float height = id.y * Height;
+    float value = 1f;
+    if (height > Height / 2f)
+    {
+        value = 0f;
+    }
+    VoxelData voxel = Result[index];
+    voxel.Volume = value;
+    voxel.MaterialHash = MaterialHash;
+    Result[index] = voxel;
+    
+}
