@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace MarchingCubesProject
+namespace World.Data
 {
-    public class MeshData
+    public class MeshDataBuffer
     {
         public int VerticesTargetLength;
         public int UvTargetLength;
@@ -15,7 +15,7 @@ namespace MarchingCubesProject
         private Dictionary<int, List<int>> _materialKeyAndTriangleListAssociations 
             = new Dictionary<int, List<int>>();
 
-        public MeshData(
+        public MeshDataBuffer(
             int maxVerticesArrayLength,
             int maxUVArrayLength,
             IEnumerable<int> materialKeysHashes)

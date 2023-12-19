@@ -22,13 +22,15 @@ namespace World.Organization
         private IChunksDataProvider _chunksDataProvider;
         private Vector3Int _minPoint;
         private ChunkCoordinatesCalculator _chunkCoordinatesCalculator;
+        private MeshDataBuffer _meshDataBuffer;
 
         public void OnEnable()
         {
             _chunkCoordinatesCalculator = new ChunkCoordinatesCalculator(_basicChunkSettings.Size, _basicChunkSettings.Scale);
 
             _activeChunksContainer = _activeChunksContainerHeir.GetValue();
-            _chunkPrefabGO = (_chunkPrefabHeir.GetHeirObject() as Component)?.gameObject;
+            IChunk chunkPrefab = _chunkPrefabHeir.GetValue();
+            _chunkPrefabGO = (chunkPrefab as Component)?.gameObject;
             if (_chunkPrefabGO == null)
             {
                 throw new ArgumentException($"{nameof(_chunkPrefabHeir)} should be prefab gameObject!");
@@ -36,23 +38,22 @@ namespace World.Organization
             _chunksDataProvider = _chunksDataProviderHeir.GetValue();
             _minPoint = _chunksGridSize / 2;
 
+            Vector3Int size = _basicChunkSettings.Size;
+            int cubesCount = size.x * size.y * size.z;
+            var meshGenerationAlgorithmInfo 
+                = chunkPrefab.MeshGenerationAlgorithm.MeshGenerationAlgorithmInfo;
+
+            _meshDataBuffer = new MeshDataBuffer(
+                meshGenerationAlgorithmInfo.MaxVerticesPerMarch * cubesCount,
+                meshGenerationAlgorithmInfo.MaxTrianglesPerMarch * cubesCount,
+                _chunksDataProvider.MaterialAssociations.GetMaterialKeyHashes());
+
             DestroyOldChunks();
 
-            FirstInitializationStage();
-            SecondInitializationStage();
+            InitializeChunks();
         }
 
-        private void DestroyOldChunks()
-        {
-            foreach (var chunk in _chunksList)
-            {
-                Vector3Int chunkPosition = chunk.ChunkComponent.ChunkPosition;
-                _activeChunksContainer.RemoveChunk(chunkPosition.x, chunkPosition.y, chunkPosition.z);
-                Destroy(chunk.ChunkGameObject);
-            }
-        }
-
-        private void FirstInitializationStage()
+        private void InitializeChunks()
         {
             Vector3Int chunkDataSize = _basicChunkSettings.Size + new Vector3Int(1, 1, 1) * 1;
             for (int x = -_minPoint.x; x <= _minPoint.x; x++)
@@ -77,31 +78,27 @@ namespace World.Organization
                             _basicChunkSettings,
                             _chunksDataProvider.MaterialAssociations,
                             new Vector3Int(x, y, z),
-                            chunkData);
+                            chunkData,
+                            _meshDataBuffer);
+
+                        chunk.UpdateMesh();
+                        chunk.RootGameObject.transform.localScale
+                            = Vector3.one * _basicChunkSettings.Scale;
+
+                        chunk.RootGameObject.transform.position
+                            = _chunkCoordinatesCalculator.GetGlobalChunkPositionByLocal(new Vector3Int(x, y, z));
                     }
                 }
             }
         }
 
-        private void SecondInitializationStage()
+        private void DestroyOldChunks()
         {
-            for (int x = -_minPoint.x; x <= _minPoint.x; x++)
+            foreach (var chunk in _chunksList)
             {
-                for (int y = -_minPoint.y; y <= _minPoint.y; y++)
-                {
-                    for (int z = -_minPoint.z; z <= _minPoint.z; z++)
-                    {
-                        IChunk chunk = _activeChunksContainer.GetChunk(x, y, z);
-
-                        chunk.InitializeNeighbors(new ChunkNeighbors(x, y, z, _activeChunksContainer));
-                        chunk.UpdateMesh();
-                        chunk.RootGameObject.transform.localScale
-                            = Vector3.one * _basicChunkSettings.Scale;
-
-                        chunk.RootGameObject.transform.position 
-                            = _chunkCoordinatesCalculator.GetGlobalChunkPositionByLocal(new Vector3Int(x, y, z));
-                    }
-                }
+                Vector3Int chunkPosition = chunk.ChunkComponent.ChunkPosition;
+                _activeChunksContainer.RemoveChunk(chunkPosition.x, chunkPosition.y, chunkPosition.z);
+                Destroy(chunk.ChunkGameObject);
             }
         }
     }

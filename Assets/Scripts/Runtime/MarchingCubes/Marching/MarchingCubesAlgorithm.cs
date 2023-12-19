@@ -1,14 +1,13 @@
+using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
+using World.Data;
 
 namespace MarchingCubesProject
 {
     public class MarchingCubesAlgorithm : MarchingAlgorithm
     {
-        public override int MaxTrianglesPerMarch { get => 15; }
-        public override int MaxVerticesPerMarch { get => 15; }
-
         private Vector3[] _edgeVertex;
 
         private Vector3 _vertex1 = default;
@@ -21,13 +20,14 @@ namespace MarchingCubesProject
         private Vector3 _normal;
         private Quaternion _rotation;
 
-        public MarchingCubesAlgorithm(float surface = 0.0f) : base(surface)
+        public MarchingCubesAlgorithm(GenerationAlgorithmInfo generationAlgorithmInfo, float surface = 0.0f) 
+			: base(surface, generationAlgorithmInfo)
         {
             _edgeVertex = new Vector3[12];
         }
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected override MeshData March(float x, float y, float z, float[] cube, MeshData cashedMeshData, int materialHash)
+        protected override MeshDataBuffer March(float x, float y, float z, float[] cube, MeshDataBuffer cashedMeshData, int materialHash)
         {
             int i, j, vert, idx;
             int flagIndex = 0;
@@ -75,7 +75,7 @@ namespace MarchingCubesProject
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void UpdateUV(MeshData cashedMeshData)
+        private void UpdateUV(MeshDataBuffer cashedMeshData)
         {
             _vertex1 = cashedMeshData.CashedVertices[cashedMeshData.VerticesTargetLength - 3];
             _vertex2 = cashedMeshData.CashedVertices[cashedMeshData.VerticesTargetLength - 2];

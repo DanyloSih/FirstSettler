@@ -13,45 +13,46 @@ namespace MarchingCubesProject
     {
         [SerializeField] private string _chunkNameFormat = "MarchingCubesChunk: x({0}) y({1}) z({2})";
         [SerializeField] private string _meshNameFormat = "Mesh: x({0}) y({1}) z({2})";
+        [SerializeField] private GenerationAlgorithmInfo _generationAlgorithmInfo;
 
         private MaterialKeyAndUnityMaterialAssociations _materialAssociations;
         private BasicChunkSettings _basicChunkSettings;
         private Vector3Int _chunkPosition;
         private Dictionary<int, int> _materialKeyAndSubmeshAssociation = new Dictionary<int, int>();
         private List<Vector3> _normals = new List<Vector3>();
-        private MarchingAlgorithm _marching;
         private ChunkData _chunkData;
         private (MeshFilter MeshFilter, MeshCollider MeshCollider) _currentMeshComponents;
         private bool _isBasicDataInitialized;
-        private MeshData _meshData;
-
-        public Vector3Int ChunkPosition { get => _chunkPosition; }
-        public ChunkData ChunkData { get => _chunkData; }
-        public GameObject RootGameObject { get => gameObject; }
-        public ChunkNeighbors Neighbors { get; private set; }
-        public Vector3Int ChunkSize { get; private set; }
-
-        private bool _isNeighborsInitialized;
+        private MeshDataBuffer _meshDataBuffer;
         private Coroutine _updatePhysicsCoroutine;
         private List<Material> _currentMaterials;
         private int _filledSubmeshesCount;
         private Renderer _meshRenderer;
         private string _meshName;
+        private MarchingCubesAlgorithm _marchingCubesAlgorithm;
+
+        public Vector3Int ChunkPosition { get => _chunkPosition; }
+        public Vector3Int ChunkSize { get; private set; }
+        public ChunkData ChunkData { get => _chunkData; }
+        public GameObject RootGameObject { get => gameObject; }
+        public IMeshGenerationAlgorithm MeshGenerationAlgorithm
+            => _marchingCubesAlgorithm ?? new MarchingCubesAlgorithm(_generationAlgorithmInfo);
 
         public void InitializeBasicData(
             BasicChunkSettings basicChunkSettings, 
             MaterialKeyAndUnityMaterialAssociations materialKeyAndUnityMaterial, 
             Vector3Int chunkPosition, 
-            ChunkData chunkData)
+            ChunkData chunkData,
+            MeshDataBuffer meshDataBuffer)
         {
-
+            _chunkData = chunkData;
+            _meshDataBuffer = meshDataBuffer;
             _chunkPosition = chunkPosition;
             InitializeNames(chunkPosition);
 
             _materialAssociations = materialKeyAndUnityMaterial;
             _basicChunkSettings = basicChunkSettings;
             ChunkSize = _basicChunkSettings.Size;
-            _chunkData = chunkData;
 
             InitializeMeshData();
 
@@ -64,30 +65,24 @@ namespace MarchingCubesProject
             _isBasicDataInitialized = true;
         }
 
-        public void InitializeNeighbors(ChunkNeighbors chunkNeighbors)
-        {
-            Neighbors = chunkNeighbors;
-            _isNeighborsInitialized = true;
-        }
-
         /// <summary>
         /// Updates chunk mesh. Before use this method, you should initialize
         /// chunk using this methods: InitializeBasicData and InitializeNeighbors
         /// </summary>
         public void UpdateMesh()
         {
-            if (!_isBasicDataInitialized || !_isNeighborsInitialized)
+            if (!_isBasicDataInitialized)
             {
                 throw new InvalidOperationException(
                     $"Before use {nameof(UpdateMesh)} method, you should initialize " +
-                    $"chunk using this methods: {nameof(InitializeBasicData)} and {nameof(InitializeNeighbors)}");
+                    $"chunk using this method: {nameof(InitializeBasicData)}");
             }
 
-            _meshData = _marching.GenerateMeshData(_chunkData, _meshData, Neighbors);
-            UpdateMesh(_meshData, _normals);
+            MeshGenerationAlgorithm.GenerateMeshData(_chunkData, _meshDataBuffer);
+            UpdateMesh(_meshDataBuffer, _normals);
         }
 
-        private void UpdateMesh(MeshData meshData, List<Vector3> normals)
+        private void UpdateMesh(MeshDataBuffer meshData, List<Vector3> normals)
         {
             var mesh = _currentMeshComponents.MeshFilter.mesh;
             mesh.Clear();
@@ -101,6 +96,8 @@ namespace MarchingCubesProject
                 mesh.RecalculateNormals();
 
             mesh.RecalculateBounds();
+
+            meshData.ResetAllCollections();
 
             _currentMeshComponents.MeshFilter.transform.localPosition = Vector3.zero;
             if (_updatePhysicsCoroutine == null)
@@ -125,15 +122,7 @@ namespace MarchingCubesProject
 
         private void InitializeMeshData()
         {
-            _currentMaterials = new List<Material>();
-            _marching = new MarchingCubesAlgorithm();
-            _marching.Surface = 0.0f;
-            Vector3Int size = _basicChunkSettings.Size;
-            int cubesCount = size.x * size.y * size.z;
-            _meshData = new MeshData(
-                _marching.MaxVerticesPerMarch * cubesCount,
-                _marching.MaxTrianglesPerMarch * cubesCount,
-                _materialAssociations.GetMaterialKeyHashes());
+            _currentMaterials = new List<Material>();           
         }
 
         private void InitializeNames(Vector3Int chunkPosition)
@@ -151,7 +140,7 @@ namespace MarchingCubesProject
                 chunkPosition.z.ToString());
         }
 
-        private void InitializeTriangles(MeshData meshData, Mesh mesh)
+        private void InitializeTriangles(MeshDataBuffer meshData, Mesh mesh)
         {
             mesh.subMeshCount = meshData.GetMaterialKeyHashAndTriangleListAssociations()
                 .Where(x => x.Value.Count > 2).Count();

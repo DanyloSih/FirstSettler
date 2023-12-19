@@ -46,3 +46,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _chunkNameFormat: 'MarchingCubesChunk: x({0}) y({1}) z({2})'
   _meshNameFormat: 'Mesh: x({0}) y({1}) z({2})'
+  _generationAlgorithmInfo: {fileID: 11400000, guid: 27c3d601efea98c4fafd2ff21daa7815,
+    type: 2}

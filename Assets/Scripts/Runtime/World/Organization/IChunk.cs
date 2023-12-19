@@ -5,19 +5,18 @@ namespace World.Organization
 {
     public interface IChunk
     {
+        public IMeshGenerationAlgorithm MeshGenerationAlgorithm { get; }
         public GameObject RootGameObject { get; }
         public Vector3Int ChunkSize { get; }
         public Vector3Int ChunkPosition { get; }
         public ChunkData ChunkData { get; }
-        public ChunkNeighbors Neighbors { get; }
 
         public void InitializeBasicData(
             BasicChunkSettings basicChunkSettings,
             MaterialKeyAndUnityMaterialAssociations materialKeyAndUnityMaterial,
             Vector3Int chunkPosition,
-            ChunkData chunkData);
-
-        public void InitializeNeighbors(ChunkNeighbors chunkNeighbors);
+            ChunkData chunkData,
+            MeshDataBuffer meshDataBuffer);
 
         public void UpdateMesh();
     }

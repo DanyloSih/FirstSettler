@@ -1,27 +1,30 @@
+using System;
 using System.Runtime.CompilerServices;
+using UnityEngine;
 using World.Data;
-using World.Organization;
 
 namespace MarchingCubesProject
 {
-    public abstract class MarchingAlgorithm
+    public abstract class MarchingAlgorithm : IMeshGenerationAlgorithm
     {
-        public abstract int MaxTrianglesPerMarch { get; }
-        public abstract int MaxVerticesPerMarch { get; }
-        public float Surface { get; set; }
-        protected int[] WindingOrder { get; private set; }
-
+        private GenerationAlgorithmInfo _generationAlgorithmInfo ;
+        private int[] _windingOrder = new int[] { 0, 1, 2 };
         private float[] _cube = new float[8];
 
-        protected MarchingAlgorithm(float surface)
+        public float Surface { get; set; }
+        public GenerationAlgorithmInfo MeshGenerationAlgorithmInfo { get => _generationAlgorithmInfo; }
+        protected int[] WindingOrder { get => _windingOrder; }
+
+        protected MarchingAlgorithm(float surface, GenerationAlgorithmInfo generationAlgorithmInfo)
         {
             Surface = surface;
-            WindingOrder = new int[] { 0, 1, 2 };
+            _generationAlgorithmInfo = generationAlgorithmInfo;
         }
 
-        public virtual MeshData GenerateMeshData(ChunkData chunkData, MeshData cashedMeshData, ChunkNeighbors neighbors)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void GenerateMeshData(ChunkData chunkData, MeshDataBuffer cashedMeshData)
         {
-            MeshData localMeshData = cashedMeshData;
+            MeshDataBuffer localMeshData = cashedMeshData;
             cashedMeshData.ResetAllCollections();
             UpdateWindingOrder();
             int width = chunkData.Width;
@@ -37,31 +40,28 @@ namespace MarchingCubesProject
 
             GenerateMainPartOfChunkMeshData(
                 chunkData, localMeshData, widthMinusOne, heightMinusOne, mainChunkPartElementsCount);
-
-
-            return localMeshData;
         }
-        
+
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected void UpdateWindingOrder()
         {
             if (Surface > 0.0f)
             {
-                WindingOrder[0] = 2;
-                WindingOrder[1] = 1;
-                WindingOrder[2] = 0;
+                _windingOrder[0] = 2;
+                _windingOrder[1] = 1;
+                _windingOrder[2] = 0;
             }
             else
             {
-                WindingOrder[0] = 0;
-                WindingOrder[1] = 1;
-                WindingOrder[2] = 2;
+                _windingOrder[0] = 0;
+                _windingOrder[1] = 1;
+                _windingOrder[2] = 2;
             }
         }
 
-        protected abstract MeshData March(
-            float x, float y, float z, float[] cube, MeshData meshData, int materialHash);
+        protected abstract MeshDataBuffer March(
+            float x, float y, float z, float[] cube, MeshDataBuffer meshData, int materialHash);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected float GetOffset(float v1, float v2)
@@ -79,7 +79,7 @@ namespace MarchingCubesProject
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void GenerateMainPartOfChunkMeshData(
             ChunkData chunkData,
-            MeshData localMeshData,
+            MeshDataBuffer localMeshData,
             int width,
             int height,
             int total)
