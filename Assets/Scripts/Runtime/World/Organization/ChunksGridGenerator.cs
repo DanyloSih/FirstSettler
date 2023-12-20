@@ -45,7 +45,7 @@ namespace World.Organization
                 = chunkPrefab.MeshGenerationAlgorithm.MeshGenerationAlgorithmInfo;
 
             var maxVerticesCount = meshGenerationAlgorithmInfo.MaxVerticesPerMarch * cubesCount;
-            _meshDataBuffer = new MeshDataBuffers(maxVerticesCount, cubesCount);
+            _meshDataBuffer = new MeshDataBuffers(maxVerticesCount);
 
             DestroyOldChunks();
             InitializeChunks();

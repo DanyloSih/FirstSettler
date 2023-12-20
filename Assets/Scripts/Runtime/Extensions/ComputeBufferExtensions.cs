@@ -17,13 +17,15 @@ namespace FirstSettler.Extensions
             }
             else
             {
-                int dataSize = 0;
-                foreach (var field in dataType.GetFields(
-                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
-                {
-                    dataSize += Marshal.SizeOf(field.DeclaringType);
-                }
-                return new ComputeBuffer(bufferLength, dataSize);
+                return new ComputeBuffer(bufferLength, Marshal.SizeOf(dataType));
+
+                //int dataSize = 0;
+                //foreach (var field in dataType.GetFields(
+                //    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
+                //{
+                //    dataSize += Marshal.SizeOf(field.DeclaringType);
+                //}
+                //return new ComputeBuffer(bufferLength, dataSize / 2);
             }
         }
     }

@@ -87,9 +87,11 @@ namespace MarchingCubesProject
         {
             var mesh = _currentMeshComponents.MeshFilter.mesh;
             mesh.Clear();
-            mesh.SetVertices(meshData.CashedVertices, 0, meshData.VerticesTargetLength);
+            meshData.UpdateMeshEssentialsFromCash();
+            mesh.SetVertices(meshData.GetVertices());
             InitializeTriangles(meshData, mesh);
-            mesh.SetUVs(0, meshData.CashedUV, 0, meshData.UvTargetLength);
+
+            // mesh.SetUVs(0, meshData.CashedUV, 0, meshData.UvTargetLength);
 
             if (normals.Count > 0)
                 mesh.SetNormals(normals);
@@ -143,7 +145,6 @@ namespace MarchingCubesProject
 
         private void InitializeTriangles(MeshDataBuffers meshData, Mesh mesh)
         {
-            meshData.UpdateTriangleAssociatoins();
             mesh.subMeshCount = meshData.GetMaterialKeyHashAndTriangleListAssociations()
                 .Where(x => x.Value.Count > 2).Count();
             _currentMaterials.Clear();

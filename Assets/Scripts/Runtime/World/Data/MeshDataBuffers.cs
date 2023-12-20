@@ -10,10 +10,11 @@ namespace World.Data
         public Vector3[] CashedVertices;
         public TriangleAndMaterialHash[] CashedTriangles;
         public Vector2[] CashedUV;
-        public int[] ArraysTargetLengths;
+        public int[] ArraysTargetLengths = new int[3];
 
         private Dictionary<int, List<int>> _materialKeyAndTriangleListAssociations 
             = new Dictionary<int, List<int>>();
+        private List<Vector3> _vertsList = new List<Vector3>();
 
         public int VerticesTargetLength { get => ArraysTargetLengths[0]; set => ArraysTargetLengths[0] = value; }   
         public int TrianglesTargetLength { get => ArraysTargetLengths[1]; set => ArraysTargetLengths[1] = value; }
@@ -22,21 +23,16 @@ namespace World.Data
         public ComputeBuffer TrianglesBuffer { get; }
         public ComputeBuffer UvsBuffer { get; }
         public ComputeBuffer ArraysTargetLengthBuffer { get; }
-        public ComputeBuffer CubesBuffer { get; }
-        public ComputeBuffer EdgeVertexBuffer { get; }
 
-        public MeshDataBuffers(int maxVerticesCount, int cubesCount)
+        public MeshDataBuffers(int maxVerticesCount)
         {
             CashedVertices = new Vector3[maxVerticesCount];
-            CashedTriangles = new TriangleAndMaterialHash[VerticesTargetLength];
+            CashedTriangles = new TriangleAndMaterialHash[maxVerticesCount];
             CashedUV = new Vector2[maxVerticesCount];
-            ArraysTargetLengths = new int[3];
             VerticesBuffer = ComputeBufferExtensions.Create(maxVerticesCount, typeof(Vector3));
             TrianglesBuffer = ComputeBufferExtensions.Create(maxVerticesCount, typeof(TriangleAndMaterialHash));
             UvsBuffer = ComputeBufferExtensions.Create(maxVerticesCount, typeof(Vector2));
             ArraysTargetLengthBuffer = ComputeBufferExtensions.Create(3, typeof(int));
-            CubesBuffer = ComputeBufferExtensions.Create(cubesCount * 8, typeof(float));
-            EdgeVertexBuffer = ComputeBufferExtensions.Create(cubesCount * 12, typeof(Vector3));
             SetAllDataToBuffers();
         }
 
@@ -56,21 +52,36 @@ namespace World.Data
             ArraysTargetLengthBuffer.SetData(ArraysTargetLengths);
         }
 
-        public void UpdateTriangleAssociatoins()
+        public List<Vector3> GetVertices()
+        {
+            return _vertsList;
+        }
+
+        public void UpdateMeshEssentialsFromCash()
         {
             _materialKeyAndTriangleListAssociations.Clear();
-            for (int i = 0; i < TrianglesTargetLength; i++)
+            _vertsList.Clear();
+            int i = 0;
+            foreach (var triangleInfo in CashedTriangles)
             {
-                TriangleAndMaterialHash triangleInfo = CashedTriangles[i];
-                if (_materialKeyAndTriangleListAssociations.ContainsKey(triangleInfo.MaterialHash))
+                TriangleAndMaterialHash newInfo = triangleInfo;
+                if (newInfo.MaterialHash != 0)
                 {
-                    _materialKeyAndTriangleListAssociations[triangleInfo.MaterialHash].Add(triangleInfo.Triangle);
-                }
-                else
-                {
-                    _materialKeyAndTriangleListAssociations.Add(triangleInfo.MaterialHash, new List<int>() { triangleInfo.Triangle });
-                }
+                    _vertsList.Add(CashedVertices[newInfo.Triangle]);
+                    newInfo.Triangle = i;
+                    i++;
+
+                    if (_materialKeyAndTriangleListAssociations.ContainsKey(newInfo.MaterialHash))
+                    {
+                        _materialKeyAndTriangleListAssociations[newInfo.MaterialHash].Add(newInfo.Triangle);
+                    }
+                    else
+                    {
+                        _materialKeyAndTriangleListAssociations.Add(newInfo.MaterialHash, new List<int>() { newInfo.Triangle });
+                    }
+                } 
             }
+
         }
 
         public IEnumerable<KeyValuePair<int, List<int>>> GetMaterialKeyHashAndTriangleListAssociations()
