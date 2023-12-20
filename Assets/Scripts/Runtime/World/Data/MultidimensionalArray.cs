@@ -1,4 +1,7 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using UnityEngine;
 
 namespace World.Data
@@ -20,13 +23,16 @@ namespace World.Data
         public int WidthAndHeight => _widthAndHeight;
         public int FullLength => _fullLength;
         public T[] RawData => _data;
+        public Type DataType => typeof(T);
+        public ComputeBuffer ComputeBuffer { get; set; }
 
-        public MultidimensionalArray(Vector3Int size) : this(size.x, size.y, size.z)
+        public MultidimensionalArray(Vector3Int size, ComputeBuffer computeBuffer = null) 
+            : this(size.x, size.y, size.z, computeBuffer)
         {
-
+           
         }
 
-        public MultidimensionalArray(int width, int height, int depth)
+        public MultidimensionalArray(int width, int height, int depth, ComputeBuffer computeBuffer = null)
         {
             _width = width;
             _height = height;
@@ -36,7 +42,10 @@ namespace World.Data
             _widthAndHeight = _width * _height;
             _fullLength = _width * _height * _depth;
             _data = new T[_fullLength];
+            ComputeBuffer = computeBuffer;
         }
+
+       
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public T GetValue(int x, int y, int z)

@@ -31,7 +31,7 @@ namespace World.Data
         public int Height => _height;
         public int Depth => _depth;
         public Vector3Int Size => _size;
-        public VoxelData[] RawData => _voxelsData.RawData;
+        public MultidimensionalArray<VoxelData> VoxelsData => _voxelsData;
         public bool FlipNormals
         {
             get => _flipNormals;

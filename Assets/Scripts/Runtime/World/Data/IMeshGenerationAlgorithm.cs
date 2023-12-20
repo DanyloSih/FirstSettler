@@ -4,6 +4,6 @@
     {
         GenerationAlgorithmInfo MeshGenerationAlgorithmInfo { get; }
 
-        public void GenerateMeshData(ChunkData chunkData, MeshDataBuffer cashedMeshData);
+        public void GenerateMeshData(ChunkData chunkData, MeshDataBuffers cashedMeshData);
     }
 }

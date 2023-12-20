@@ -16,7 +16,7 @@ namespace World.Organization
             MaterialKeyAndUnityMaterialAssociations materialKeyAndUnityMaterial,
             Vector3Int chunkPosition,
             ChunkData chunkData,
-            MeshDataBuffer meshDataBuffer);
+            MeshDataBuffers meshDataBuffer);
 
         public void UpdateMesh();
     }

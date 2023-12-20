@@ -6,7 +6,7 @@ struct VoxelData
     int MaterialHash;
 };
 
-RWStructuredBuffer<VoxelData> Result;
+RWStructuredBuffer<VoxelData> ChunkData;
 int ChunkWidth;
 int ChunkHeight;
 int ChunkDepth;
@@ -26,9 +26,9 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     {
         volume = 1;
     }
-    VoxelData voxel = Result[i];
+    VoxelData voxel = ChunkData[i];
     voxel.Volume = volume;
     voxel.MaterialHash = MatHash;
-    Result[i] = voxel;
+    ChunkData[i] = voxel;
     
 }

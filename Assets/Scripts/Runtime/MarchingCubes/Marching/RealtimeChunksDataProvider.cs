@@ -1,9 +1,9 @@
-﻿using System.Linq;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using ProceduralNoiseProject;
 using UnityEngine;
 using World.Data;
 using World.Organization;
+using FirstSettler.Extensions;
 
 namespace MarchingCubesProject
 {
@@ -29,18 +29,19 @@ namespace MarchingCubesProject
         {
             Vector3Int chunkDataSize = chunkSize + new Vector3Int(1, 1, 1) * 1;
             var voxels = new MultidimensionalArray<VoxelData>(chunkDataSize);
+            _voxelsBuffer = _voxelsBuffer ?? ComputeBufferExtensions.Create(voxels.FullLength, voxels.DataType);
+            voxels.ComputeBuffer = _voxelsBuffer;
+
             await FillVoxelsArray(voxels, x, y, z);
             return new ChunkData(voxels);
         }
 
         private Task FillVoxelsArray(MultidimensionalArray<VoxelData> voxels, int x, int y, int z)
         {
-            var kernelId = _generationComputeShader.FindKernel("CSMain");
-            int dataSize = sizeof(int) + sizeof(float);
-            _voxelsBuffer = new ComputeBuffer(voxels.FullLength, dataSize);
+            var kernelId = _generationComputeShader.FindKernel("CSMain");          
             int mat = _heightAssociations.GetMaterialKeyHashByHeight(0);
             _voxelsBuffer.SetData(voxels.RawData);
-            _generationComputeShader.SetBuffer(kernelId, "Result", _voxelsBuffer);
+            _generationComputeShader.SetBuffer(kernelId, "ChunkData", _voxelsBuffer);
             _generationComputeShader.SetInt("MatHash", mat);
             _generationComputeShader.SetInt("ChunkWidth", voxels.Width);
             _generationComputeShader.SetInt("ChunkHeight", voxels.Height);

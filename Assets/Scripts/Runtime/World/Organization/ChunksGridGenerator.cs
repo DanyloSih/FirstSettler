@@ -3,6 +3,7 @@ using SimpleHeirs;
 using System.Collections.Generic;
 using System;
 using World.Data;
+using FirstSettler.Extensions;
 
 namespace World.Organization
 {
@@ -22,7 +23,7 @@ namespace World.Organization
         private IChunksDataProvider _chunksDataProvider;
         private Vector3Int _minPoint;
         private ChunkCoordinatesCalculator _chunkCoordinatesCalculator;
-        private MeshDataBuffer _meshDataBuffer;
+        private MeshDataBuffers _meshDataBuffer;
 
         public async void OnEnable()
         {
@@ -43,10 +44,8 @@ namespace World.Organization
             var meshGenerationAlgorithmInfo 
                 = chunkPrefab.MeshGenerationAlgorithm.MeshGenerationAlgorithmInfo;
 
-            _meshDataBuffer = new MeshDataBuffer(
-                meshGenerationAlgorithmInfo.MaxVerticesPerMarch * cubesCount,
-                meshGenerationAlgorithmInfo.MaxTrianglesPerMarch * cubesCount,
-                _chunksDataProvider.MaterialAssociations.GetMaterialKeyHashes());
+            var maxVerticesCount = meshGenerationAlgorithmInfo.MaxVerticesPerMarch * cubesCount;
+            _meshDataBuffer = new MeshDataBuffers(maxVerticesCount, cubesCount);
 
             DestroyOldChunks();
             InitializeChunks();

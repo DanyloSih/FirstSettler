@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.CompilerServices;
+using FirstSettler.Extensions;
 using UnityEngine;
 using World.Data;
 
@@ -7,40 +8,24 @@ namespace MarchingCubesProject
 {
     public abstract class MarchingAlgorithm : IMeshGenerationAlgorithm
     {
-        private GenerationAlgorithmInfo _generationAlgorithmInfo ;
+        private GenerationAlgorithmInfo _generationAlgorithmInfo;
+        private ComputeBuffer _windingOrderBuffer;
         private int[] _windingOrder = new int[] { 0, 1, 2 };
-        private float[] _cube = new float[8];
 
         public float Surface { get; set; }
         public GenerationAlgorithmInfo MeshGenerationAlgorithmInfo { get => _generationAlgorithmInfo; }
-        protected int[] WindingOrder { get => _windingOrder; }
+        public ComputeBuffer WindingOrderBuffer { get => _windingOrderBuffer; }
 
-        protected MarchingAlgorithm(float surface, GenerationAlgorithmInfo generationAlgorithmInfo)
+        protected MarchingAlgorithm(GenerationAlgorithmInfo generationAlgorithmInfo, float surface)
         {
             Surface = surface;
             _generationAlgorithmInfo = generationAlgorithmInfo;
+            _windingOrderBuffer = ComputeBufferExtensions.Create(3, typeof(int));
+            _windingOrderBuffer.SetData(_windingOrder);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void GenerateMeshData(ChunkData chunkData, MeshDataBuffer cashedMeshData)
-        {
-            MeshDataBuffer localMeshData = cashedMeshData;
-            cashedMeshData.ResetAllCollections();
-            UpdateWindingOrder();
-            int width = chunkData.Width;
-            int height = chunkData.Height;
-            int depth = chunkData.Depth;
-
-            int widthMinusOne = width - 1;
-            int heightMinusOne = height - 1;
-            int depthMinusOne = chunkData.Depth - 1;
-
-            int mainChunkPartElementsCount = widthMinusOne * heightMinusOne * depthMinusOne;
-            int fullChunkElementsCount = width * height * depth;
-
-            GenerateMainPartOfChunkMeshData(
-                chunkData, localMeshData, widthMinusOne, heightMinusOne, mainChunkPartElementsCount);
-        }
+        public abstract void GenerateMeshData(ChunkData chunkData, MeshDataBuffers cashedMeshData);
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -58,10 +43,8 @@ namespace MarchingCubesProject
                 _windingOrder[1] = 1;
                 _windingOrder[2] = 2;
             }
+            _windingOrderBuffer.SetData(_windingOrder);
         }
-
-        protected abstract MeshDataBuffer March(
-            float x, float y, float z, float[] cube, MeshDataBuffer meshData, int materialHash);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected float GetOffset(float v1, float v2)
@@ -75,26 +58,6 @@ namespace MarchingCubesProject
             {0, 0, 0}, {1, 0, 0}, {1, 1, 0}, {0, 1, 0},
             {0, 0, 1}, {1, 0, 1}, {1, 1, 1}, {0, 1, 1}
         };
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void GenerateMainPartOfChunkMeshData(
-            ChunkData chunkData,
-            MeshDataBuffer localMeshData,
-            int width,
-            int height,
-            int total)
-        {
-            for (int i = 0; i < total; i++)
-            {
-                int x = i % width;
-                int y = (i / width) % height;
-                int z = i / (width * height);
-
-                ApplyVertexOffsets(chunkData, x, y, z, _cube);
-                int voxelHash = chunkData.GetVoxelData(x, y, z).MaterialHash;
-                localMeshData = March(x, y, z, _cube, localMeshData, voxelHash);
-            }
-        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ApplyVertexOffsets(ChunkData chunkData, int x, int y, int z, float[] cube)

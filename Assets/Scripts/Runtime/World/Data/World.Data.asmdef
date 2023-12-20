@@ -1,7 +1,9 @@
 {
     "name": "World.Data",
     "rootNamespace": "",
-    "references": [],
+    "references": [
+        "GUID:be5e81ee7636b9449a60141540177f73"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
