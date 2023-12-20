@@ -7,22 +7,22 @@ struct VoxelData
 };
 
 RWStructuredBuffer<VoxelData> Result;
-int RegionWidth;
-int RegionHeight;
-int RegionDepth;
-int RegionPositionX;
-int RegionPositionY;
-int RegionPositionZ;
+int ChunkWidth;
+int ChunkHeight;
+int ChunkDepth;
+int ChunkGlobalPositionX;
+int ChunkGlobalPositionY;
+int ChunkGlobalPositionZ;
 int MatHash;
 
 
-[numthreads(8, 8, 8)]
+[numthreads(1, 1, 1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
-    int i = id.x + id.y * RegionWidth + id.z * (RegionWidth * RegionHeight);
-    int globalYPos = RegionPositionY + id.y;
+    int i = id.x + id.y * ChunkWidth + id.z * (ChunkWidth * ChunkHeight);
+    int3 globalPos = int3(ChunkGlobalPositionX + id.x, ChunkGlobalPositionY + id.y, ChunkGlobalPositionZ + id.z);
     float volume = 0;
-    if (globalYPos < 0)
+    if (globalPos.y < 0)
     {
         volume = 1;
     }

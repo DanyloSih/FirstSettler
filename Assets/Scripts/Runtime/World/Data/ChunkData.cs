@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using UnityEngine;
 
 namespace World.Data
 {
@@ -7,7 +8,8 @@ namespace World.Data
     /// </summary>
     public class ChunkData
     {
-        private readonly MultidimensionalArrayRegion<VoxelData> _voxelsData;
+        private readonly MultidimensionalArray<VoxelData> _voxelsData;
+        private readonly Vector3Int _size;
         private bool _flipNormals;
 
         private readonly int _width;
@@ -15,18 +17,21 @@ namespace World.Data
         private readonly int _depth;
 
         public ChunkData(
-            MultidimensionalArrayRegion<VoxelData> voxelsData)
+            MultidimensionalArray<VoxelData> voxelsData)
         {
             _voxelsData = voxelsData;
-            _width = _voxelsData.RegionSize.x;
-            _height = _voxelsData.RegionSize.y;
-            _depth = _voxelsData.RegionSize.z;
+            _size = _voxelsData.Size;
+            _width = _voxelsData.Size.x;
+            _height = _voxelsData.Size.y;
+            _depth = _voxelsData.Size.z;
             _flipNormals = true;
         }
 
         public int Width => _width;
         public int Height => _height;
         public int Depth => _depth;
+        public Vector3Int Size => _size;
+        public VoxelData[] RawData => _voxelsData.RawData;
         public bool FlipNormals
         {
             get => _flipNormals;

@@ -1,0 +1,64 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+RWStructuredBuffer<VoxelData> Result;
+int RegionWidth;
+int RegionHeight;
+int RegionDepth;
+int RegionPositionX;
+int RegionPositionY;
+int RegionPositionZ;
+int MatHash;
+
+[numthreads(8,8,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    int i, j, vert, idx;
+    int flagIndex = 0;
+    float offset = 0.0f;
+    List <
+    int> triangles = cashedMeshData.GetTrianglesListByMaterialKeyHash(materialHash);
+
+    for (i = 0; i < 8; i++) 
+        if (cube[i] <= Surface) 
+            flagIndex |= 1 << i;
+
+    int edgeFlags = CubeEdgeFlags[flagIndex];
+
+    if (edgeFlags == 0) 
+        return cashedMeshData;
+
+    for (i = 0; i < 12; i++)
+    {
+        if ((edgeFlags & (1 << i)) != 0)
+        {
+            offset = GetOffset(cube[EdgeConnection[i, 0]],
+            cube[EdgeConnection[i, 1]]);
+            _edgeVertex[i].x = x + VertexOffset[EdgeConnection[i, 0], 0] + offset * EdgeDirection[i, 0];
+            _edgeVertex[i].y = y + VertexOffset[EdgeConnection[i, 0], 1] + offset * EdgeDirection[i, 1];
+            _edgeVertex[i].z = z + VertexOffset[EdgeConnection[i, 0], 2] + offset * EdgeDirection[i, 2];
+        }
+    }
+
+    for (i = 0; i < 5; i++)
+    {
+        if (TriangleConnectionTable[flagIndex, 3 * i] < 0)
+            break;
+
+        idx = cashedMeshData.VerticesTargetLength;
+
+        for (j = 0; j < 3; j++)
+        {
+            vert = TriangleConnectionTable[flagIndex, 3 * i + j];
+            triangles.Add(idx + WindingOrder[j]);
+            cashedMeshData.CashedVertices[cashedMeshData.VerticesTargetLength] = _edgeVertex[vert];
+            cashedMeshData.VerticesTargetLength++;
+        }
+
+        UpdateUV(cashedMeshData);
+    }
+
+    return cashedMeshData;
+
+    Result[id.xy] = float4(id.x & id.y, (id.x & 15)/15.0, (id.y & 15)/15.0, 0.0);
+}

@@ -21,6 +21,11 @@ namespace World.Data
         public int FullLength => _fullLength;
         public T[] RawData => _data;
 
+        public MultidimensionalArray(Vector3Int size) : this(size.x, size.y, size.z)
+        {
+
+        }
+
         public MultidimensionalArray(int width, int height, int depth)
         {
             _width = width;

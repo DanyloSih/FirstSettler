@@ -49,13 +49,12 @@ namespace World.Organization
                 _chunksDataProvider.MaterialAssociations.GetMaterialKeyHashes());
 
             DestroyOldChunks();
-            await _chunksDataProvider.LoadRegion();
             InitializeChunks();
         }
 
-        private void InitializeChunks()
+        private async void InitializeChunks()
         {
-            Vector3Int chunkDataSize = _basicChunkSettings.Size + new Vector3Int(1, 1, 1) * 1;
+           
             for (int x = -_minPoint.x; x <= _minPoint.x; x++)
             {
                 for (int y = -_minPoint.y; y <= _minPoint.y; y++)
@@ -65,7 +64,7 @@ namespace World.Organization
                         var instance = Instantiate(_chunkPrefabGO, _chunksRoot);
                         IChunk chunk = instance.GetComponent(typeof(IChunk)) as IChunk;
                         _chunksList.Add(new (chunk, instance));
-                        var chunkData = _chunksDataProvider.GetChunkData(x, y, z, chunkDataSize);
+                        var chunkData = await _chunksDataProvider.GetChunkData(x, y, z, _basicChunkSettings.Size);
                         if (!_activeChunksContainer.IsChunkExist(x, y, z))
                         {
                             _activeChunksContainer.AddChunk(x, y, z, chunk);
