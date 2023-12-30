@@ -23,7 +23,7 @@ namespace World.Organization
         private IChunksDataProvider _chunksDataProvider;
         private Vector3Int _minPoint;
         private ChunkCoordinatesCalculator _chunkCoordinatesCalculator;
-        private MeshDataBuffers _meshDataBuffer;
+        private MeshDataBuffersKeeper _meshDataBuffer;
 
         public async void OnEnable()
         {
@@ -39,13 +39,13 @@ namespace World.Organization
             _chunksDataProvider = _chunksDataProviderHeir.GetValue();
             _minPoint = _chunksGridSize / 2;
 
-            Vector3Int size = _basicChunkSettings.Size;
+            Vector3Int size = _basicChunkSettings.Size + Vector3Int.one;
             int cubesCount = size.x * size.y * size.z;
             var meshGenerationAlgorithmInfo 
                 = chunkPrefab.MeshGenerationAlgorithm.MeshGenerationAlgorithmInfo;
 
             var maxVerticesCount = meshGenerationAlgorithmInfo.MaxVerticesPerMarch * cubesCount;
-            _meshDataBuffer = new MeshDataBuffers(maxVerticesCount);
+            _meshDataBuffer = new MeshDataBuffersKeeper(maxVerticesCount);
 
             DestroyOldChunks();
             InitializeChunks();

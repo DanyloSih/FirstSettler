@@ -24,7 +24,7 @@ namespace MarchingCubesProject
         private ChunkData _chunkData;
         private (MeshFilter MeshFilter, MeshCollider MeshCollider) _currentMeshComponents;
         private bool _isBasicDataInitialized;
-        private MeshDataBuffers _meshDataBuffer;
+        private MeshDataBuffersKeeper _meshDataBuffer;
         private Coroutine _updatePhysicsCoroutine;
         private List<Material> _currentMaterials;
         private int _filledSubmeshesCount;
@@ -44,7 +44,7 @@ namespace MarchingCubesProject
             MaterialKeyAndUnityMaterialAssociations materialKeyAndUnityMaterial, 
             Vector3Int chunkPosition, 
             ChunkData chunkData,
-            MeshDataBuffers meshDataBuffer)
+            MeshDataBuffersKeeper meshDataBuffer)
         {
             _chunkData = chunkData;
             _meshDataBuffer = meshDataBuffer;
@@ -83,7 +83,7 @@ namespace MarchingCubesProject
             UpdateMesh(_meshDataBuffer, _normals);
         }
 
-        private void UpdateMesh(MeshDataBuffers meshData, List<Vector3> normals)
+        private void UpdateMesh(MeshDataBuffersKeeper meshData, List<Vector3> normals)
         {
             var mesh = _currentMeshComponents.MeshFilter.mesh;
             mesh.Clear();
@@ -143,7 +143,7 @@ namespace MarchingCubesProject
                 chunkPosition.z.ToString());
         }
 
-        private void InitializeTriangles(MeshDataBuffers meshData, Mesh mesh)
+        private void InitializeTriangles(MeshDataBuffersKeeper meshData, Mesh mesh)
         {
             mesh.subMeshCount = meshData.GetMaterialKeyHashAndTriangleListAssociations()
                 .Where(x => x.Value.Count > 2).Count();

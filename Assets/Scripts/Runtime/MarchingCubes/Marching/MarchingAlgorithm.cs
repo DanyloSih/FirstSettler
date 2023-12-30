@@ -10,41 +10,18 @@ namespace MarchingCubesProject
     {
         private GenerationAlgorithmInfo _generationAlgorithmInfo;
         private ComputeBuffer _windingOrderBuffer;
-        private int[] _windingOrder = new int[] { 0, 1, 2 };
 
         public float Surface { get; set; }
         public GenerationAlgorithmInfo MeshGenerationAlgorithmInfo { get => _generationAlgorithmInfo; }
-        public ComputeBuffer WindingOrderBuffer { get => _windingOrderBuffer; }
 
         protected MarchingAlgorithm(GenerationAlgorithmInfo generationAlgorithmInfo, float surface)
         {
             Surface = surface;
             _generationAlgorithmInfo = generationAlgorithmInfo;
-            _windingOrderBuffer = ComputeBufferExtensions.Create(3, typeof(int));
-            _windingOrderBuffer.SetData(_windingOrder);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public abstract void GenerateMeshData(ChunkData chunkData, MeshDataBuffers cashedMeshData);
-
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected void UpdateWindingOrder()
-        {
-            if (Surface > 0.0f)
-            {
-                _windingOrder[0] = 2;
-                _windingOrder[1] = 1;
-                _windingOrder[2] = 0;
-            }
-            else
-            {
-                _windingOrder[0] = 0;
-                _windingOrder[1] = 1;
-                _windingOrder[2] = 2;
-            }
-            _windingOrderBuffer.SetData(_windingOrder);
-        }
+        public abstract void GenerateMeshData(ChunkData chunkData, MeshDataBuffersKeeper cashedMeshData);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected float GetOffset(float v1, float v2)

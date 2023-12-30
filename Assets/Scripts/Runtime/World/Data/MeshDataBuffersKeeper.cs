@@ -1,55 +1,52 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using FirstSettler.Extensions;
 using UnityEngine;
 
 namespace World.Data
 {
-    public class MeshDataBuffers
+    public class MeshDataBuffersKeeper
     {
         public Vector3[] CashedVertices;
         public TriangleAndMaterialHash[] CashedTriangles;
         public Vector2[] CashedUV;
+        private int _maxVerticesCount;
         public int[] ArraysTargetLengths = new int[3];
 
         private Dictionary<int, List<int>> _materialKeyAndTriangleListAssociations 
             = new Dictionary<int, List<int>>();
         private List<Vector3> _vertsList = new List<Vector3>();
+        private MeshBuffers _meshBuffers;
 
         public int VerticesTargetLength { get => ArraysTargetLengths[0]; set => ArraysTargetLengths[0] = value; }   
         public int TrianglesTargetLength { get => ArraysTargetLengths[1]; set => ArraysTargetLengths[1] = value; }
         public int UvTargetLength { get => ArraysTargetLengths[2]; set => ArraysTargetLengths[2] = value; }
-        public ComputeBuffer VerticesBuffer { get; }
-        public ComputeBuffer TrianglesBuffer { get; }
-        public ComputeBuffer UvsBuffer { get; }
-        public ComputeBuffer ArraysTargetLengthBuffer { get; }
 
-        public MeshDataBuffers(int maxVerticesCount)
+        public MeshDataBuffersKeeper(int maxVerticesCount)
         {
             CashedVertices = new Vector3[maxVerticesCount];
             CashedTriangles = new TriangleAndMaterialHash[maxVerticesCount];
             CashedUV = new Vector2[maxVerticesCount];
-            VerticesBuffer = ComputeBufferExtensions.Create(maxVerticesCount, typeof(Vector3));
-            TrianglesBuffer = ComputeBufferExtensions.Create(maxVerticesCount, typeof(TriangleAndMaterialHash));
-            UvsBuffer = ComputeBufferExtensions.Create(maxVerticesCount, typeof(Vector2));
-            ArraysTargetLengthBuffer = ComputeBufferExtensions.Create(3, typeof(int));
-            SetAllDataToBuffers();
+            _maxVerticesCount = maxVerticesCount;
         }
 
-        public void GetAllDataFromBuffers()
+        public MeshBuffers GetOrCreateNewMeshBuffers()
         {
-            VerticesBuffer.GetData(CashedVertices);
-            TrianglesBuffer.GetData(CashedTriangles);
-            UvsBuffer.GetData(CashedUV);
-            ArraysTargetLengthBuffer.GetData(ArraysTargetLengths);
+            _meshBuffers = _meshBuffers ?? new MeshBuffers(
+                ComputeBufferExtensions.Create(_maxVerticesCount, typeof(Vector3)),
+                ComputeBufferExtensions.Create(_maxVerticesCount, typeof(TriangleAndMaterialHash)),
+                ComputeBufferExtensions.Create(_maxVerticesCount, typeof(Vector2)));
+
+            _meshBuffers.VerticesBuffer.SetData(CashedVertices);
+            _meshBuffers.TrianglesBuffer.SetData(CashedTriangles);
+            _meshBuffers.UvsBuffer.SetData(CashedUV);
+            return _meshBuffers;  
         }
 
-        public void SetAllDataToBuffers()
+        public void GetAllDataFromBuffers(MeshBuffers meshBuffers)
         {
-            VerticesBuffer.SetData(CashedVertices);
-            TrianglesBuffer.SetData(CashedTriangles);
-            UvsBuffer.SetData(CashedUV);
-            ArraysTargetLengthBuffer.SetData(ArraysTargetLengths);
+            meshBuffers.VerticesBuffer.GetData(CashedVertices);
+            meshBuffers.TrianglesBuffer.GetData(CashedTriangles);
+            meshBuffers.UvsBuffer.GetData(CashedUV);
         }
 
         public List<Vector3> GetVertices()

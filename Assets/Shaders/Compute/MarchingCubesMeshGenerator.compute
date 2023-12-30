@@ -45,7 +45,7 @@ static int CubeEdgeFlags[CUBE_EDGE_FLAGS_LENGTH] =
 };
 
 
-static int TriangleConnectionTable[TRIANGLE_CONNECTION_TABLE_ROWS_HALF][TRIANGLE_CONNECTION_TABLE_COLS] =
+groupshared int TriangleConnectionTable[TRIANGLE_CONNECTION_TABLE_ROWS][TRIANGLE_CONNECTION_TABLE_COLS] =
 {
     {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
     {0, 8, 3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
@@ -175,11 +175,6 @@ static int TriangleConnectionTable[TRIANGLE_CONNECTION_TABLE_ROWS_HALF][TRIANGLE
     {0, 9, 1, 11, 6, 7, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
     {7, 8, 0, 7, 0, 6, 3, 11, 0, 11, 6, 0, -1, -1, -1, -1},
     { 7, 11, 6, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 },
- 
-};
-
-static float TriangleConnectionTable2[TRIANGLE_CONNECTION_TABLE_ROWS_HALF][TRIANGLE_CONNECTION_TABLE_COLS] =
-{  
     { 7, 6, 11, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 },
     { 3, 0, 8, 11, 7, 6, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 },
     { 0, 1, 9, 11, 7, 6, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 },
@@ -367,6 +362,8 @@ int ChunkHeight;
 int ChunkDepth;
 int MaxVericesCount;
 float Surface;
+groupshared float Cubes[8];
+groupshared float3 localEdgeVertexBuffer[12];
 
 int GetID(int3 pos)
 {
@@ -379,34 +376,27 @@ float GetOffset(float v1, float v2)
     return (delta == 0.0f) ? Surface : (Surface - v1) / delta;
 }
 
-int GetTriangleEdge(int x, int y)
-{
-    if (x < TRIANGLE_CONNECTION_TABLE_ROWS)
-    {
-        return TriangleConnectionTable[x][y];
-    }
-    else
-    {
-        return TriangleConnectionTable2[x - TRIANGLE_CONNECTION_TABLE_ROWS_HALF][y];
-    }
-}
-
 [numthreads(1,1,1)]
-void CSMain (uint3 id : SV_DispatchThreadID)
+void CSMain(uint3 id : SV_DispatchThreadID)
 {
     int voxelIndex = GetID(id);
-    int meshPartIndex = voxelIndex * MaxVericesCount;
+    int materialHash = ChunkData[voxelIndex].MaterialHash;
+    int meshPartIndexStart = voxelIndex * 15;
+    int meshPartIndexEnd = (voxelIndex + 1) * 15;
     float offset = 0.0f;
     int i;
-    int Cubes[8];
+    TriangleAndMaterialHash tr;
     
-    TriangleAndMaterialHash tr = Triangles[voxelIndex];
-    tr.Triangle = 0;
-    tr.MaterialHash = 0;
-    Triangles[voxelIndex] = tr;
-    Vertices[voxelIndex] = float3(0, 0, 0);
-    UVs[voxelIndex] = float2(0, 0);
-    
+    for (i = meshPartIndexStart; i < meshPartIndexEnd; i++)
+    {
+        tr = Triangles[i];
+        tr.Triangle = 0;
+        tr.MaterialHash = 0;
+        Triangles[i] = tr;
+        Vertices[i] = float3(0, 0, 0);
+        UVs[i] = float2(0, 0);
+    }
+        
     Cubes[0] = ChunkData[GetID(float3(id.x, id.y, id.z))].Volume;
     Cubes[1] = ChunkData[GetID(float3(id.x + 1, id.y, id.z))].Volume;
     Cubes[2] = ChunkData[GetID(float3(id.x + 1, id.y + 1, id.z))].Volume;
@@ -417,62 +407,41 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     Cubes[7] = ChunkData[GetID(float3(id.x, id.y + 1, id.z + 1))].Volume;
     
     int flagIndex = 0;
+    for (i = 0; i < 8; i++) 
+        if (Cubes[i] <= Surface) 
+            flagIndex |= 1 << i;
     
-    if (Cubes[0] <= Surface)
-        flagIndex |= 1 << 0;
-    if (Cubes[1] <= Surface)
-        flagIndex |= 1 << 1;
-    if (Cubes[2] <= Surface)
-        flagIndex |= 1 << 2;
-    if (Cubes[3] <= Surface)
-        flagIndex |= 1 << 3;
-    if (Cubes[4] <= Surface)
-        flagIndex |= 1 << 4;
-    if (Cubes[5] <= Surface)
-        flagIndex |= 1 << 5;
-    if (Cubes[6] <= Surface)
-        flagIndex |= 1 << 6;
-    if (Cubes[7] <= Surface)
-        flagIndex |= 1 << 7;
-      
     int edgeFlags = CubeEdgeFlags[flagIndex];
-    if (edgeFlags == 0) 
-        return;
+    if (edgeFlags == 0) return;
+    UVs[meshPartIndexStart + 0] = float2(voxelIndex, id.x);
+    UVs[meshPartIndexStart + 1] = float2(id.y, id.z);
     
-    float3 localEdgeVertexBuffer[12];
-    
+    float3 edgeVert;
     for (i = 0; i < 12; i++)
     {
         if ((edgeFlags & (1 << i)) != 0)
         {
             offset = GetOffset(Cubes[EdgeConnection[i][0]], Cubes[EdgeConnection[i][1]]);
             
-            float3 edgeVert;
-            edgeVert.x = id.x + VertexOffset[EdgeConnection[i][0]][0] + offset * EdgeDirection[i][0];
-            edgeVert.y = id.y + VertexOffset[EdgeConnection[i][0]][1] + offset * EdgeDirection[i][1];
-            edgeVert.z = id.z + VertexOffset[EdgeConnection[i][0]][2] + offset * EdgeDirection[i][2];
+            edgeVert.x = id.x + VertexOffset[EdgeConnection[i][0] ][0] + offset * EdgeDirection[i][0];
+            edgeVert.y = id.y + VertexOffset[EdgeConnection[i][0] ][1] + offset * EdgeDirection[i][1];
+            edgeVert.z = id.z + VertexOffset[EdgeConnection[i][0] ][2] + offset * EdgeDirection[i][2];
             localEdgeVertexBuffer[i] = edgeVert;
         }
     }
     
-    
-    for (i = 0; i < 5; i++)
+    for (int b = 0; b < 15; b++)
     {
+        int globalB = meshPartIndexStart + b;    
+        int triangleEdge = TriangleConnectionTable[flagIndex][b / 3];     
         
-        if (GetTriangleEdge(flagIndex, 3 * i) < 0)
+        if (triangleEdge < 0)
             break;
         
-        for (int j = 0; j < 3; j++)
-        {
-            int partId = meshPartIndex + (3 * i) + j;
-            int vert = GetTriangleEdge(flagIndex, 3 * i + j);
-            
-            tr.MaterialHash = ChunkData[voxelIndex].MaterialHash;
-            tr.Triangle = partId;
-            Triangles[partId] = tr;
-            
-            Vertices[partId] = localEdgeVertexBuffer[vert];
-        }
+        int vert = TriangleConnectionTable[flagIndex][b];
+        tr.MaterialHash = materialHash;
+        tr.Triangle = globalB;
+        Triangles[globalB] = tr;
+        Vertices[globalB] = localEdgeVertexBuffer[vert];
     }
-
 }

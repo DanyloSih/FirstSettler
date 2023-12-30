@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using FirstSettler.Extensions;
 using UnityEngine;
@@ -26,29 +27,37 @@ namespace MarchingCubesProject
             _meshGenerationComputeShader = meshGenerationComputeShader;
         }
 
-        public override void GenerateMeshData(ChunkData chunkData, MeshDataBuffers meshBuffers)
+        public override void GenerateMeshData(ChunkData chunkData, MeshDataBuffersKeeper meshBuffersKeeper)
         {
-            meshBuffers.ResetAllCollections();
-            UpdateWindingOrder();
-            var voxels = chunkData.VoxelsData;
-            
+            meshBuffersKeeper.ResetAllCollections();
+            MultidimensionalArray<VoxelData> voxels = chunkData.VoxelsData;
+            ComputeBuffer voxelsBuffer = voxels.GetOrCreateVoxelsDataBuffer();
+            MeshBuffers meshBuffers = meshBuffersKeeper.GetOrCreateNewMeshBuffers();
 
-            var kernelId = _meshGenerationComputeShader.FindKernel("CSMain");
-            _meshGenerationComputeShader.SetBuffer(kernelId, "ChunkData", voxels.ComputeBuffer);
+            int kernelId = _meshGenerationComputeShader.FindKernel("CSMain");
+            _meshGenerationComputeShader.SetBuffer(kernelId, "ChunkData", voxelsBuffer);
             _meshGenerationComputeShader.SetBuffer(kernelId, "Triangles", meshBuffers.TrianglesBuffer);
             _meshGenerationComputeShader.SetBuffer(kernelId, "Vertices", meshBuffers.VerticesBuffer);
             _meshGenerationComputeShader.SetBuffer(kernelId, "UVs", meshBuffers.UvsBuffer);
-            _meshGenerationComputeShader.SetBuffer(kernelId, "ArraysTargetLengths", meshBuffers.ArraysTargetLengthBuffer);
             _meshGenerationComputeShader.SetInt("MaxVericesCount", MeshGenerationAlgorithmInfo.MaxVerticesPerMarch);
             _meshGenerationComputeShader.SetInt("ChunkWidth", voxels.Width);
             _meshGenerationComputeShader.SetInt("ChunkHeight", voxels.Height);
             _meshGenerationComputeShader.SetInt("ChunkDepth", voxels.Depth);
-            _meshGenerationComputeShader.SetInt("CubesCount", (voxels.Size - Vector3Int.one).sqrMagnitude);
             _meshGenerationComputeShader.SetFloat("Surface", Surface);
             _meshGenerationComputeShader.Dispatch(
                 kernelId, voxels.Width - 1, voxels.Height - 1, voxels.Depth - 1);
 
-            meshBuffers.GetAllDataFromBuffers();
+            voxels.GetDataFromVoxelsBuffer(voxelsBuffer);
+            meshBuffersKeeper.GetAllDataFromBuffers(meshBuffers);
+
+            List<Vector2> debug = new List<Vector2>();
+            foreach (var item in meshBuffersKeeper.CashedUV)
+            {
+                if(item != Vector2.zero)
+                {
+                    debug.Add(item);
+                }
+            }
         }
 
         //    [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -101,7 +110,7 @@ namespace MarchingCubesProject
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void UpdateUV(MeshDataBuffers cashedMeshData)
+        private void UpdateUV(MeshDataBuffersKeeper cashedMeshData)
         {
             _vertex1 = cashedMeshData.CashedVertices[cashedMeshData.VerticesTargetLength - 3];
             _vertex2 = cashedMeshData.CashedVertices[cashedMeshData.VerticesTargetLength - 2];

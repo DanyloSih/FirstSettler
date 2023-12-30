@@ -19,7 +19,6 @@ namespace MarchingCubesProject
         [SerializeField] private MaterialKeyAndUnityMaterialAssociations _materialAssociations;
         [SerializeField] private MaterialKeyAndHeightAssociations _heightAssociations;
 
-        private ComputeBuffer _voxelsBuffer;
         private FractalNoise _fractal;
 
         public MaterialKeyAndUnityMaterialAssociations MaterialAssociations
@@ -29,8 +28,6 @@ namespace MarchingCubesProject
         {
             Vector3Int chunkDataSize = chunkSize + new Vector3Int(1, 1, 1) * 1;
             var voxels = new MultidimensionalArray<VoxelData>(chunkDataSize);
-            _voxelsBuffer = _voxelsBuffer ?? ComputeBufferExtensions.Create(voxels.FullLength, voxels.DataType);
-            voxels.ComputeBuffer = _voxelsBuffer;
 
             await FillVoxelsArray(voxels, x, y, z);
             return new ChunkData(voxels);
@@ -40,8 +37,10 @@ namespace MarchingCubesProject
         {
             var kernelId = _generationComputeShader.FindKernel("CSMain");          
             int mat = _heightAssociations.GetMaterialKeyHashByHeight(0);
-            _voxelsBuffer.SetData(voxels.RawData);
-            _generationComputeShader.SetBuffer(kernelId, "ChunkData", _voxelsBuffer);
+
+            var chunkDataBuffer = voxels.GetOrCreateVoxelsDataBuffer();
+
+            _generationComputeShader.SetBuffer(kernelId, "ChunkData", chunkDataBuffer);
             _generationComputeShader.SetInt("MatHash", mat);
             _generationComputeShader.SetInt("ChunkWidth", voxels.Width);
             _generationComputeShader.SetInt("ChunkHeight", voxels.Height);
@@ -52,7 +51,7 @@ namespace MarchingCubesProject
             _generationComputeShader.Dispatch(
                 kernelId, voxels.Width, voxels.Height, voxels.Depth);
 
-            _voxelsBuffer.GetData(voxels.RawData);
+            voxels.GetDataFromVoxelsBuffer(chunkDataBuffer);
             return Task.CompletedTask;
         }
     }
