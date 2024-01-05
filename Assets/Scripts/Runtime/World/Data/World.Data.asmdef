@@ -2,7 +2,9 @@
     "name": "World.Data",
     "rootNamespace": "",
     "references": [
-        "GUID:be5e81ee7636b9449a60141540177f73"
+        "GUID:be5e81ee7636b9449a60141540177f73",
+        "GUID:f51ebe6a0ceec4240a699833d6309b23",
+        "GUID:9a361c27a1a1e66429bc25ccd05e7f9d"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

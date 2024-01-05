@@ -6,6 +6,7 @@ using System.Linq;
 using World.Organization;
 using World.Data;
 using System.Collections;
+using System.Threading.Tasks;
 
 namespace MarchingCubesProject
 {
@@ -37,7 +38,7 @@ namespace MarchingCubesProject
         public ChunkData ChunkData { get => _chunkData; }
         public GameObject RootGameObject { get => gameObject; }
         public IMeshGenerationAlgorithm MeshGenerationAlgorithm
-            => _marchingCubesAlgorithm ?? new MarchingCubesAlgorithm(_generationAlgorithmInfo, _meshGenerationComputeShader, 0);
+            => _marchingCubesAlgorithm ?? new MarchingCubesAlgorithm(_generationAlgorithmInfo, _meshGenerationComputeShader, this, 0);
 
         protected void OnDestroy()
         {
@@ -78,7 +79,7 @@ namespace MarchingCubesProject
         /// Updates chunk mesh. Before use this method, you should initialize
         /// chunk using this methods: InitializeBasicData and InitializeNeighbors
         /// </summary>
-        public void UpdateMesh()
+        public async Task UpdateMesh()
         {
             if (!_isBasicDataInitialized)
             {
@@ -87,7 +88,7 @@ namespace MarchingCubesProject
                     $"chunk using this method: {nameof(InitializeBasicData)}");
             }
 
-            MeshGenerationAlgorithm.GenerateMeshData(_chunkData, _meshDataBuffer);
+            await MeshGenerationAlgorithm.GenerateMeshData(_chunkData, _meshDataBuffer);
             UpdateMesh(_meshDataBuffer, _normals);
         }
 

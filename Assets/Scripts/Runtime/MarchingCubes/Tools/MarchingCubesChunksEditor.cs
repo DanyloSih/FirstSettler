@@ -29,7 +29,7 @@ namespace MarchingCubesProject.Tools
             _chunkSize = _basicChunkSettings.Size;
         }
 
-        public void SetNewChunkDataVolumeAndMaterial(
+        public async void SetNewChunkDataVolumeAndMaterial(
             IEnumerable<ChunkDataPoint> chunkDataVolumeAndMaterials, 
             bool updateMeshes = true)
         {
@@ -80,7 +80,7 @@ namespace MarchingCubesProject.Tools
             {
                 foreach (var updatingChunk in updatingChunks)
                 {
-                    updatingChunk.UpdateMesh();
+                    await updatingChunk.UpdateMesh();
                 }
             }
         }

@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using FirstSettler.Extensions;
 using UnityEngine;
 using World.Data;
@@ -21,7 +22,7 @@ namespace MarchingCubesProject
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public abstract void GenerateMeshData(ChunkData chunkData, MeshDataBuffersKeeper cashedMeshData);
+        public abstract Task GenerateMeshData(ChunkData chunkData, MeshDataBuffersKeeper cashedMeshData);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected float GetOffset(float v1, float v2)

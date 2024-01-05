@@ -1,6 +1,5 @@
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using FirstSettler.Extensions;
+using System.Threading.Tasks;
 using UnityEngine;
 using World.Data;
 
@@ -9,6 +8,7 @@ namespace MarchingCubesProject
     public class MarchingCubesAlgorithm : MarchingAlgorithm
     {
         private ComputeShader _meshGenerationComputeShader;
+        private MonoBehaviour _coroutineRunner;
         private Vector3 _vertex1 = default;
         private Vector3 _vertex2 = default;
         private Vector3 _vertex3 = default;
@@ -21,13 +21,15 @@ namespace MarchingCubesProject
         public MarchingCubesAlgorithm(
 			GenerationAlgorithmInfo generationAlgorithmInfo, 
 			ComputeShader meshGenerationComputeShader,
+			MonoBehaviour coroutineRunner,
             float surface)
             : base(generationAlgorithmInfo, surface)
         {
             _meshGenerationComputeShader = meshGenerationComputeShader;
+            _coroutineRunner = coroutineRunner;
         }
 
-        public override void GenerateMeshData(ChunkData chunkData, MeshDataBuffersKeeper meshBuffersKeeper)
+        public override async Task GenerateMeshData(ChunkData chunkData, MeshDataBuffersKeeper meshBuffersKeeper)
         {
             meshBuffersKeeper.ResetAllCollections();
             MultidimensionalArray<VoxelData> voxels = chunkData.VoxelsData;
@@ -49,7 +51,10 @@ namespace MarchingCubesProject
             _meshGenerationComputeShader.Dispatch(
                 kernelId, voxels.Width - 1, voxels.Height - 1, voxels.Depth - 1);
 
-            meshBuffersKeeper.GetAllDataFromBuffers(meshBuffers);
+            meshBuffersKeeper.UpdatePolygonsCount();
+
+            await meshBuffersKeeper.GetAllDataFromBuffers(meshBuffers);
+            Debug.Log("Waited");
         }
 
         //    [MethodImpl(MethodImplOptions.AggressiveInlining)]

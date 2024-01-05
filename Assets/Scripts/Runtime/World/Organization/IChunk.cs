@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Threading.Tasks;
+using UnityEngine;
 using World.Data;
 
 namespace World.Organization
@@ -18,6 +19,6 @@ namespace World.Organization
             ChunkData chunkData,
             MeshDataBuffersKeeper meshDataBuffer);
 
-        public void UpdateMesh();
+        public Task UpdateMesh();
     }
 }
