@@ -7,19 +7,20 @@ namespace World.Data
         public ComputeBuffer VerticesBuffer;
         public ComputeBuffer TrianglesBuffer;
         public ComputeBuffer UvsBuffer;
+        public ComputeBuffer PolygonsCounter;
 
-        public MeshBuffers(ComputeBuffer verticesBuffer, ComputeBuffer trianglesBuffer, ComputeBuffer uvsBuffer)
+        public MeshBuffers(ComputeBuffer verticesBuffer, ComputeBuffer trianglesBuffer, ComputeBuffer uvsBuffer, ComputeBuffer polygonsCounter)
         {
             VerticesBuffer = verticesBuffer;
             TrianglesBuffer = trianglesBuffer;
             UvsBuffer = uvsBuffer;
+            PolygonsCounter = polygonsCounter;
         }
+
 
         public void ResetCounters()
         {
-            VerticesBuffer.SetCounterValue(0);
-            TrianglesBuffer.SetCounterValue(0);
-            UvsBuffer.SetCounterValue(0);
+            PolygonsCounter.SetCounterValue(0);
         }
     }
 }

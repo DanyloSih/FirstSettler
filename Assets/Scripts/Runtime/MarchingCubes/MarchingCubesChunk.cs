@@ -39,6 +39,14 @@ namespace MarchingCubesProject
         public IMeshGenerationAlgorithm MeshGenerationAlgorithm
             => _marchingCubesAlgorithm ?? new MarchingCubesAlgorithm(_generationAlgorithmInfo, _meshGenerationComputeShader, 0);
 
+        protected void OnDestroy()
+        {
+            if (ChunkData != null)
+            {
+                ChunkData.VoxelsData.GetOrCreateVoxelsDataBuffer().Dispose();
+            }
+        }
+
         public void InitializeBasicData(
             BasicChunkSettings basicChunkSettings, 
             MaterialKeyAndUnityMaterialAssociations materialKeyAndUnityMaterial, 
@@ -88,7 +96,7 @@ namespace MarchingCubesProject
             var mesh = _currentMeshComponents.MeshFilter.mesh;
             mesh.Clear();
             meshData.UpdateMeshEssentialsFromCash();
-            mesh.SetVertices(meshData.GetVertices());
+            mesh.SetVertices(meshData.CashedVertices, 0, meshData.VerticesCount);
             InitializeTriangles(meshData, mesh);
 
             // mesh.SetUVs(0, meshData.CashedUV, 0, meshData.UvTargetLength);

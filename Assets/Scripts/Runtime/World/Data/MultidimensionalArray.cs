@@ -24,6 +24,7 @@ namespace World.Data
         public Vector3Int Size => _size;
         public int WidthAndHeight => _widthAndHeight;
         public int FullLength => _fullLength;
+        public  T[] Data => _data;
 
         public MultidimensionalArray(Vector3Int size) 
             : this(size.x, size.y, size.z)

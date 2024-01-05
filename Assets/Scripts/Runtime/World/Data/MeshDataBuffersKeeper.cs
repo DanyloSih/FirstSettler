@@ -10,16 +10,15 @@ namespace World.Data
         public TriangleAndMaterialHash[] CashedTriangles;
         public Vector2[] CashedUV;
         private int _maxVerticesCount;
-        public int[] ArraysTargetLengths = new int[3];
+        private int[] _polygonsCount = new int[1];
+        private int _currentVertices = 0;
 
         private Dictionary<int, List<int>> _materialKeyAndTriangleListAssociations 
             = new Dictionary<int, List<int>>();
-        private List<Vector3> _vertsList = new List<Vector3>();
         private MeshBuffers _meshBuffers;
 
-        public int VerticesTargetLength { get => ArraysTargetLengths[0]; set => ArraysTargetLengths[0] = value; }   
-        public int TrianglesTargetLength { get => ArraysTargetLengths[1]; set => ArraysTargetLengths[1] = value; }
-        public int UvTargetLength { get => ArraysTargetLengths[2]; set => ArraysTargetLengths[2] = value; }
+        public int PolygonsCount { get => _polygonsCount[0]; private set => _polygonsCount[0] = value; }   
+        public int VerticesCount { get => _currentVertices; private set => _currentVertices = value; }   
 
         public MeshDataBuffersKeeper(int maxVerticesCount)
         {
@@ -36,11 +35,8 @@ namespace World.Data
                 _meshBuffers = new MeshBuffers(
                     ComputeBufferExtensions.Create(_maxVerticesCount, typeof(Vector3), ComputeBufferType.Counter, ComputeBufferMode.Immutable),
                     ComputeBufferExtensions.Create(_maxVerticesCount, typeof(TriangleAndMaterialHash), ComputeBufferType.Counter, ComputeBufferMode.Immutable),
-                    ComputeBufferExtensions.Create(_maxVerticesCount, typeof(Vector2), ComputeBufferType.Counter, ComputeBufferMode.Immutable));
-
-                //_meshBuffers.VerticesBuffer.SetData(CashedVertices);
-                //_meshBuffers.TrianglesBuffer.SetData(CashedTriangles);
-                //_meshBuffers.UvsBuffer.SetData(CashedUV);
+                    ComputeBufferExtensions.Create(_maxVerticesCount, typeof(Vector2), ComputeBufferType.Counter, ComputeBufferMode.Immutable),
+                    ComputeBufferExtensions.Create(_maxVerticesCount, typeof(int), ComputeBufferType.Counter));
             }
 
             return _meshBuffers;  
@@ -48,41 +44,31 @@ namespace World.Data
 
         public void GetAllDataFromBuffers(MeshBuffers meshBuffers)
         {
-            meshBuffers.VerticesBuffer.GetData(CashedVertices);
-            meshBuffers.TrianglesBuffer.GetData(CashedTriangles);
-            meshBuffers.UvsBuffer.GetData(CashedUV);
-        }
+            var argBuffer = new ComputeBuffer(1, sizeof(int), ComputeBufferType.IndirectArguments);
+            ComputeBuffer.CopyCount(meshBuffers.PolygonsCounter, argBuffer, 0);
+            argBuffer.GetData(_polygonsCount);
+            VerticesCount = PolygonsCount * 3;
 
-        public List<Vector3> GetVertices()
-        {
-            return _vertsList;
+            meshBuffers.VerticesBuffer.GetData(CashedVertices, 0, 0, VerticesCount);
+            meshBuffers.TrianglesBuffer.GetData(CashedTriangles, 0, 0, VerticesCount);
+            meshBuffers.UvsBuffer.GetData(CashedUV, 0, 0, VerticesCount); 
         }
 
         public void UpdateMeshEssentialsFromCash()
         {
             _materialKeyAndTriangleListAssociations.Clear();
-            _vertsList.Clear();
-            int i = 0;
-            foreach (var triangleInfo in CashedTriangles)
+            for (int j = 0; j < VerticesCount; j++)
             {
-                TriangleAndMaterialHash newInfo = triangleInfo;
-                if (newInfo.MaterialHash != 0)
+                TriangleAndMaterialHash newInfo = CashedTriangles[j];
+                if (_materialKeyAndTriangleListAssociations.ContainsKey(newInfo.MaterialHash))
                 {
-                    _vertsList.Add(CashedVertices[newInfo.Triangle]);
-                    newInfo.Triangle = i;
-                    i++;
-
-                    if (_materialKeyAndTriangleListAssociations.ContainsKey(newInfo.MaterialHash))
-                    {
-                        _materialKeyAndTriangleListAssociations[newInfo.MaterialHash].Add(newInfo.Triangle);
-                    }
-                    else
-                    {
-                        _materialKeyAndTriangleListAssociations.Add(newInfo.MaterialHash, new List<int>() { newInfo.Triangle });
-                    }
-                } 
+                    _materialKeyAndTriangleListAssociations[newInfo.MaterialHash].Add(newInfo.Triangle);
+                }
+                else
+                {
+                    _materialKeyAndTriangleListAssociations.Add(newInfo.MaterialHash, new List<int>() { newInfo.Triangle });
+                }
             }
-
         }
 
         public IEnumerable<KeyValuePair<int, List<int>>> GetMaterialKeyHashAndTriangleListAssociations()
@@ -90,9 +76,8 @@ namespace World.Data
 
         public void ResetAllCollections()
         {
-            VerticesTargetLength = 0;
-            TrianglesTargetLength = 0;
-            UvTargetLength = 0;
+            PolygonsCount = 0;
+            VerticesCount = 0;
             _materialKeyAndTriangleListAssociations.Clear();
         }
     }

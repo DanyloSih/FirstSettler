@@ -34,12 +34,13 @@ namespace MarchingCubesProject
             ComputeBuffer voxelsBuffer = voxels.GetOrCreateVoxelsDataBuffer();
             MeshBuffers meshBuffers = meshBuffersKeeper.GetOrCreateNewMeshBuffers();
             meshBuffers.ResetCounters();
-
+            
             int kernelId = _meshGenerationComputeShader.FindKernel("CSMain");
             _meshGenerationComputeShader.SetBuffer(kernelId, "ChunkData", voxelsBuffer);
             _meshGenerationComputeShader.SetBuffer(kernelId, "Triangles", meshBuffers.TrianglesBuffer);
             _meshGenerationComputeShader.SetBuffer(kernelId, "Vertices", meshBuffers.VerticesBuffer);
             _meshGenerationComputeShader.SetBuffer(kernelId, "UVs", meshBuffers.UvsBuffer);
+            _meshGenerationComputeShader.SetBuffer(kernelId, "PolygonsCounter", meshBuffers.PolygonsCounter);
             _meshGenerationComputeShader.SetInt("MaxVericesCount", MeshGenerationAlgorithmInfo.MaxVerticesPerMarch);
             _meshGenerationComputeShader.SetInt("ChunkWidth", voxels.Width);
             _meshGenerationComputeShader.SetInt("ChunkHeight", voxels.Height);
@@ -48,17 +49,7 @@ namespace MarchingCubesProject
             _meshGenerationComputeShader.Dispatch(
                 kernelId, voxels.Width - 1, voxels.Height - 1, voxels.Depth - 1);
 
-            voxels.GetDataFromVoxelsBuffer(voxelsBuffer);
             meshBuffersKeeper.GetAllDataFromBuffers(meshBuffers);
-
-            //List<Vector2> debug = new List<Vector2>();
-            //foreach (var item in meshBuffersKeeper.CashedUV)
-            //{
-            //    if(item != Vector2.zero)
-            //    {
-            //        debug.Add(item);
-            //    }
-            //}
         }
 
         //    [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -110,20 +101,20 @@ namespace MarchingCubesProject
         //    }
 
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void UpdateUV(MeshDataBuffersKeeper cashedMeshData)
-        {
-            _vertex1 = cashedMeshData.CashedVertices[cashedMeshData.VerticesTargetLength - 3];
-            _vertex2 = cashedMeshData.CashedVertices[cashedMeshData.VerticesTargetLength - 2];
-            _vertex3 = cashedMeshData.CashedVertices[cashedMeshData.VerticesTargetLength - 1];
-
-			UpdateTriangleUVProjection();
-
-            cashedMeshData.UvTargetLength += 3;
-            cashedMeshData.CashedUV[cashedMeshData.UvTargetLength - 3] = _uv1;
-            cashedMeshData.CashedUV[cashedMeshData.UvTargetLength - 2] = _uv2;
-            cashedMeshData.CashedUV[cashedMeshData.UvTargetLength - 1] = _uv3;
-        }
+        // [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        // private void UpdateUV(MeshDataBuffersKeeper cashedMeshData)
+        // {
+        //     _vertex1 = cashedMeshData.CashedVertices[cashedMeshData.VerticesTargetLength - 3];
+        //     _vertex2 = cashedMeshData.CashedVertices[cashedMeshData.VerticesTargetLength - 2];
+        //     _vertex3 = cashedMeshData.CashedVertices[cashedMeshData.VerticesTargetLength - 1];
+        // 
+		// 	UpdateTriangleUVProjection();
+        // 
+        //     cashedMeshData.UvTargetLength += 3;
+        //     cashedMeshData.CashedUV[cashedMeshData.UvTargetLength - 3] = _uv1;
+        //     cashedMeshData.CashedUV[cashedMeshData.UvTargetLength - 2] = _uv2;
+        //     cashedMeshData.CashedUV[cashedMeshData.UvTargetLength - 1] = _uv3;
+        // }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void UpdateTriangleUVProjection()

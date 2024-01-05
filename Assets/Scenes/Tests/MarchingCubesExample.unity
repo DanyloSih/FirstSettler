@@ -630,7 +630,7 @@ MonoBehaviour:
     _isFolded: 1
   _basicChunkSettings: {fileID: 11400000, guid: fef79431f067b8346aaa6fbb3ebd2d14,
     type: 2}
-  _chunksGridSize: {x: 1, y: 3, z: 1}
+  _chunksGridSize: {x: 3, y: 3, z: 3}
   references:
     version: 2
     RefIds:
@@ -803,11 +803,11 @@ MonoBehaviour:
   _generationComputeShader: {fileID: 7200000, guid: e16d5ec2db706554c963533d6fcdf2de,
     type: 3}
   _maxHeight: 32
-  _minHeight: -16
+  _minHeight: 32
   _octaves: 3
   _frequency: 0.6
   _seed: 0
-  _chunksOffset: {x: 0, y: -1, z: 0}
+  _chunksOffset: {x: 0, y: 0, z: 0}
   _materialAssociations: {fileID: 11400000, guid: 666ef968199c91a4182bc98a711d7d8e,
     type: 2}
   _heightAssociations: {fileID: 11400000, guid: 1247a779be5a5f3448531b07ef66707c,

@@ -1,9 +1,9 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 using ProceduralNoiseProject;
 using UnityEngine;
 using World.Data;
 using World.Organization;
-using FirstSettler.Extensions;
 
 namespace MarchingCubesProject
 {
@@ -48,6 +48,7 @@ namespace MarchingCubesProject
             _generationComputeShader.SetInt("ChunkGlobalPositionX", x * (voxels.Width - 1));
             _generationComputeShader.SetInt("ChunkGlobalPositionY", y * (voxels.Height - 1));
             _generationComputeShader.SetInt("ChunkGlobalPositionZ", z * (voxels.Depth - 1));
+            _generationComputeShader.SetFloat("MinHeight", _minHeight);
             _generationComputeShader.Dispatch(
                 kernelId, voxels.Width, voxels.Height, voxels.Depth);
 

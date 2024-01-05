@@ -353,6 +353,7 @@ StructuredBuffer<VoxelData> ChunkData;
 RWStructuredBuffer<float3> Vertices;
 RWStructuredBuffer<TriangleAndMaterialHash> Triangles;
 RWStructuredBuffer<float2> UVs;
+RWStructuredBuffer<int> PolygonsCounter;
 //VerticesTargetLength - 0
 //TrianglesTargetLength - 1
 //UvTargetLength - 2
@@ -381,21 +382,9 @@ void CSMain(uint3 id : SV_DispatchThreadID)
 {
     int voxelIndex = GetID(id);
     int materialHash = ChunkData[voxelIndex].MaterialHash;
-    int meshPartIndexStart = voxelIndex * 15;
-    int meshPartIndexEnd = (voxelIndex + 1) * 15;
     float offset = 0.0f;
-    int i;
+    int i, triangleId;
     TriangleAndMaterialHash tr;
-    
-    for (i = meshPartIndexStart; i < meshPartIndexEnd; i++)
-    {
-        tr = Triangles[i];
-        tr.Triangle = 0;
-        tr.MaterialHash = 0;
-        Triangles[i] = tr;
-        Vertices[i] = float3(0, 0, 0);
-        UVs[i] = float2(0, 0);
-    }
         
     Cubes[0] = ChunkData[GetID(float3(id.x, id.y, id.z))].Volume;
     Cubes[1] = ChunkData[GetID(float3(id.x + 1, id.y, id.z))].Volume;
@@ -413,8 +402,6 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     
     int edgeFlags = CubeEdgeFlags[flagIndex];
     if (edgeFlags == 0) return;
-    UVs[meshPartIndexStart + 0] = float2(voxelIndex, id.x);
-    UVs[meshPartIndexStart + 1] = float2(id.y, id.z);
     
     float3 edgeVert;
     for (i = 0; i < 12; i++)
@@ -430,18 +417,32 @@ void CSMain(uint3 id : SV_DispatchThreadID)
         }
     }
     
-    for (int b = 0; b < 15; b++)
+    tr.MaterialHash = materialHash;
+    
+    int subLoopId = 0;
+    for (i = 0; i < 5; i++)
     {
-        int globalB = meshPartIndexStart + b;    
-        int triangleEdge = TriangleConnectionTable[flagIndex][b / 3];     
-        
-        if (triangleEdge < 0)
+        subLoopId = 3 * i;
+        if (TriangleConnectionTable[flagIndex][subLoopId] < 0)
             break;
         
-        int vert = TriangleConnectionTable[flagIndex][b];
-        tr.MaterialHash = materialHash;
-        tr.Triangle = globalB;
-        Triangles[globalB] = tr;
-        Vertices[globalB] = localEdgeVertexBuffer[vert];
+        triangleId = PolygonsCounter.IncrementCounter() * 3;
+        
+        tr.Triangle = triangleId;
+        Triangles[triangleId] = tr;
+        
+        tr.Triangle = triangleId + 1;
+        Triangles[triangleId + 1] = tr;
+        
+        tr.Triangle = triangleId + 2;
+        Triangles[triangleId + 2] = tr;
+        
+        Vertices[triangleId] = localEdgeVertexBuffer[TriangleConnectionTable[flagIndex][subLoopId]];
+        Vertices[triangleId + 1] = localEdgeVertexBuffer[TriangleConnectionTable[flagIndex][subLoopId + 1]];
+        Vertices[triangleId + 2] = localEdgeVertexBuffer[TriangleConnectionTable[flagIndex][subLoopId + 2]];
+        
+        UVs[triangleId] = float2(voxelIndex, triangleId);
+        UVs[triangleId + 1] = float2(voxelIndex, triangleId + 1);
+        UVs[triangleId + 2] = float2(voxelIndex, triangleId + 2);
     }
 }
