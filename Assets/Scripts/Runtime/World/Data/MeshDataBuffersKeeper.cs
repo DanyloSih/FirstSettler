@@ -31,14 +31,18 @@ namespace World.Data
 
         public MeshBuffers GetOrCreateNewMeshBuffers()
         {
-            _meshBuffers = _meshBuffers ?? new MeshBuffers(
-                ComputeBufferExtensions.Create(_maxVerticesCount, typeof(Vector3)),
-                ComputeBufferExtensions.Create(_maxVerticesCount, typeof(TriangleAndMaterialHash)),
-                ComputeBufferExtensions.Create(_maxVerticesCount, typeof(Vector2)));
+            if (_meshBuffers == null)
+            {
+                _meshBuffers = new MeshBuffers(
+                    ComputeBufferExtensions.Create(_maxVerticesCount, typeof(Vector3), ComputeBufferType.Counter, ComputeBufferMode.Immutable),
+                    ComputeBufferExtensions.Create(_maxVerticesCount, typeof(TriangleAndMaterialHash), ComputeBufferType.Counter, ComputeBufferMode.Immutable),
+                    ComputeBufferExtensions.Create(_maxVerticesCount, typeof(Vector2), ComputeBufferType.Counter, ComputeBufferMode.Immutable));
 
-            _meshBuffers.VerticesBuffer.SetData(CashedVertices);
-            _meshBuffers.TrianglesBuffer.SetData(CashedTriangles);
-            _meshBuffers.UvsBuffer.SetData(CashedUV);
+                //_meshBuffers.VerticesBuffer.SetData(CashedVertices);
+                //_meshBuffers.TrianglesBuffer.SetData(CashedTriangles);
+                //_meshBuffers.UvsBuffer.SetData(CashedUV);
+            }
+
             return _meshBuffers;  
         }
 

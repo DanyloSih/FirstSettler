@@ -14,5 +14,12 @@ namespace World.Data
             TrianglesBuffer = trianglesBuffer;
             UvsBuffer = uvsBuffer;
         }
+
+        public void ResetCounters()
+        {
+            VerticesBuffer.SetCounterValue(0);
+            TrianglesBuffer.SetCounterValue(0);
+            UvsBuffer.SetCounterValue(0);
+        }
     }
 }

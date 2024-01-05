@@ -33,6 +33,7 @@ namespace MarchingCubesProject
             MultidimensionalArray<VoxelData> voxels = chunkData.VoxelsData;
             ComputeBuffer voxelsBuffer = voxels.GetOrCreateVoxelsDataBuffer();
             MeshBuffers meshBuffers = meshBuffersKeeper.GetOrCreateNewMeshBuffers();
+            meshBuffers.ResetCounters();
 
             int kernelId = _meshGenerationComputeShader.FindKernel("CSMain");
             _meshGenerationComputeShader.SetBuffer(kernelId, "ChunkData", voxelsBuffer);
@@ -50,14 +51,14 @@ namespace MarchingCubesProject
             voxels.GetDataFromVoxelsBuffer(voxelsBuffer);
             meshBuffersKeeper.GetAllDataFromBuffers(meshBuffers);
 
-            List<Vector2> debug = new List<Vector2>();
-            foreach (var item in meshBuffersKeeper.CashedUV)
-            {
-                if(item != Vector2.zero)
-                {
-                    debug.Add(item);
-                }
-            }
+            //List<Vector2> debug = new List<Vector2>();
+            //foreach (var item in meshBuffersKeeper.CashedUV)
+            //{
+            //    if(item != Vector2.zero)
+            //    {
+            //        debug.Add(item);
+            //    }
+            //}
         }
 
         //    [MethodImpl(MethodImplOptions.AggressiveInlining)]
