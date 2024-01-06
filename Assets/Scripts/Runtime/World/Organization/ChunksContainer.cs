@@ -27,7 +27,7 @@ namespace World.Organization
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void AddChunk(int x, int y, int z, IChunk chunk)
         {
-            _chunks.Add(GetIndex(x, y, z), chunk);
+            _chunks.Add(ChunkExtensions.GetUniqueIndexByCoordinates(x, y, z), chunk);
         }
 
         /// <summary>
@@ -37,7 +37,7 @@ namespace World.Organization
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void RemoveChunk(int x, int y, int z)
         {
-            _chunks.Remove(GetIndex(x, y, z));
+            _chunks.Remove(ChunkExtensions.GetUniqueIndexByCoordinates(x, y, z));
         }
 
         /// <summary>
@@ -47,7 +47,7 @@ namespace World.Organization
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IChunk GetChunk(int x, int y, int z)
         {
-            if (_chunks.TryGetValue(GetIndex(x, y, z), out var chunk))
+            if (_chunks.TryGetValue(ChunkExtensions.GetUniqueIndexByCoordinates(x, y, z), out var chunk))
             {
                 return chunk;
             }
@@ -62,26 +62,13 @@ namespace World.Organization
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsChunkExist(int x, int y, int z)
         {
-            return _chunks.ContainsKey(GetIndex(x, y, z));
+            return _chunks.ContainsKey(ChunkExtensions.GetUniqueIndexByCoordinates(x, y, z));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ClearAllRecordsAboutChunks()
         {
             _chunks.Clear();
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private long GetIndex(int x, int y, int z)
-        {
-            unchecked 
-            {
-                long hash = 54;
-                hash = hash * 228 + x.GetHashCode();
-                hash = hash * 228 + y.GetHashCode();
-                hash = hash * 228 + z.GetHashCode();
-                return hash;
-            }
-        }
+        }   
     }
 }

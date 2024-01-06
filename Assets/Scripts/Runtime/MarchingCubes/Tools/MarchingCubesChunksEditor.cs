@@ -33,7 +33,7 @@ namespace MarchingCubesProject.Tools
             IEnumerable<ChunkDataPoint> chunkDataVolumeAndMaterials, 
             bool updateMeshes = true)
         {
-            List<IChunk> updatingChunks = new List<IChunk>();
+            Dictionary<long, IChunk> updatingChunks = new Dictionary<long, IChunk>();
 
             foreach (var chunkDataVoxel in chunkDataVolumeAndMaterials)
             {
@@ -69,9 +69,9 @@ namespace MarchingCubesProject.Tools
                         dataPoint.x, dataPoint.y, dataPoint.z, voxelData
                         );
 
-                    if (!updatingChunks.Contains(affectedChunk))
+                    if (!updatingChunks.ContainsKey(affectedChunk.GetUniqueIndex()))
                     {
-                        updatingChunks.Add(affectedChunk);
+                        updatingChunks.Add(affectedChunk.GetUniqueIndex(), affectedChunk);
                     }
                 }
             }
@@ -80,7 +80,7 @@ namespace MarchingCubesProject.Tools
             {
                 foreach (var updatingChunk in updatingChunks)
                 {
-                    await updatingChunk.UpdateMesh();
+                    await updatingChunk.Value.UpdateMesh();
                 }
             }
         }

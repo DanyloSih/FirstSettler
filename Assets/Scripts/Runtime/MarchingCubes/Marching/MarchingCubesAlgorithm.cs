@@ -41,7 +41,7 @@ namespace MarchingCubesProject
             _meshGenerationComputeShader.SetBuffer(kernelId, "ChunkData", voxelsBuffer);
             _meshGenerationComputeShader.SetBuffer(kernelId, "Triangles", meshBuffers.TrianglesBuffer);
             _meshGenerationComputeShader.SetBuffer(kernelId, "Vertices", meshBuffers.VerticesBuffer);
-            _meshGenerationComputeShader.SetBuffer(kernelId, "UVs", meshBuffers.UvsBuffer);
+            _meshGenerationComputeShader.SetBuffer(kernelId, "UVs", meshBuffers.UVBuffer);
             _meshGenerationComputeShader.SetBuffer(kernelId, "PolygonsCounter", meshBuffers.PolygonsCounter);
             _meshGenerationComputeShader.SetInt("MaxVericesCount", MeshGenerationAlgorithmInfo.MaxVerticesPerMarch);
             _meshGenerationComputeShader.SetInt("ChunkWidth", voxels.Width);

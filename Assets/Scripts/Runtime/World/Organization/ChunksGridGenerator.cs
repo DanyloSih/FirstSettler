@@ -97,7 +97,7 @@ namespace World.Organization
         {
             foreach (var chunk in _chunksList)
             {
-                Vector3Int chunkPosition = chunk.ChunkComponent.ChunkPosition;
+                Vector3Int chunkPosition = chunk.ChunkComponent.LocalPosition;
                 _activeChunksContainer.RemoveChunk(chunkPosition.x, chunkPosition.y, chunkPosition.z);
                 Destroy(chunk.ChunkGameObject);
             }

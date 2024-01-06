@@ -7,6 +7,7 @@ using World.Organization;
 using World.Data;
 using System.Collections;
 using System.Threading.Tasks;
+using System.Runtime.CompilerServices;
 
 namespace MarchingCubesProject
 {
@@ -19,7 +20,7 @@ namespace MarchingCubesProject
 
         private MaterialKeyAndUnityMaterialAssociations _materialAssociations;
         private BasicChunkSettings _basicChunkSettings;
-        private Vector3Int _chunkPosition;
+        private Vector3Int _localPosition;
         private Dictionary<int, int> _materialKeyAndSubmeshAssociation = new Dictionary<int, int>();
         private List<Vector3> _normals = new List<Vector3>();
         private ChunkData _chunkData;
@@ -33,8 +34,7 @@ namespace MarchingCubesProject
         private string _meshName;
         private MarchingCubesAlgorithm _marchingCubesAlgorithm;
 
-        public Vector3Int ChunkPosition { get => _chunkPosition; }
-        public Vector3Int ChunkSize { get; private set; }
+        public Vector3Int LocalPosition { get => _localPosition; }
         public ChunkData ChunkData { get => _chunkData; }
         public GameObject RootGameObject { get => gameObject; }
         public IMeshGenerationAlgorithm MeshGenerationAlgorithm
@@ -57,12 +57,11 @@ namespace MarchingCubesProject
         {
             _chunkData = chunkData;
             _meshDataBuffer = meshDataBuffer;
-            _chunkPosition = chunkPosition;
+            _localPosition = chunkPosition;
             InitializeNames(chunkPosition);
 
             _materialAssociations = materialKeyAndUnityMaterial;
             _basicChunkSettings = basicChunkSettings;
-            ChunkSize = _basicChunkSettings.Size;
 
             InitializeMeshData();
 

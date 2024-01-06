@@ -1,11 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Collections;
-using System.Threading.Tasks;
 using Cysharp.Threading.Tasks;
 using FirstSettler.Extensions;
 using UnityEngine;
 using UnityEngine.Rendering;
-using UnityThreading;
 
 using Task = System.Threading.Tasks.Task;
 using System;
@@ -25,7 +23,7 @@ namespace World.Data
         private Dictionary<int, List<int>> _materialKeyAndTriangleListAssociations 
             = new Dictionary<int, List<int>>();
         private MeshBuffers _meshBuffers;
-        private Coroutine _coroutine;
+        private int _coroutinesCount = 0;
 
         public int PolygonsCount { get => _polygonsCount[0]; private set => _polygonsCount[0] = value; }   
         public int VerticesCount { get => _currentVertices; private set => _currentVertices = value; }   
@@ -65,7 +63,7 @@ namespace World.Data
 
         public async Task GetAllDataFromBuffers(MeshBuffers meshBuffers = null)
         {
-            if (_coroutine != null)
+            if (_coroutinesCount != 0)
             {
                 throw new InvalidOperationException($"Method {nameof(GetAllDataFromBuffers)} already executing! " +
                     $"Wait for ending before invoke.");
@@ -79,14 +77,19 @@ namespace World.Data
             if (PolygonsCount != 0)
             {
                 AsyncGPUReadbackRequest verticesRequest = AsyncGPUReadback.Request(meshBuffers.VerticesBuffer);
+                _coroutineExecutor.StartCoroutine(
+                    ReceivingDataProcess(verticesRequest, CashedVertices));
+
                 AsyncGPUReadbackRequest trianglesRequest = AsyncGPUReadback.Request(meshBuffers.TrianglesBuffer);
-                AsyncGPUReadbackRequest uvsRequest = AsyncGPUReadback.Request(meshBuffers.UvsBuffer);
-                
-                _coroutine = _coroutineExecutor.StartCoroutine(
-                    ReceivingDataProcess(verticesRequest, trianglesRequest, uvsRequest));
+                _coroutineExecutor.StartCoroutine(
+                    ReceivingDataProcess(trianglesRequest, CashedTriangles));
+
+                AsyncGPUReadbackRequest uvsRequest = AsyncGPUReadback.Request(meshBuffers.UVBuffer);
+                _coroutineExecutor.StartCoroutine(
+                    ReceivingDataProcess(uvsRequest, CashedUV));
             }
 
-            await UniTask.WaitWhile(() => _coroutine != null);
+            await UniTask.WaitWhile(() => _coroutinesCount != 0);
             //meshBuffers.VerticesBuffer.GetData(CashedVertices, 0, 0, VerticesCount);
             //meshBuffers.TrianglesBuffer.GetData(CashedTriangles, 0, 0, VerticesCount);
             //meshBuffers.UvsBuffer.GetData(CashedUV, 0, 0, VerticesCount); 
@@ -98,7 +101,7 @@ namespace World.Data
 
             meshBuffers.VerticesBuffer?.Dispose();
             meshBuffers.TrianglesBuffer?.Dispose();
-            meshBuffers.UvsBuffer?.Dispose();
+            meshBuffers.UVBuffer?.Dispose();
             meshBuffers.PolygonsCounter?.Dispose();
 
             _meshBuffers = null;
@@ -131,20 +134,18 @@ namespace World.Data
             _materialKeyAndTriangleListAssociations.Clear();
         }
 
-        private IEnumerator ReceivingDataProcess(
-            AsyncGPUReadbackRequest verticesRequest,
-            AsyncGPUReadbackRequest trianglesRequest,
-            AsyncGPUReadbackRequest uvsRequest)
+        private IEnumerator ReceivingDataProcess<T>(
+            AsyncGPUReadbackRequest request, T[] copyToArray)
+            where T : struct
         {
-            while (!verticesRequest.done || !trianglesRequest.done || !uvsRequest.done) 
+            _coroutinesCount++;
+            while (!request.done) 
             {
                 yield return null;
             }
 
-            verticesRequest.GetData<Vector3>().CopyTo(CashedVertices);
-            trianglesRequest.GetData<TriangleAndMaterialHash>().CopyTo(CashedTriangles);
-            uvsRequest.GetData<Vector2>().CopyTo(CashedUV);
-            _coroutine = null;
+            request.GetData<T>().CopyTo(copyToArray);
+            _coroutinesCount--;
         }
     }
 }

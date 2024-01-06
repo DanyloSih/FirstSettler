@@ -6,14 +6,14 @@ namespace World.Data
     {
         public ComputeBuffer VerticesBuffer;
         public ComputeBuffer TrianglesBuffer;
-        public ComputeBuffer UvsBuffer;
+        public ComputeBuffer UVBuffer;
         public ComputeBuffer PolygonsCounter;
 
         public MeshBuffers(ComputeBuffer verticesBuffer, ComputeBuffer trianglesBuffer, ComputeBuffer uvsBuffer, ComputeBuffer polygonsCounter)
         {
             VerticesBuffer = verticesBuffer;
             TrianglesBuffer = trianglesBuffer;
-            UvsBuffer = uvsBuffer;
+            UVBuffer = uvsBuffer;
             PolygonsCounter = polygonsCounter;
         }
 
