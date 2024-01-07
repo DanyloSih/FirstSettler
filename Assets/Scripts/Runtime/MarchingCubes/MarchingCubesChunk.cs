@@ -39,7 +39,7 @@ namespace MarchingCubesProject
         public GameObject RootGameObject { get => gameObject; }
         public IMeshGenerationAlgorithm MeshGenerationAlgorithm
             => _marchingCubesAlgorithm ?? new MarchingCubesAlgorithm(
-                _generationAlgorithmInfo, _meshGenerationComputeShader, _basicChunkSettings.Size, this, 0);
+                _generationAlgorithmInfo, _meshGenerationComputeShader, _basicChunkSettings.Size, 0);
 
         protected void OnDestroy()
         {
