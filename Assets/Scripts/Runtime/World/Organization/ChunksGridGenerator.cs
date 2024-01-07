@@ -12,7 +12,7 @@ namespace World.Organization
     {
         [SerializeField] private Transform _chunksRoot;
         [SerializeField] private HeirsProvider<IChunksContainer> _activeChunksContainerHeir;
-        [SerializeField] private HeirsProvider<IChunksDataProvider> _chunksDataProviderHeir;
+        [SerializeField] private HeirsProvider<IChunkDataProvider> _chunksDataProviderHeir;
         [SerializeField] private HeirsProvider<IChunk> _chunkPrefabHeir;
         [SerializeField] private BasicChunkSettings _basicChunkSettings;
         [SerializeField] private Vector3Int _chunksGridSize;
@@ -21,11 +21,10 @@ namespace World.Organization
             = new List<(IChunk ChunkComponent, GameObject ChunkGameObject)>();
         private IChunksContainer _activeChunksContainer;
         private GameObject _chunkPrefabGO;
-        private IChunksDataProvider _chunksDataProvider;
+        private IChunkDataProvider _chunksDataProvider;
         private Vector3Int _minPoint;
         private ChunkCoordinatesCalculator _chunkCoordinatesCalculator;
         private IMatrixWalker _matrixWalker;
-        private MeshDataBuffersKeeper _meshDataBuffer;
 
         protected void OnEnable()
         {
@@ -41,21 +40,8 @@ namespace World.Organization
             _chunksDataProvider = _chunksDataProviderHeir.GetValue();
             _minPoint = _chunksGridSize / 2;
 
-            Vector3Int size = _basicChunkSettings.Size + Vector3Int.one;
-            int cubesCount = size.x * size.y * size.z;
-            var meshGenerationAlgorithmInfo 
-                = chunkPrefab.MeshGenerationAlgorithm.MeshGenerationAlgorithmInfo;
-
-            var maxVerticesCount = meshGenerationAlgorithmInfo.MaxVerticesPerMarch * cubesCount;
-            _meshDataBuffer = new MeshDataBuffersKeeper(maxVerticesCount, this);
-
             DestroyOldChunks();
             InitializeChunks();
-        }
-
-        protected void OnDestroy()
-        {
-            _meshDataBuffer.DisposeBuffers();
         }
 
         private async void InitializeChunks()
@@ -81,10 +67,11 @@ namespace World.Organization
                     _basicChunkSettings,
                     _chunksDataProvider.MaterialAssociations,
                     new Vector3Int(x, y, z),
-                    chunkData,
-                    _meshDataBuffer);
+                    chunkData);
 
-                await chunk.UpdateMesh();
+                await chunk.GenerateNewMeshData();
+                chunk.ApplyMeshData();
+
                 chunk.RootGameObject.transform.localScale
                     = Vector3.one * _basicChunkSettings.Scale;
 

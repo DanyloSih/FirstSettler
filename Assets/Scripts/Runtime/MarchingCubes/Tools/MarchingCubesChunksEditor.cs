@@ -5,6 +5,7 @@ using World.Data;
 using World.Organization;
 using FirstSettler.Extensions;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace MarchingCubesProject.Tools
 {
@@ -34,39 +35,37 @@ namespace MarchingCubesProject.Tools
             bool updateMeshes = true)
         {
             Dictionary<long, IChunk> updatingChunks = new Dictionary<long, IChunk>();
-
             foreach (var chunkDataVoxel in chunkDataVolumeAndMaterials)
             {
-                Vector3Int localChunkPosition 
-                    = _chunkCoordinatesCalculator.GetLocalChunkPositionByGlobalPoint(
-                        chunkDataVoxel.GlobalChunkDataPoint);
-
-                Vector3Int localChunkDataPoint
-                    = _chunkCoordinatesCalculator.GetLocalChunkDataPointByGlobalPoint(
-                        chunkDataVoxel.GlobalChunkDataPoint);
+                Vector3Int localChunkPosition = chunkDataVoxel.LocalChunkPosition.FloorToVector3Int();
+                Vector3Int localChunkDataPoint = chunkDataVoxel.LocalChunkDataPoint.FloorToVector3Int();
 
                 List<AffectedNeighborData> affectedNeighborsData
-                    = GetAffectedNeighborsData(localChunkPosition, localChunkDataPoint);
+                    = GetAffectedNeighborsData(
+                        localChunkPosition,
+                        localChunkDataPoint);
 
                 foreach (var affectedNeighborData in affectedNeighborsData)
                 {
-                    Vector3Int chunkPosition = affectedNeighborData.AffectedLocalChunkPosition;
+                    localChunkPosition = affectedNeighborData.AffectedLocalChunkPosition;
+                    localChunkDataPoint = affectedNeighborData.AffectedLocalChunkDataPoint;
+
                     IChunk affectedChunk = _chunksContainer.GetChunk(
-                        chunkPosition.x, chunkPosition.y, chunkPosition.z);
+                    localChunkPosition.x, localChunkPosition.y, localChunkPosition.z);
 
                     if (affectedChunk == null)
                     {
                         continue;
                     }
 
-                    Vector3Int dataPoint = affectedNeighborData.AffectedLocalChunkDataPoint;
-                    var voxelData = new VoxelData() {
+                    var voxelData = new VoxelData()
+                    {
                         Volume = chunkDataVoxel.Volume,
                         MaterialHash = chunkDataVoxel.MaterialHash
                     };
 
                     affectedChunk.ChunkData.SetVoxelData(
-                        dataPoint.x, dataPoint.y, dataPoint.z, voxelData
+                        localChunkDataPoint.x, localChunkDataPoint.y, localChunkDataPoint.z, voxelData
                         );
 
                     if (!updatingChunks.ContainsKey(affectedChunk.GetUniqueIndex()))
@@ -80,7 +79,12 @@ namespace MarchingCubesProject.Tools
             {
                 foreach (var updatingChunk in updatingChunks)
                 {
-                    await updatingChunk.Value.UpdateMesh();
+                    await updatingChunk.Value.GenerateNewMeshData();
+                }
+
+                foreach (var updatingChunk in updatingChunks)
+                {
+                    updatingChunk.Value.ApplyMeshData();
                 }
             }
         }
@@ -100,7 +104,7 @@ namespace MarchingCubesProject.Tools
             {
                 var voxelData = chunk.ChunkData.GetVoxelData(
                     localChunkDataPoint.x, localChunkDataPoint.y, localChunkDataPoint.z);
-                return new ChunkDataPoint(globalChunkDataPoint, voxelData.Volume, voxelData.MaterialHash);
+                return new ChunkDataPoint(globalChunkDataPoint, localChunkPosition, localChunkDataPoint, voxelData.Volume, voxelData.MaterialHash);
             }
             else
             {
@@ -120,7 +124,7 @@ namespace MarchingCubesProject.Tools
             var voxelData = chunk.ChunkData.GetVoxelData(
                     localChunkDataPoint.x, localChunkDataPoint.y, localChunkDataPoint.z);
 
-            return new ChunkDataPoint(globalChunkPos, voxelData.Volume, voxelData.MaterialHash);
+            return new ChunkDataPoint(globalChunkPos, localChunkPosition, localChunkDataPoint, voxelData.Volume, voxelData.MaterialHash);
         }
 
         private List<AffectedNeighborData> GetAffectedNeighborsData(

@@ -85,7 +85,7 @@ namespace World.Data
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private int XYZToIndex(int x, int y, int z)
+        public int XYZToIndex(int x, int y, int z)
         {
             return x + y * _width + z * _widthAndHeight;
         }

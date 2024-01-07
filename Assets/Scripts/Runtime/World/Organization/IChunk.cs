@@ -22,9 +22,23 @@ namespace World.Organization
             BasicChunkSettings basicChunkSettings,
             MaterialKeyAndUnityMaterialAssociations materialKeyAndUnityMaterial,
             Vector3Int chunkPosition,
-            ChunkData chunkData,
-            MeshDataBuffersKeeper meshDataBuffer);
+            ChunkData chunkData);
 
-        public Task UpdateMesh();
+        /// <summary>
+        /// Saves mesh data locally but don't apply it. <br/>
+        /// To apply generated data, invoke method: <br/>
+        /// <see cref="ApplyMeshData"/> <br/>
+        /// Before invoking this method, make sure the chunk has been initialized
+        /// by that method: <br/> 
+        /// <see cref="InitializeBasicData"/>
+        /// </summary>
+        public Task GenerateNewMeshData();
+
+        /// <summary>
+        /// Applies locally stored mesh data (Verticies, Triangles, UVs). <br/>
+        /// To generate mesh data, invoke method: <br/>
+        /// <see cref="GenerateNewMeshData"/>
+        /// </summary>
+        public void ApplyMeshData();
     }
 }

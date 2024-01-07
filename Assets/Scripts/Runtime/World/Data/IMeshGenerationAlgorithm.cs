@@ -6,6 +6,6 @@ namespace World.Data
     {
         GenerationAlgorithmInfo MeshGenerationAlgorithmInfo { get; }
 
-        public Task GenerateMeshData(ChunkData chunkData, MeshDataBuffersKeeper cashedMeshData);
+        public Task<DisposableMeshData> GenerateMeshData(ChunkData chunkData);
     }
 }

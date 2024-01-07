@@ -8,7 +8,7 @@ namespace MarchingCubesProject
     public class MarchingCubesAlgorithm : MarchingAlgorithm
     {
         private ComputeShader _meshGenerationComputeShader;
-        private MonoBehaviour _coroutineRunner;
+        private MonoBehaviour _coroutineExecutor;
         private Vector3 _vertex1 = default;
         private Vector3 _vertex2 = default;
         private Vector3 _vertex3 = default;
@@ -17,24 +17,27 @@ namespace MarchingCubesProject
         private Vector2 _uv3 = default;
         private Vector3 _normal;
         private Quaternion _rotation;
+        private MeshDataBuffersReader _meshDataBuffersReader;
 
         public MarchingCubesAlgorithm(
 			GenerationAlgorithmInfo generationAlgorithmInfo, 
 			ComputeShader meshGenerationComputeShader,
-			MonoBehaviour coroutineRunner,
+            Vector3Int chunkSize,
+			MonoBehaviour coroutineExecutor,
             float surface)
             : base(generationAlgorithmInfo, surface)
         {
             _meshGenerationComputeShader = meshGenerationComputeShader;
-            _coroutineRunner = coroutineRunner;
+            _coroutineExecutor = coroutineExecutor;
+            var maxVerticesCount = chunkSize.x * chunkSize.y * chunkSize.z * generationAlgorithmInfo.MaxVerticesPerMarch;
+            _meshDataBuffersReader = new MeshDataBuffersReader(maxVerticesCount, coroutineExecutor);
         }
 
-        public override async Task GenerateMeshData(ChunkData chunkData, MeshDataBuffersKeeper meshBuffersKeeper)
+        public override async Task<DisposableMeshData> GenerateMeshData(ChunkData chunkData)
         {
-            meshBuffersKeeper.ResetAllCollections();
             MultidimensionalArray<VoxelData> voxels = chunkData.VoxelsData;
             ComputeBuffer voxelsBuffer = voxels.GetOrCreateVoxelsDataBuffer();
-            MeshBuffers meshBuffers = meshBuffersKeeper.GetOrCreateNewMeshBuffers();
+            MeshBuffers meshBuffers = _meshDataBuffersReader.GetOrCreateNewMeshBuffers();
             meshBuffers.ResetCounters();
             
             int kernelId = _meshGenerationComputeShader.FindKernel("CSMain");
@@ -51,10 +54,8 @@ namespace MarchingCubesProject
             _meshGenerationComputeShader.Dispatch(
                 kernelId, voxels.Width - 1, voxels.Height - 1, voxels.Depth - 1);
 
-            meshBuffersKeeper.UpdatePolygonsCount();
-
-            await meshBuffersKeeper.GetAllDataFromBuffers(meshBuffers);
-            Debug.Log("Waited");
+            _meshDataBuffersReader.UpdatePolygonsCount();
+            return await _meshDataBuffersReader.GetAllDataFromBuffers();
         }
 
         //    [MethodImpl(MethodImplOptions.AggressiveInlining)]

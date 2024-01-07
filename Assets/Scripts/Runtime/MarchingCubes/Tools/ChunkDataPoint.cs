@@ -4,19 +4,19 @@ namespace MarchingCubesProject.Tools
 {
     public struct ChunkDataPoint
     {
-        private Vector3 _globalChunkDataPoint;
-        private float _volume;
-        private int _materialHash;
-
-        public ChunkDataPoint(Vector3 globalChunkDataPoint, float volume, int materialHash)
+        public ChunkDataPoint(Vector3 globalChunkDataPoint, Vector3 localChunkPosition, Vector3 localChunkDataPoint, float volume, int materialHash)
         {
-            _globalChunkDataPoint = globalChunkDataPoint;
-            _volume = volume;
-            _materialHash = materialHash;
+            GlobalChunkDataPoint = globalChunkDataPoint;
+            LocalChunkPosition = localChunkPosition;
+            LocalChunkDataPoint = localChunkDataPoint;
+            Volume = volume;
+            MaterialHash = materialHash;
         }
 
-        public Vector3 GlobalChunkDataPoint { get => _globalChunkDataPoint; set => _globalChunkDataPoint = value; }
-        public float Volume { get => _volume; set => _volume = value; }
-        public int MaterialHash { get => _materialHash; set => _materialHash = value; }
+        public Vector3 GlobalChunkDataPoint { get; set; }
+        public Vector3 LocalChunkPosition { get; set; }
+        public Vector3 LocalChunkDataPoint { get; set; }
+        public float Volume { get; set; }
+        public int MaterialHash { get; set; }
     }
 }

@@ -22,7 +22,7 @@ namespace MarchingCubesProject
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public abstract Task GenerateMeshData(ChunkData chunkData, MeshDataBuffersKeeper cashedMeshData);
+        public abstract Task<DisposableMeshData> GenerateMeshData(ChunkData chunkData);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected float GetOffset(float v1, float v2)

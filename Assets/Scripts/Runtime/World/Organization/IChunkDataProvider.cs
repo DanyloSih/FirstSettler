@@ -4,7 +4,7 @@ using World.Data;
 
 namespace World.Organization
 {
-    public interface IChunksDataProvider
+    public interface IChunkDataProvider
     {
         public Task<ChunkData> GetChunkData(int x, int y, int z, Vector3Int chunkDataSize);
 

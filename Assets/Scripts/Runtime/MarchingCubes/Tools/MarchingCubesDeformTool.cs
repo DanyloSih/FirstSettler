@@ -14,6 +14,7 @@ namespace MarchingCubesProject.Tools
 
         private int _drawMaterialHash;
         private Camera _mainCamera;
+        List<ChunkDataPoint> _changePoints = new List<ChunkDataPoint>();
 
         private void OnEnable()
         {
@@ -52,9 +53,9 @@ namespace MarchingCubesProject.Tools
             Deform(chunkRaycastResult.GlobalChunkDataPoint, chunkRaycastResult.Scale, newVolume, _drawMaterial.GetHashCode());
         }
 
-        private void Deform(Vector3 globalChunkPosition, float scale, float deformFactor, int materialHash)
+        private void Deform(Vector3 globalChunkDataPoint, float scale, float deformFactor, int materialHash)
         {
-            List<ChunkDataPoint> changePoints = new List<ChunkDataPoint>();
+            _changePoints.Clear();
             int halfBrushSize = _brushSize / 2;
             for (int x = -halfBrushSize; x <= halfBrushSize; x++) 
             {
@@ -62,20 +63,24 @@ namespace MarchingCubesProject.Tools
                 {
                     for (int z = -halfBrushSize; z <= halfBrushSize; z++)
                     {
-                        Vector3 brushPointScaled = globalChunkPosition + new Vector3(x, y, z) * scale;
-                        Vector3 brushPointUnscaled = globalChunkPosition + new Vector3(x, y, z);
+                        Vector3 brushPointScaled = globalChunkDataPoint + new Vector3(x, y, z) * scale;
+                        Vector3 brushPointUnscaled = globalChunkDataPoint + new Vector3(x, y, z);
                         ChunkDataPoint chunkDataPoint 
                             = _marchingCubesChunksEditor.GetChunkDataPoint(brushPointScaled);
-
-                        float distance = Vector3.Distance(globalChunkPosition, brushPointUnscaled);
+                        
+                        float distance = Vector3.Distance(globalChunkDataPoint, brushPointUnscaled);
                         float brushForce = distance == 0 ? 1 : 1f - Mathf.Clamp01(distance / halfBrushSize);
                         float resultVolume = Mathf.Clamp01(chunkDataPoint.Volume + deformFactor * brushForce);
-                        changePoints.Add(new ChunkDataPoint(
-                                 brushPointScaled, resultVolume, chunkDataPoint.MaterialHash));
+
+                        if (chunkDataPoint.Volume != resultVolume)
+                        {
+                            chunkDataPoint.Volume = resultVolume;
+                            _changePoints.Add(chunkDataPoint);
+                        }
                     }
                 }
             }
-            _marchingCubesChunksEditor.SetNewChunkDataVolumeAndMaterial(changePoints);
+            _marchingCubesChunksEditor.SetNewChunkDataVolumeAndMaterial(_changePoints);
         }
     }
 }

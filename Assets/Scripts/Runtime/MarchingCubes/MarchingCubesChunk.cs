@@ -7,7 +7,7 @@ using World.Organization;
 using World.Data;
 using System.Collections;
 using System.Threading.Tasks;
-using System.Runtime.CompilerServices;
+using Unity.Collections;
 
 namespace MarchingCubesProject
 {
@@ -22,23 +22,24 @@ namespace MarchingCubesProject
         private BasicChunkSettings _basicChunkSettings;
         private Vector3Int _localPosition;
         private Dictionary<int, int> _materialKeyAndSubmeshAssociation = new Dictionary<int, int>();
-        private List<Vector3> _normals = new List<Vector3>();
         private ChunkData _chunkData;
         private (MeshFilter MeshFilter, MeshCollider MeshCollider) _currentMeshComponents;
         private bool _isBasicDataInitialized;
-        private MeshDataBuffersKeeper _meshDataBuffer;
         private Coroutine _updatePhysicsCoroutine;
         private List<Material> _currentMaterials;
         private int _filledSubmeshesCount;
         private Renderer _meshRenderer;
         private string _meshName;
         private MarchingCubesAlgorithm _marchingCubesAlgorithm;
+        private Mesh _cashedMesh;
+        private DisposableMeshData _cashedDisposableMeshData;
 
         public Vector3Int LocalPosition { get => _localPosition; }
         public ChunkData ChunkData { get => _chunkData; }
         public GameObject RootGameObject { get => gameObject; }
         public IMeshGenerationAlgorithm MeshGenerationAlgorithm
-            => _marchingCubesAlgorithm ?? new MarchingCubesAlgorithm(_generationAlgorithmInfo, _meshGenerationComputeShader, this, 0);
+            => _marchingCubesAlgorithm ?? new MarchingCubesAlgorithm(
+                _generationAlgorithmInfo, _meshGenerationComputeShader, _basicChunkSettings.Size, this, 0);
 
         protected void OnDestroy()
         {
@@ -52,11 +53,9 @@ namespace MarchingCubesProject
             BasicChunkSettings basicChunkSettings, 
             MaterialKeyAndUnityMaterialAssociations materialKeyAndUnityMaterial, 
             Vector3Int chunkPosition, 
-            ChunkData chunkData,
-            MeshDataBuffersKeeper meshDataBuffer)
+            ChunkData chunkData)
         {
             _chunkData = chunkData;
-            _meshDataBuffer = meshDataBuffer;
             _localPosition = chunkPosition;
             InitializeNames(chunkPosition);
 
@@ -74,47 +73,105 @@ namespace MarchingCubesProject
             _isBasicDataInitialized = true;
         }
 
-        /// <summary>
-        /// Updates chunk mesh. Before use this method, you should initialize
-        /// chunk using this methods: InitializeBasicData and InitializeNeighbors
-        /// </summary>
-        public async Task UpdateMesh()
+        public async Task GenerateNewMeshData()
         {
             if (!_isBasicDataInitialized)
             {
                 throw new InvalidOperationException(
-                    $"Before use {nameof(UpdateMesh)} method, you should initialize " +
+                    $"Before use {nameof(GenerateNewMeshData)} method, you should initialize " +
                     $"chunk using this method: {nameof(InitializeBasicData)}");
             }
 
-            await MeshGenerationAlgorithm.GenerateMeshData(_chunkData, _meshDataBuffer);
-            UpdateMesh(_meshDataBuffer, _normals);
+            if (_cashedDisposableMeshData != null)
+            {
+                _cashedDisposableMeshData.DisposeAllArrays();
+                _cashedDisposableMeshData = null;
+            }
+
+            _cashedMesh = _currentMeshComponents.MeshFilter.mesh;
+            _cashedDisposableMeshData = await MeshGenerationAlgorithm.GenerateMeshData(_chunkData);
         }
 
-        private void UpdateMesh(MeshDataBuffersKeeper meshData, List<Vector3> normals)
+        public void ApplyMeshData()
         {
-            var mesh = _currentMeshComponents.MeshFilter.mesh;
-            mesh.Clear();
-            meshData.UpdateMeshEssentialsFromCash();
-            mesh.SetVertices(meshData.CashedVertices, 0, meshData.VerticesCount);
-            InitializeTriangles(meshData, mesh);
+            if (_cashedDisposableMeshData == null)
+            {
+                throw new InvalidOperationException(
+                    $"Before using method {nameof(ApplyMeshData)} you " +
+                    $"should invoke {nameof(GenerateNewMeshData)} method!");
+            }
+            _cashedMesh.Clear();
 
-            // mesh.SetUVs(0, meshData.CashedUV, 0, meshData.UvTargetLength);
+            ApplyVertices(_cashedDisposableMeshData.VerticesCash);
+            ApplyTriangles(_cashedDisposableMeshData.TrianglesCash);
+            ApplyUVs(_cashedDisposableMeshData.UVsCash);
 
-            if (normals.Count > 0)
-                mesh.SetNormals(normals);
-            else
-                mesh.RecalculateNormals();
-
-            mesh.RecalculateBounds();
-
-            meshData.ResetAllCollections();
-
+            _cashedMesh.RecalculateNormals(MeshUpdateFlags.DontResetBoneBounds);
             _currentMeshComponents.MeshFilter.transform.localPosition = Vector3.zero;
             if (_updatePhysicsCoroutine == null)
             {
                 _updatePhysicsCoroutine = StartCoroutine(UpdatePhysicsProcess());
             }
+            _cashedDisposableMeshData.DisposeAllArrays();
+            _cashedDisposableMeshData = null;
+        }
+
+        private void ApplyVertices(NativeArray<Vector3> vertices)
+        {
+            if (vertices.Length == 0)
+            {
+                return;
+            }
+
+            _cashedMesh.SetVertices(vertices);
+        }
+
+        private void ApplyTriangles(NativeArray<TriangleAndMaterialHash> nativeTriangles)
+        {
+            if (nativeTriangles.Length == 0)
+            {
+                return;
+            }
+
+            var associations = CalculateMaterialKeyHashAndTriangleListAssociations(nativeTriangles);
+            _cashedMesh.subMeshCount = associations
+                .Where(x => x.Value.Count > 2).Count();
+            _currentMaterials.Clear();
+            _filledSubmeshesCount = 0;
+            int submeshOffset = 0;
+            foreach (var item in associations)
+            {
+                List<int> triangles = item.Value;
+                if (triangles.Count < 3)
+                {
+                    submeshOffset--;
+                    continue;
+                }
+                _currentMaterials.Add(_materialAssociations.GetMaterialByKeyHash(item.Key));
+                _filledSubmeshesCount++;
+                int minTriangleValue = triangles.Min();
+                if (_materialKeyAndSubmeshAssociation.TryGetValue(item.Key, out var submeshId))
+                {
+                    _cashedMesh.SetTriangles(triangles, 0, triangles.Count, submeshId + submeshOffset);
+                }
+                else
+                {
+                    throw new InvalidOperationException(
+                        $"There no {nameof(submeshId)} associated with hash: {item.Key}");
+                }
+            }
+
+            _meshRenderer.materials = _currentMaterials.ToArray();
+        }
+
+        private void ApplyUVs(NativeArray<Vector2> uvs)
+        {
+            if (uvs.Length == 0)
+            {
+                return;
+            }
+
+            _cashedMesh.SetUVs(0, uvs);
         }
 
         private IEnumerator UpdatePhysicsProcess()
@@ -151,36 +208,28 @@ namespace MarchingCubesProject
                 chunkPosition.z.ToString());
         }
 
-        private void InitializeTriangles(MeshDataBuffersKeeper meshData, Mesh mesh)
+        private IEnumerable<KeyValuePair<int, List<int>>> CalculateMaterialKeyHashAndTriangleListAssociations(
+            NativeArray<TriangleAndMaterialHash> triangles)
         {
-            mesh.subMeshCount = meshData.GetMaterialKeyHashAndTriangleListAssociations()
-                .Where(x => x.Value.Count > 2).Count();
-            _currentMaterials.Clear();
-            _filledSubmeshesCount = 0;
-            int submeshOffset = 0;
-            foreach (var item in meshData.GetMaterialKeyHashAndTriangleListAssociations())
+            Dictionary<int, List<int>> materialKeyAndTriangleListAssociations
+                = new Dictionary<int, List<int>>();
+
+            int trianglesCount = triangles.Length;
+
+            for (int j = 0; j < trianglesCount; j++)
             {
-                List<int> triangles = item.Value;
-                if (triangles.Count < 3)
+                TriangleAndMaterialHash newInfo = triangles[j];
+                if (materialKeyAndTriangleListAssociations.ContainsKey(newInfo.MaterialHash))
                 {
-                    submeshOffset--;
-                    continue;
-                }
-                _currentMaterials.Add(_materialAssociations.GetMaterialByKeyHash(item.Key));
-                _filledSubmeshesCount++;
-                int minTriangleValue = triangles.Min();
-                if (_materialKeyAndSubmeshAssociation.TryGetValue(item.Key, out var submeshId))
-                {
-                    mesh.SetTriangles(triangles, 0, triangles.Count, submeshId + submeshOffset);
+                    materialKeyAndTriangleListAssociations[newInfo.MaterialHash].Add(newInfo.Triangle);
                 }
                 else
                 {
-                    throw new InvalidOperationException(
-                        $"There no {nameof(submeshId)} associated with hash: {item.Key}");
+                    materialKeyAndTriangleListAssociations.Add(newInfo.MaterialHash, new List<int>() { newInfo.Triangle });
                 }
             }
 
-            _meshRenderer.materials = _currentMaterials.ToArray();
+            return materialKeyAndTriangleListAssociations;
         }
 
         private (MeshFilter, MeshCollider) CreateMesh32()
