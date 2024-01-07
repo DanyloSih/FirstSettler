@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using ProceduralNoiseProject;
 using UnityEngine;
 using World.Data;
@@ -7,9 +6,8 @@ using World.Organization;
 
 namespace MarchingCubesProject
 {
-    public class RealtimeGPUChunkDataGenerator : MonoBehaviour, IChunkDataProvider
+    public class RealtimeCPUChunkDataGenerator : MonoBehaviour, IChunkDataProvider
     {
-        [SerializeField] private ComputeShader _generationComputeShader;
         [SerializeField] private float _maxHeight = 256;
         [SerializeField] private float _minHeight;
         [SerializeField] private int _octaves;
@@ -35,24 +33,13 @@ namespace MarchingCubesProject
 
         private Task FillVoxelsArray(MultidimensionalArray<VoxelData> voxels, int x, int y, int z)
         {
-            var kernelId = _generationComputeShader.FindKernel("CSMain");          
             int mat = _heightAssociations.GetMaterialKeyHashByHeight(0);
+            int chunkGlobalXPos = x * (voxels.Width - 1);
+            int chunkGlobalYPos = y * (voxels.Height - 1);
+            int chunkGlobalZPos = z * (voxels.Depth - 1);
 
-            var chunkDataBuffer = voxels.GetOrCreateVoxelsDataBuffer();
 
-            _generationComputeShader.SetBuffer(kernelId, "ChunkData", chunkDataBuffer);
-            _generationComputeShader.SetInt("MatHash", mat);
-            _generationComputeShader.SetInt("ChunkWidth", voxels.Width);
-            _generationComputeShader.SetInt("ChunkHeight", voxels.Height);
-            _generationComputeShader.SetInt("ChunkDepth", voxels.Depth);
-            _generationComputeShader.SetInt("ChunkGlobalPositionX", x * (voxels.Width - 1));
-            _generationComputeShader.SetInt("ChunkGlobalPositionY", y * (voxels.Height - 1));
-            _generationComputeShader.SetInt("ChunkGlobalPositionZ", z * (voxels.Depth - 1));
-            _generationComputeShader.SetFloat("MinHeight", _minHeight);
-            _generationComputeShader.Dispatch(
-                kernelId, voxels.Width, voxels.Height, voxels.Depth);
 
-            voxels.GetDataFromVoxelsBuffer(chunkDataBuffer);
             return Task.CompletedTask;
         }
     }

@@ -614,7 +614,7 @@ MonoBehaviour:
     _targetObject: {fileID: 1000216450}
     _isFolded: 1
   _chunksDataProviderHeir:
-    _selectedIndex: 1
+    _selectedIndex: 2
     _heirObject:
       rid: -2
     _heirUnityObject: {fileID: 1117199047}

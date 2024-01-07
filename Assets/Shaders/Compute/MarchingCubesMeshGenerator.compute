@@ -366,6 +366,27 @@ float Surface;
 groupshared float Cubes[8];
 groupshared float3 localEdgeVertexBuffer[12];
 
+float4x4 QuatFromToRotation(float3 from, float3 to)
+{
+    float3 axis = cross(from, to);
+    float dotProduct = dot(from, to);
+    float angle = acos(dotProduct);
+    float s = sin(angle / 2);
+
+    float4 q;
+    q.xyz = axis * s;
+    q.w = cos(angle / 2);
+
+    float4x4 rotationMatrix = float4x4(
+        1 - 2 * q.y * q.y - 2 * q.z * q.z, 2 * q.x * q.y - 2 * q.w * q.z, 2 * q.x * q.z + 2 * q.w * q.y, 0,
+        2 * q.x * q.y + 2 * q.w * q.z, 1 - 2 * q.x * q.x - 2 * q.z * q.z, 2 * q.y * q.z - 2 * q.w * q.x, 0,
+        2 * q.x * q.z - 2 * q.w * q.y, 2 * q.y * q.z + 2 * q.w * q.x, 1 - 2 * q.x * q.x - 2 * q.y * q.y, 0,
+        0, 0, 0, 1
+    );
+
+    return rotationMatrix;
+}
+
 int GetID(int3 pos)
 {
     return pos.x + pos.y * ChunkWidth + pos.z * (ChunkWidth * ChunkHeight);
@@ -419,7 +440,10 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     
     tr.MaterialHash = materialHash;
     
+    float3 vertex1, vertex2, vertex3, edge1, edge2, normal;
+    float4x4 rotation;
     int subLoopId = 0;
+    
     for (i = 0; i < 5; i++)
     {
         subLoopId = 3 * i;
@@ -437,12 +461,23 @@ void CSMain(uint3 id : SV_DispatchThreadID)
         tr.Triangle = triangleId + 2;
         Triangles[triangleId + 2] = tr;
         
-        Vertices[triangleId] = localEdgeVertexBuffer[TriangleConnectionTable[flagIndex][subLoopId]];
-        Vertices[triangleId + 1] = localEdgeVertexBuffer[TriangleConnectionTable[flagIndex][subLoopId + 1]];
-        Vertices[triangleId + 2] = localEdgeVertexBuffer[TriangleConnectionTable[flagIndex][subLoopId + 2]];
+        vertex1 = localEdgeVertexBuffer[TriangleConnectionTable[flagIndex][subLoopId]];
+        vertex2 = localEdgeVertexBuffer[TriangleConnectionTable[flagIndex][subLoopId + 1]];
+        vertex3 = localEdgeVertexBuffer[TriangleConnectionTable[flagIndex][subLoopId + 2]];
         
-        UVs[triangleId] = float2(voxelIndex, triangleId);
-        UVs[triangleId + 1] = float2(voxelIndex, triangleId + 1);
-        UVs[triangleId + 2] = float2(voxelIndex, triangleId + 2);
+        Vertices[triangleId] = vertex1;
+        Vertices[triangleId + 1] = vertex2;
+        Vertices[triangleId + 2] = vertex3;
+         
+        edge1 = vertex2 - vertex1;
+        edge2 = vertex3 - vertex1;
+        normal = cross(edge1, edge2);
+        normal = normalize(normal);
+
+        rotation = QuatFromToRotation(normal, float3(0, 1, 0));
+
+        UVs[triangleId + 2].xy = mul(rotation, vertex1).xz;
+        UVs[triangleId + 1].xy = mul(rotation, vertex2).xz;
+        UVs[triangleId].xy = mul(rotation, vertex3).xz;
     }
 }

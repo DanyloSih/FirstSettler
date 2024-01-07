@@ -1,10 +1,7 @@
 ﻿using System.Collections.Generic;
-using System.Collections;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Rendering;
-using System;
-using Unity.Collections;
 using UnityEngine.SceneManagement;
 
 namespace World.Data
@@ -14,11 +11,8 @@ namespace World.Data
         private static Dictionary<int, MeshBuffers> s_meshBuffers;
 
         private int _maxVerticesCount;
-        private MonoBehaviour _coroutineExecutor;
         private int[] _polygonsCount = new int[1];
         private int _currentVertices = 0;
-        private int _coroutinesCount = 0;
-        private bool _isTest = false;
 
         public int PolygonsCount { get => _polygonsCount[0]; private set => _polygonsCount[0] = value; }   
         public int VerticesCount { get => _currentVertices; private set => _currentVertices = value; }
@@ -60,10 +54,9 @@ namespace World.Data
             s_meshBuffers.Clear();
         }
 
-        public MeshDataBuffersReader(int maxVerticesCount, MonoBehaviour coroutineExecutor)
+        public MeshDataBuffersReader(int maxVerticesCount)
         {
             _maxVerticesCount = maxVerticesCount;
-            _coroutineExecutor = coroutineExecutor;
         }
 
         public MeshBuffers GetOrCreateNewMeshBuffers()
@@ -97,8 +90,6 @@ namespace World.Data
 
             if (PolygonsCount != 0)
             {
-                _coroutinesCount = 3;
-
                 AsyncGPUReadbackRequest verticesRequest = AsyncGPUReadback.Request(
                     meshBuffers.VerticesBuffer, sizeof(float) * 3 * VerticesCount, 0, 
                     x => meshDataHandler.UpdateVertices(x.GetData<Vector3>()));
@@ -115,20 +106,6 @@ namespace World.Data
             }
 
             return meshDataHandler;
-        }
-
-        private IEnumerator ReceivingDataProcess<T>(
-            AsyncGPUReadbackRequest request, Action<NativeArray<T>> dataReceivedCallback)
-            where T : struct
-        {
-            _coroutinesCount++;
-            while (!request.done) 
-            {
-                yield return null;
-            }
-
-            dataReceivedCallback(request.GetData<T>());
-            _coroutinesCount--;
         }
     }
 }
