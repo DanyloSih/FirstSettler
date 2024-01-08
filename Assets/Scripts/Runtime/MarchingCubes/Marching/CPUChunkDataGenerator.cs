@@ -6,7 +6,7 @@ using World.Organization;
 
 namespace MarchingCubesProject
 {
-    public class RealtimeCPUChunkDataGenerator : MonoBehaviour, IChunkDataProvider
+    public class CPUChunkDataGenerator : MonoBehaviour, IChunkDataProvider
     {
         [SerializeField] private float _maxHeight = 256;
         [SerializeField] private float _minHeight;
@@ -31,14 +31,33 @@ namespace MarchingCubesProject
             return new ChunkData(voxels);
         }
 
-        private Task FillVoxelsArray(MultidimensionalArray<VoxelData> voxels, int x, int y, int z)
+        private Task FillVoxelsArray(MultidimensionalArray<VoxelData> voxels, int chunkLocalX, int chunkLocalY, int chunkLocalZ)
         {
-            int mat = _heightAssociations.GetMaterialKeyHashByHeight(0);
-            int chunkGlobalXPos = x * (voxels.Width - 1);
-            int chunkGlobalYPos = y * (voxels.Height - 1);
-            int chunkGlobalZPos = z * (voxels.Depth - 1);
+            int width = (voxels.Width - 1);
+            int height = (voxels.Height - 1);
+            int depth = (voxels.Depth - 1);
+            int chunkGlobalX = chunkLocalX * width;
+            int chunkGlobalY = chunkLocalY * height;
+            int chunkGlobalZ = chunkLocalZ * depth;
 
+            for (int y = 0; y <= height; y++)
+            {
+                float voxelGlobalY = chunkGlobalY + y; 
+                for (int x = 0; x <= width; x++)
+                {
+                    float voxelGlobalX = chunkGlobalX + x; 
+                    for (int z = 0; z <= depth; z++)
+                    {
+                        float voxelGlobalZ = chunkGlobalZ + z;
+                        VoxelData result = new VoxelData();
 
+                        result.Volume = voxelGlobalY <= _minHeight ? 1 : 0;
+                        result.MaterialHash = _heightAssociations.GetMaterialKeyHashByHeight(voxelGlobalY);
+
+                        voxels.SetValue(x, y, z, result);
+                    }
+                }
+            }
 
             return Task.CompletedTask;
         }

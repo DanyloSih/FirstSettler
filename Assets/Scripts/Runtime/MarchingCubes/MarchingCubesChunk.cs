@@ -33,6 +33,7 @@ namespace MarchingCubesProject
         private MarchingCubesAlgorithm _marchingCubesAlgorithm;
         private Mesh _cashedMesh;
         private DisposableMeshData _cashedDisposableMeshData;
+        private bool _isMeshDataApplying = false;
 
         public Vector3Int LocalPosition { get => _localPosition; }
         public ChunkData ChunkData { get => _chunkData; }
@@ -100,6 +101,7 @@ namespace MarchingCubesProject
                     $"Before using method {nameof(ApplyMeshData)} you " +
                     $"should invoke {nameof(GenerateNewMeshData)} method!");
             }
+            _isMeshDataApplying = true;
             _cashedMesh.Clear();
 
             ApplyVertices(_cashedDisposableMeshData.VerticesCash);
@@ -114,6 +116,11 @@ namespace MarchingCubesProject
             }
             _cashedDisposableMeshData.DisposeAllArrays();
             _cashedDisposableMeshData = null;
+        }
+
+        public bool IsMeshDataApplying()
+        {
+            return _isMeshDataApplying;
         }
 
         private void ApplyVertices(NativeArray<Vector3> vertices)
@@ -176,7 +183,7 @@ namespace MarchingCubesProject
 
         private IEnumerator UpdatePhysicsProcess()
         {
-            yield return new WaitForFixedUpdate();
+            yield return new WaitForEndOfFrame();
 
             if (_filledSubmeshesCount > 0)
             {
@@ -186,6 +193,8 @@ namespace MarchingCubesProject
             }     
 
             _updatePhysicsCoroutine = null;
+            _isMeshDataApplying = false;
+            yield return null;
         }
 
         private void InitializeMeshData()
@@ -208,24 +217,26 @@ namespace MarchingCubesProject
                 chunkPosition.z.ToString());
         }
 
-        private IEnumerable<KeyValuePair<int, List<int>>> CalculateMaterialKeyHashAndTriangleListAssociations(
+        private Dictionary<int, List<int>> CalculateMaterialKeyHashAndTriangleListAssociations(
             NativeArray<TriangleAndMaterialHash> triangles)
         {
             Dictionary<int, List<int>> materialKeyAndTriangleListAssociations
-                = new Dictionary<int, List<int>>();
+                = new Dictionary<int, List<int>>(_materialAssociations.Count);
+
+            var materials = _materialAssociations.GetMaterialKeyHashes();
+            foreach (var item in materials)
+            {
+                materialKeyAndTriangleListAssociations.Add(item, new List<int>());
+            }
 
             int trianglesCount = triangles.Length;
 
             for (int j = 0; j < trianglesCount; j++)
             {
                 TriangleAndMaterialHash newInfo = triangles[j];
-                if (materialKeyAndTriangleListAssociations.ContainsKey(newInfo.MaterialHash))
+                if (newInfo.MaterialHash != 0)
                 {
                     materialKeyAndTriangleListAssociations[newInfo.MaterialHash].Add(newInfo.Triangle);
-                }
-                else
-                {
-                    materialKeyAndTriangleListAssociations.Add(newInfo.MaterialHash, new List<int>() { newInfo.Triangle });
                 }
             }
 

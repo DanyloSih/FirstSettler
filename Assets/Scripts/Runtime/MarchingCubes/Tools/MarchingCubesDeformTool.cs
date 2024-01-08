@@ -1,4 +1,7 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics;
+using System.Threading;
+using System.Threading.Tasks;
 using UnityEngine;
 using World.Data;
 
@@ -12,11 +15,12 @@ namespace MarchingCubesProject.Tools
         [SerializeField] private MaterialKey _drawMaterial;
         [SerializeField] private MarchingCubesChunksEditor _marchingCubesChunksEditor;
 
+        private Stopwatch _cooldownStopwatch = new Stopwatch();
         private int _drawMaterialHash;
         private Camera _mainCamera;
-        List<ChunkDataPoint> _changePoints = new List<ChunkDataPoint>();
+        List<VoxelBlueprint> _changePoints = new List<VoxelBlueprint>();
 
-        private void OnEnable()
+        protected void OnEnable()
         {
             if (_drawMaterial != null)
             {
@@ -25,24 +29,29 @@ namespace MarchingCubesProject.Tools
             _mainCamera = Camera.main;
         }
 
-        private void Update()
+        protected async void Update()
         {
-            if (Input.GetMouseButtonDown(1))
+            if (Input.GetMouseButton(1))
             {
-                ThrowRayAndDeform(Mathf.Abs(_deformForce));
+                await ThrowRayAndDeform(Mathf.Abs(_deformForce));
             }
             else if (Input.GetMouseButtonDown(2))
             {
-                ThrowRayAndDeform(0);
+                await ThrowRayAndDeform(0);
             }
             else if (Input.GetMouseButtonDown(0))
             {
-                ThrowRayAndDeform(-Mathf.Abs(_deformForce));
+                await ThrowRayAndDeform(-Mathf.Abs(_deformForce));
             }
         }
 
-        private void ThrowRayAndDeform(float newVolume)
+        private async Task ThrowRayAndDeform(float newVolume)
         {
+            if (_marchingCubesChunksEditor.IsAlreadyEditingChunks())
+            {
+                return;
+            }
+
             ChunkRaycastingResult chunkRaycastResult = _raycastPointerToChunk.ThrowRaycast();
 
             if (!chunkRaycastResult.IsChunkHited)
@@ -50,10 +59,10 @@ namespace MarchingCubesProject.Tools
                 return;
             }
 
-            Deform(chunkRaycastResult.GlobalChunkDataPoint, chunkRaycastResult.Scale, newVolume, _drawMaterial.GetHashCode());
+            await Deform(chunkRaycastResult.GlobalChunkDataPoint, chunkRaycastResult.Scale, newVolume, _drawMaterial.GetHashCode());
         }
 
-        private void Deform(Vector3 globalChunkDataPoint, float scale, float deformFactor, int materialHash)
+        private async Task Deform(Vector3 globalChunkDataPoint, float scale, float deformFactor, int materialHash)
         {
             _changePoints.Clear();
             int halfBrushSize = _brushSize / 2;
@@ -65,7 +74,7 @@ namespace MarchingCubesProject.Tools
                     {
                         Vector3 brushPointScaled = globalChunkDataPoint + new Vector3(x, y, z) * scale;
                         Vector3 brushPointUnscaled = globalChunkDataPoint + new Vector3(x, y, z);
-                        ChunkDataPoint chunkDataPoint 
+                        VoxelBlueprint chunkDataPoint 
                             = _marchingCubesChunksEditor.GetChunkDataPoint(brushPointScaled);
                         
                         float distance = Vector3.Distance(globalChunkDataPoint, brushPointUnscaled);
@@ -80,7 +89,8 @@ namespace MarchingCubesProject.Tools
                     }
                 }
             }
-            _marchingCubesChunksEditor.SetNewChunkDataVolumeAndMaterial(_changePoints);
+
+            await _marchingCubesChunksEditor.SetVoxels(_changePoints, _changePoints.Count);
         }
     }
 }

@@ -40,5 +40,7 @@ namespace World.Organization
         /// <see cref="GenerateNewMeshData"/>
         /// </summary>
         public void ApplyMeshData();
+
+        public bool IsMeshDataApplying();
     }
 }

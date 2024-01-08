@@ -89,5 +89,16 @@ namespace World.Data
         {
             return x + y * _width + z * _widthAndHeight;
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Vector3Int IndexToXYZ(int index)
+        {
+            int z = index / _widthAndHeight;
+            int remainder = index % _widthAndHeight;
+            int y = remainder / _width;
+            int x = remainder % _width;
+
+            return new Vector3Int(x, y, z);
+        }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
+using Utilities.Math;
 
 namespace World.Organization
 {
@@ -27,7 +28,7 @@ namespace World.Organization
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void AddChunk(int x, int y, int z, IChunk chunk)
         {
-            _chunks.Add(ChunkExtensions.GetUniqueIndexByCoordinates(x, y, z), chunk);
+            _chunks.Add(PositionHasher.GetPositionHash(x, y, z), chunk);
         }
 
         /// <summary>
@@ -37,7 +38,7 @@ namespace World.Organization
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void RemoveChunk(int x, int y, int z)
         {
-            _chunks.Remove(ChunkExtensions.GetUniqueIndexByCoordinates(x, y, z));
+            _chunks.Remove(PositionHasher.GetPositionHash(x, y, z));
         }
 
         /// <summary>
@@ -47,7 +48,7 @@ namespace World.Organization
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IChunk GetChunk(int x, int y, int z)
         {
-            if (_chunks.TryGetValue(ChunkExtensions.GetUniqueIndexByCoordinates(x, y, z), out var chunk))
+            if (_chunks.TryGetValue(PositionHasher.GetPositionHash(x, y, z), out var chunk))
             {
                 return chunk;
             }
@@ -62,7 +63,7 @@ namespace World.Organization
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsChunkExist(int x, int y, int z)
         {
-            return _chunks.ContainsKey(ChunkExtensions.GetUniqueIndexByCoordinates(x, y, z));
+            return _chunks.ContainsKey(PositionHasher.GetPositionHash(x, y, z));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

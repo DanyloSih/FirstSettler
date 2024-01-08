@@ -7,7 +7,7 @@ using World.Organization;
 
 namespace MarchingCubesProject
 {
-    public class RealtimeGPUChunkDataGenerator : MonoBehaviour, IChunkDataProvider
+    public class GPUChunkDataGenerator : MonoBehaviour, IChunkDataProvider
     {
         [SerializeField] private ComputeShader _generationComputeShader;
         [SerializeField] private float _maxHeight = 256;

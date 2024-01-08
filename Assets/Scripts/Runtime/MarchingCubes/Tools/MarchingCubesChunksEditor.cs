@@ -4,8 +4,9 @@ using UnityEngine;
 using World.Data;
 using World.Organization;
 using FirstSettler.Extensions;
-using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 
 namespace MarchingCubesProject.Tools
 {
@@ -14,41 +15,47 @@ namespace MarchingCubesProject.Tools
         [SerializeField] private HeirsProvider<IChunksContainer> _chunksContainerHeir;
         [SerializeField] private BasicChunkSettings _basicChunkSettings;
 
+        private AffectedNeighborData[] _affectedNeighborsDataBuffer = new AffectedNeighborData[28];
         private ChunkCoordinatesCalculator _chunkCoordinatesCalculator;
-        private Vector3Int _chunkScaledSize;
         private Vector3Int _chunkSize;
         private IChunksContainer _chunksContainer;
+        private bool _isAlreadyEditingChunks = false;
 
-        private void Awake()
+        protected void Awake()
         {
             _chunksContainer = _chunksContainerHeir.GetValue();
             _chunkCoordinatesCalculator = new ChunkCoordinatesCalculator(
                 _basicChunkSettings.Size, 
                 _basicChunkSettings.Scale);
 
-            _chunkScaledSize = _basicChunkSettings.ScaledSize;
             _chunkSize = _basicChunkSettings.Size;
         }
 
-        public async void SetNewChunkDataVolumeAndMaterial(
-            IEnumerable<ChunkDataPoint> chunkDataVolumeAndMaterials, 
+        public bool IsAlreadyEditingChunks()
+        {
+            return _isAlreadyEditingChunks;
+        }
+
+        public async Task SetVoxels(
+            IEnumerable<VoxelBlueprint> newVoxels, 
+            int newVoxelsCount,
             bool updateMeshes = true)
         {
+            _isAlreadyEditingChunks = true;
+
             Dictionary<long, IChunk> updatingChunks = new Dictionary<long, IChunk>();
-            foreach (var chunkDataVoxel in chunkDataVolumeAndMaterials)
+
+            foreach (var chunkDataVoxel in newVoxels)
             {
                 Vector3Int localChunkPosition = chunkDataVoxel.LocalChunkPosition.FloorToVector3Int();
                 Vector3Int localChunkDataPoint = chunkDataVoxel.LocalChunkDataPoint.FloorToVector3Int();
 
-                List<AffectedNeighborData> affectedNeighborsData
-                    = GetAffectedNeighborsData(
-                        localChunkPosition,
-                        localChunkDataPoint);
+                FillAffectedNeighborsDataBuffer(localChunkPosition, localChunkDataPoint, out int elementsCount);
 
-                foreach (var affectedNeighborData in affectedNeighborsData)
+                for (int i = 0; i < elementsCount; i++)
                 {
-                    localChunkPosition = affectedNeighborData.AffectedLocalChunkPosition;
-                    localChunkDataPoint = affectedNeighborData.AffectedLocalChunkDataPoint;
+                    localChunkPosition = _affectedNeighborsDataBuffer[i].AffectedLocalChunkPosition;
+                    localChunkDataPoint = _affectedNeighborsDataBuffer[i].AffectedLocalChunkDataPoint;
 
                     IChunk affectedChunk = _chunksContainer.GetChunk(
                     localChunkPosition.x, localChunkPosition.y, localChunkPosition.z);
@@ -75,21 +82,20 @@ namespace MarchingCubesProject.Tools
                 }
             }
 
-            if (updateMeshes)
+            try
             {
-                foreach (var updatingChunk in updatingChunks)
+                if (updateMeshes)
                 {
-                    await updatingChunk.Value.GenerateNewMeshData();
+                    await UpdateMeshes(updatingChunks);
                 }
-
-                foreach (var updatingChunk in updatingChunks)
-                {
-                    updatingChunk.Value.ApplyMeshData();
-                }
+            }
+            finally
+            {
+                _isAlreadyEditingChunks = false;
             }
         }
 
-        public ChunkDataPoint GetChunkDataPoint(Vector3 globalChunkDataPoint)
+        public VoxelBlueprint GetChunkDataPoint(Vector3 globalChunkDataPoint)
         {
             Vector3Int localChunkPosition = _chunkCoordinatesCalculator
                 .GetLocalChunkPositionByGlobalPoint(globalChunkDataPoint);
@@ -104,16 +110,16 @@ namespace MarchingCubesProject.Tools
             {
                 var voxelData = chunk.ChunkData.GetVoxelData(
                     localChunkDataPoint.x, localChunkDataPoint.y, localChunkDataPoint.z);
-                return new ChunkDataPoint(globalChunkDataPoint, localChunkPosition, localChunkDataPoint, voxelData.Volume, voxelData.MaterialHash);
+                return new VoxelBlueprint(globalChunkDataPoint, localChunkPosition, localChunkDataPoint, voxelData.Volume, voxelData.MaterialHash);
             }
             else
             {
-                return new ChunkDataPoint();
+                return new VoxelBlueprint();
             }
            
         }
 
-        public ChunkDataPoint GetChunkDataPoint(Vector3Int localChunkPosition, Vector3Int localChunkDataPoint)
+        public VoxelBlueprint GetChunkDataPoint(Vector3Int localChunkPosition, Vector3Int localChunkDataPoint)
         {
             Vector3 globalChunkPos = _chunkCoordinatesCalculator
                 .GetGlobalChunkDataPointByLocalChunkAndPoint(localChunkPosition, localChunkDataPoint);
@@ -124,13 +130,28 @@ namespace MarchingCubesProject.Tools
             var voxelData = chunk.ChunkData.GetVoxelData(
                     localChunkDataPoint.x, localChunkDataPoint.y, localChunkDataPoint.z);
 
-            return new ChunkDataPoint(globalChunkPos, localChunkPosition, localChunkDataPoint, voxelData.Volume, voxelData.MaterialHash);
+            return new VoxelBlueprint(globalChunkPos, localChunkPosition, localChunkDataPoint, voxelData.Volume, voxelData.MaterialHash);
         }
 
-        private List<AffectedNeighborData> GetAffectedNeighborsData(
-            Vector3Int localChunkPosition, Vector3Int localChunkDataPoint)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private async Task UpdateMeshes(Dictionary<long, IChunk> updatingChunks)
         {
-            List<AffectedNeighborData> result = new List<AffectedNeighborData>();
+            foreach (var updatingChunk in updatingChunks)
+            {
+                await updatingChunk.Value.GenerateNewMeshData();
+            }
+
+            foreach (var updatingChunk in updatingChunks)
+            {
+                updatingChunk.Value.ApplyMeshData();
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void FillAffectedNeighborsDataBuffer(
+            Vector3Int localChunkPosition, Vector3Int localChunkDataPoint, out int elementsCount)
+        {
+            int count = 0;
             Vector3Int newChunkDataPoint = localChunkDataPoint;
             Vector3Int newLocalChunkPosition = localChunkPosition;
 
@@ -164,13 +185,49 @@ namespace MarchingCubesProject.Tools
                     }
                 }
 
-                if (!result.Any(x => x.AffectedLocalChunkDataPoint == tmpChunkDataPoint))
+                if (!IsChunkDataInBuffer(count, tmpChunkDataPoint))
                 {
-                    result.Add(new AffectedNeighborData(affectMask, tmpLocalChunkPosition, tmpChunkDataPoint));
+                    _affectedNeighborsDataBuffer[count] = new AffectedNeighborData(
+                        affectMask, tmpLocalChunkPosition, tmpChunkDataPoint);
+
+                    count++;
                 }
             }
 
-            return result;
+            elementsCount = count;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private bool IsAllChunksDataApplied(Dictionary<long, IChunk> updatingChunks)
+        {
+            bool isAllChunksDataApplied = true;
+
+            foreach (var item in updatingChunks)
+            {
+                if (!item.Value.IsMeshDataApplying())
+                {
+                    isAllChunksDataApplied = false;
+                    break;
+                }
+            }
+
+            return isAllChunksDataApplied;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private bool IsChunkDataInBuffer(int elementsInBuffer, Vector3Int chunkDataPoint)
+        {
+            bool isInBuffer = false;
+            for (int i = 0; i < elementsInBuffer; i++)
+            {
+                if (_affectedNeighborsDataBuffer[i].AffectedLocalChunkDataPoint == chunkDataPoint)
+                {
+                    isInBuffer = true;
+                    break;
+                }
+            }
+
+            return isInBuffer;
         }
     }
 }

@@ -13,6 +13,8 @@ namespace World.Data
 
         private Dictionary<int, Material> _keyHashAndMaterialAssociations = new Dictionary<int, Material>();
 
+        public int Count => _keyAndMaterialAssociations.Count;
+
         protected void OnEnable()
         {
             _keyHashAndMaterialAssociations.Clear();
