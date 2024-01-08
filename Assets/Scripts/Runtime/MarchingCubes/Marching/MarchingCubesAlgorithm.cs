@@ -25,7 +25,7 @@ namespace MarchingCubesProject
         {
             MultidimensionalArray<VoxelData> voxels = chunkData.VoxelsData;
             ComputeBuffer voxelsBuffer = voxels.GetOrCreateVoxelsDataBuffer();
-            MeshBuffers meshBuffers = _meshDataBuffersReader.GetOrCreateNewMeshBuffers();
+            MeshBuffers meshBuffers = _meshDataBuffersReader.CreateNewMeshBuffers();
             meshBuffers.ResetCounters();
             
             int kernelId = _meshGenerationComputeShader.FindKernel("CSMain");
@@ -42,8 +42,9 @@ namespace MarchingCubesProject
             _meshGenerationComputeShader.Dispatch(
                 kernelId, voxels.Width - 1, voxels.Height - 1, voxels.Depth - 1);
 
-            _meshDataBuffersReader.UpdatePolygonsCount();
-            return await _meshDataBuffersReader.GetAllDataFromBuffers();
+            _meshDataBuffersReader.UpdatePolygonsCount(meshBuffers);
+            var result = await _meshDataBuffersReader.GetAllDataFromBuffers(meshBuffers);
+            return result;
         }
     }
 }

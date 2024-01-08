@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using FirstSettler.Extensions;
 using UnityEngine;
+using Utilities.Math;
 
 namespace World.Data
 {
@@ -14,6 +15,7 @@ namespace World.Data
         private readonly int _height;
         private readonly int _depth;
         private readonly Vector3Int _size;
+        private readonly Parallelepiped _parallelepiped;
         private readonly int _widthAndHeight;
         private readonly int _fullLength;
         private ComputeBuffer _voxelsBuffer;
@@ -38,7 +40,7 @@ namespace World.Data
             _height = height;
             _depth = depth;
             _size = new Vector3Int(_width, _height, _depth);
-
+            _parallelepiped = new Parallelepiped(_size);
             _widthAndHeight = _width * _height;
             _fullLength = _width * _height * _depth;
             _data = new T[_fullLength];
@@ -87,18 +89,13 @@ namespace World.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int XYZToIndex(int x, int y, int z)
         {
-            return x + y * _width + z * _widthAndHeight;
+            return _parallelepiped.VoxelPositionToIndex(x, y, z);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Vector3Int IndexToXYZ(int index)
         {
-            int z = index / _widthAndHeight;
-            int remainder = index % _widthAndHeight;
-            int y = remainder / _width;
-            int x = remainder % _width;
-
-            return new Vector3Int(x, y, z);
+            return _parallelepiped.IndexToVoxelPosition(index);
         }
     }
 }

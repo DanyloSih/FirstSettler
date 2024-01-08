@@ -37,7 +37,7 @@ namespace MarchingCubesProject.Tools
         }
 
         public async Task SetVoxels(
-            IEnumerable<VoxelBlueprint> newVoxels, 
+            IEnumerable<ChunkPoint> newVoxels, 
             int newVoxelsCount,
             bool updateMeshes = true)
         {
@@ -95,7 +95,7 @@ namespace MarchingCubesProject.Tools
             }
         }
 
-        public VoxelBlueprint GetChunkDataPoint(Vector3 globalChunkDataPoint)
+        public ChunkPoint GetChunkDataPoint(Vector3 globalChunkDataPoint)
         {
             Vector3Int localChunkPosition = _chunkCoordinatesCalculator
                 .GetLocalChunkPositionByGlobalPoint(globalChunkDataPoint);
@@ -110,27 +110,29 @@ namespace MarchingCubesProject.Tools
             {
                 var voxelData = chunk.ChunkData.GetVoxelData(
                     localChunkDataPoint.x, localChunkDataPoint.y, localChunkDataPoint.z);
-                return new VoxelBlueprint(globalChunkDataPoint, localChunkPosition, localChunkDataPoint, voxelData.Volume, voxelData.MaterialHash);
+                return new ChunkPoint(localChunkPosition, localChunkDataPoint, voxelData.Volume, voxelData.MaterialHash);
             }
             else
             {
-                return new VoxelBlueprint();
+                return new ChunkPoint();
             }
            
         }
 
-        public VoxelBlueprint GetChunkDataPoint(Vector3Int localChunkPosition, Vector3Int localChunkDataPoint)
+        public ChunkPoint GetChunkDataPoint(Vector3Int localChunkPosition, Vector3Int localChunkDataPoint)
         {
-            Vector3 globalChunkPos = _chunkCoordinatesCalculator
-                .GetGlobalChunkDataPointByLocalChunkAndPoint(localChunkPosition, localChunkDataPoint);
-
             IChunk chunk = _chunksContainer.GetChunk(
                 localChunkPosition.x, localChunkPosition.y, localChunkPosition.z);
+
+            if (chunk == null)
+            {
+                return default;
+            }
 
             var voxelData = chunk.ChunkData.GetVoxelData(
                     localChunkDataPoint.x, localChunkDataPoint.y, localChunkDataPoint.z);
 
-            return new VoxelBlueprint(globalChunkPos, localChunkPosition, localChunkDataPoint, voxelData.Volume, voxelData.MaterialHash);
+            return new ChunkPoint(localChunkPosition, localChunkDataPoint, voxelData.Volume, voxelData.MaterialHash);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -12,6 +12,8 @@ namespace World.Data
         public ComputeBuffer UVBuffer;
         public ComputeBuffer PolygonsCounter;
 
+        public bool IsDisposed { get; private set; }
+
         public MeshBuffers(int maxVerticesCount, ComputeBuffer verticesBuffer, ComputeBuffer trianglesBuffer, ComputeBuffer uvsBuffer, ComputeBuffer polygonsCounter)
         {
             MaxVerticesCount = maxVerticesCount;
@@ -38,6 +40,7 @@ namespace World.Data
 
         public void DisposeAllBuffers()
         {
+            IsDisposed = false;
             VerticesBuffer.Dispose();
             TrianglesBuffer.Dispose();
             UVBuffer.Dispose();

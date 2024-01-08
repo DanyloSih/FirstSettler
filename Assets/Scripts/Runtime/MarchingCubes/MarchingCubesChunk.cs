@@ -48,6 +48,11 @@ namespace MarchingCubesProject
             {
                 ChunkData.VoxelsData.GetOrCreateVoxelsDataBuffer().Dispose();
             }
+
+            if (_cashedDisposableMeshData != null)
+            {
+                _cashedDisposableMeshData.DisposeAllArrays();
+            }
         }
 
         public void InitializeBasicData(
@@ -107,12 +112,14 @@ namespace MarchingCubesProject
             ApplyVertices(_cashedDisposableMeshData.VerticesCash);
             ApplyTriangles(_cashedDisposableMeshData.TrianglesCash);
             ApplyUVs(_cashedDisposableMeshData.UVsCash);
-
+            _cashedMesh.Optimize();
             _cashedMesh.RecalculateNormals(MeshUpdateFlags.DontResetBoneBounds);
             _currentMeshComponents.MeshFilter.transform.localPosition = Vector3.zero;
             if (_updatePhysicsCoroutine == null)
             {
-                _updatePhysicsCoroutine = StartCoroutine(UpdatePhysicsProcess());
+                int verticesCount = _cashedDisposableMeshData.VerticesCash.Length;
+                //Debug.Log($"Vertices count pre: {verticesCount}");
+                _updatePhysicsCoroutine = StartCoroutine(UpdatePhysicsProcess(verticesCount));
             }
             _cashedDisposableMeshData.DisposeAllArrays();
             _cashedDisposableMeshData = null;
@@ -181,15 +188,19 @@ namespace MarchingCubesProject
             _cashedMesh.SetUVs(0, uvs);
         }
 
-        private IEnumerator UpdatePhysicsProcess()
+        private IEnumerator UpdatePhysicsProcess(int verticesCount)
         {
             yield return new WaitForEndOfFrame();
 
-            if (_filledSubmeshesCount > 0)
+            if (_currentMeshComponents.MeshCollider.sharedMesh != null)
             {
                 _currentMeshComponents.MeshCollider.sharedMesh = null;
-                _currentMeshComponents.MeshCollider.sharedMesh
-                    = _currentMeshComponents.MeshFilter.sharedMesh;
+            }
+
+            //Debug.Log($"Vertices count post: {verticesCount}");
+            if (verticesCount > 2 && _filledSubmeshesCount > 0)
+            {
+                _currentMeshComponents.MeshCollider.sharedMesh = _cashedMesh;
             }     
 
             _updatePhysicsCoroutine = null;
@@ -255,6 +266,7 @@ namespace MarchingCubesProject
 
             Mesh mesh = new Mesh();
             mesh.Clear();
+            mesh.MarkDynamic();
             mesh.indexFormat = IndexFormat.UInt32;
             mesh.name = _meshName;
             GameObject go = new GameObject(_meshName);

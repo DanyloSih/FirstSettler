@@ -1,8 +1,10 @@
 ﻿using System.Collections.Generic;
 using System.Diagnostics;
-using System.Threading;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using FirstSettler.Extensions;
 using UnityEngine;
+using Utilities.Math;
 using World.Data;
 
 namespace MarchingCubesProject.Tools
@@ -10,15 +12,16 @@ namespace MarchingCubesProject.Tools
     public class MarchingCubesDeformTool : MonoBehaviour
     {
         [SerializeField] private RaycastPointerToChunk _raycastPointerToChunk;
-        [SerializeField] private float _deformForce = 0.2f;
+        [SerializeField] [Range(0, 1)] private float _deformForce = 0.2f;
         [SerializeField] private int _brushSize = 2;
         [SerializeField] private MaterialKey _drawMaterial;
         [SerializeField] private MarchingCubesChunksEditor _marchingCubesChunksEditor;
+        [SerializeField] private BasicChunkSettings _basicChunkSettings;
 
         private Stopwatch _cooldownStopwatch = new Stopwatch();
         private int _drawMaterialHash;
         private Camera _mainCamera;
-        List<VoxelBlueprint> _changePoints = new List<VoxelBlueprint>();
+        List<ChunkPoint> _changePoints = new List<ChunkPoint>();
 
         protected void OnEnable()
         {
@@ -31,7 +34,7 @@ namespace MarchingCubesProject.Tools
 
         protected async void Update()
         {
-            if (Input.GetMouseButton(1))
+            if (Input.GetMouseButtonDown(1))
             {
                 await ThrowRayAndDeform(Mathf.Abs(_deformForce));
             }
@@ -65,32 +68,84 @@ namespace MarchingCubesProject.Tools
         private async Task Deform(Vector3 globalChunkDataPoint, float scale, float deformFactor, int materialHash)
         {
             _changePoints.Clear();
+            Vector3Int chunkSize = _basicChunkSettings.Size;
             int halfBrushSize = _brushSize / 2;
-            for (int x = -halfBrushSize; x <= halfBrushSize; x++) 
-            {
-                for (int y = -halfBrushSize; y <= halfBrushSize; y++)
-                {
-                    for (int z = -halfBrushSize; z <= halfBrushSize; z++)
-                    {
-                        Vector3 brushPointScaled = globalChunkDataPoint + new Vector3(x, y, z) * scale;
-                        Vector3 brushPointUnscaled = globalChunkDataPoint + new Vector3(x, y, z);
-                        VoxelBlueprint chunkDataPoint 
-                            = _marchingCubesChunksEditor.GetChunkDataPoint(brushPointScaled);
-                        
-                        float distance = Vector3.Distance(globalChunkDataPoint, brushPointUnscaled);
-                        float brushForce = distance == 0 ? 1 : 1f - Mathf.Clamp01(distance / halfBrushSize);
-                        float resultVolume = Mathf.Clamp01(chunkDataPoint.Volume + deformFactor * brushForce);
+            ChunkPoint initialDataPoint = _marchingCubesChunksEditor
+                .GetChunkDataPoint(globalChunkDataPoint);
 
-                        if (chunkDataPoint.Volume != resultVolume)
-                        {
-                            chunkDataPoint.Volume = resultVolume;
-                            _changePoints.Add(chunkDataPoint);
-                        }
+            if (initialDataPoint == default)
+            {
+                return;
+            }
+
+            Vector3Int offset = -Vector3Int.one * halfBrushSize;
+            Vector3Int unscaledGlobalChunkPosition = Vector3Int.Scale(
+                initialDataPoint.LocalChunkPosition.FloorToVector3Int(), chunkSize);
+
+            Vector3Int localChunkDataPoint = initialDataPoint.LocalChunkDataPoint.FloorToVector3Int();
+            Vector3Int unscaledGlobalDataPoint = unscaledGlobalChunkPosition + localChunkDataPoint;
+                
+
+
+            Parallelepiped editingArea = new Parallelepiped(Vector3Int.one * _brushSize);
+
+            for (int i = 0; i < editingArea.Volume; i++)
+            {
+                Vector3Int pointerInArea = editingArea.IndexToVoxelPosition(i) + offset;
+                float unscaledDistance = pointerInArea.magnitude;
+                float deformForce = unscaledDistance / halfBrushSize;
+                
+                if (unscaledDistance < halfBrushSize)
+                {
+                    Vector3Int globalUnscaledDataPointPointer = unscaledGlobalDataPoint + pointerInArea;
+                    Vector3Int pointedChunk = globalUnscaledDataPointPointer.GetElementwiseDividedVector(chunkSize);
+                    Vector3Int pointedChunkData = globalUnscaledDataPointPointer.GetElementwiseDividingRemainder(chunkSize);
+                    Vector3Int fixedPointedChunkData = FixNegativePoint(pointedChunkData, chunkSize, out var chunkOffset);
+                    pointedChunk += chunkOffset;
+
+                    ChunkPoint chunkDataPoint
+                        = _marchingCubesChunksEditor.GetChunkDataPoint(pointedChunk, fixedPointedChunkData);
+
+                    if (chunkDataPoint == default)
+                    {
+                        continue;
                     }
-                }
+
+                    chunkDataPoint.Volume = Mathf.Clamp01(deformFactor);
+                    if (chunkDataPoint.Volume > 0)
+                    {
+                        chunkDataPoint.MaterialHash = materialHash;
+                    }
+                    _changePoints.Add(chunkDataPoint);
+                }  
             }
 
             await _marchingCubesChunksEditor.SetVoxels(_changePoints, _changePoints.Count);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private Vector3Int FixNegativePoint(Vector3Int point, Vector3Int chunkSize, out Vector3Int chunkOffset)
+        {
+            chunkOffset = new Vector3Int();
+            if (point.x < 0)
+            {
+                point.x = chunkSize.x + point.x;
+                chunkOffset.x = -1;
+            }
+
+            if (point.y < 0)
+            {
+                point.y = chunkSize.y + point.y;
+                chunkOffset.y = -1;
+            }
+
+            if (point.z < 0)
+            {
+                point.z = chunkSize.z + point.z;
+                chunkOffset.z = -1;
+            }
+
+            return point;
         }
     }
 }
