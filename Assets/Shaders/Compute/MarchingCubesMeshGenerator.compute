@@ -441,7 +441,7 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     tr.MaterialHash = materialHash;
     
     float3 vertex1, vertex2, vertex3, edge1, edge2, normal;
-    float4x4 rotation;
+    float4x3 rotation;
     int subLoopId = 0;
     
     for (i = 0; i < 5; i++)
