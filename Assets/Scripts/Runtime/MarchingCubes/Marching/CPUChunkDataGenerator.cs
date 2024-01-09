@@ -22,17 +22,9 @@ namespace MarchingCubesProject
         public MaterialKeyAndUnityMaterialAssociations MaterialAssociations
             => _materialAssociations;
 
-        public async Task<ChunkData> GetChunkData(int x, int y, int z, Vector3Int chunkSize)
+        public Task FillChunkData(ChunkData chunkData, int chunkLocalX, int chunkLocalY, int chunkLocalZ)
         {
-            Vector3Int chunkDataSize = chunkSize + new Vector3Int(1, 1, 1) * 1;
-            var voxels = new MultidimensionalArray<VoxelData>(chunkDataSize);
-
-            await FillVoxelsArray(voxels, x, y, z);
-            return new ChunkData(voxels);
-        }
-
-        private Task FillVoxelsArray(MultidimensionalArray<VoxelData> voxels, int chunkLocalX, int chunkLocalY, int chunkLocalZ)
-        {
+            ThreedimensionalNativeArray<VoxelData> voxels = chunkData.VoxelsData;
             int width = (voxels.Width - 1);
             int height = (voxels.Height - 1);
             int depth = (voxels.Depth - 1);
@@ -42,10 +34,10 @@ namespace MarchingCubesProject
 
             for (int y = 0; y <= height; y++)
             {
-                float voxelGlobalY = chunkGlobalY + y; 
+                float voxelGlobalY = chunkGlobalY + y;
                 for (int x = 0; x <= width; x++)
                 {
-                    float voxelGlobalX = chunkGlobalX + x; 
+                    float voxelGlobalX = chunkGlobalX + x;
                     for (int z = 0; z <= depth; z++)
                     {
                         float voxelGlobalZ = chunkGlobalZ + z;

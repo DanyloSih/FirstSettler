@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using ProceduralNoiseProject;
 using UnityEngine;
 using World.Data;
@@ -24,36 +23,26 @@ namespace MarchingCubesProject
         public MaterialKeyAndUnityMaterialAssociations MaterialAssociations
             => _materialAssociations;
 
-        public async Task<ChunkData> GetChunkData(int x, int y, int z, Vector3Int chunkSize)
+        public async Task FillChunkData(ChunkData chunkData, int chunkLocalX, int chunkLocalY, int chunkLocalZ)
         {
-            Vector3Int chunkDataSize = chunkSize + new Vector3Int(1, 1, 1) * 1;
-            var voxels = new MultidimensionalArray<VoxelData>(chunkDataSize);
-
-            await FillVoxelsArray(voxels, x, y, z);
-            return new ChunkData(voxels);
-        }
-
-        private Task FillVoxelsArray(MultidimensionalArray<VoxelData> voxels, int x, int y, int z)
-        {
-            var kernelId = _generationComputeShader.FindKernel("CSMain");          
+            var kernelId = _generationComputeShader.FindKernel("CSMain");
             int mat = _heightAssociations.GetMaterialKeyHashByHeight(0);
-
-            var chunkDataBuffer = voxels.GetOrCreateVoxelsDataBuffer();
+            var voxels = chunkData.VoxelsData;
+            var chunkDataBuffer = chunkData.GetOrCreateVoxelsDataBuffer();
 
             _generationComputeShader.SetBuffer(kernelId, "ChunkData", chunkDataBuffer);
             _generationComputeShader.SetInt("MatHash", mat);
             _generationComputeShader.SetInt("ChunkWidth", voxels.Width);
             _generationComputeShader.SetInt("ChunkHeight", voxels.Height);
             _generationComputeShader.SetInt("ChunkDepth", voxels.Depth);
-            _generationComputeShader.SetInt("ChunkGlobalPositionX", x * (voxels.Width - 1));
-            _generationComputeShader.SetInt("ChunkGlobalPositionY", y * (voxels.Height - 1));
-            _generationComputeShader.SetInt("ChunkGlobalPositionZ", z * (voxels.Depth - 1));
+            _generationComputeShader.SetInt("ChunkGlobalPositionX", chunkLocalX * (voxels.Width - 1));
+            _generationComputeShader.SetInt("ChunkGlobalPositionY", chunkLocalY * (voxels.Height - 1));
+            _generationComputeShader.SetInt("ChunkGlobalPositionZ", chunkLocalZ * (voxels.Depth - 1));
             _generationComputeShader.SetFloat("MinHeight", _minHeight);
             _generationComputeShader.Dispatch(
                 kernelId, voxels.Width, voxels.Height, voxels.Depth);
 
-            voxels.GetDataFromVoxelsBuffer(chunkDataBuffer);
-            return Task.CompletedTask;
+            await chunkData.GetDataFromVoxelsBuffer(chunkDataBuffer);
         }
     }
 }

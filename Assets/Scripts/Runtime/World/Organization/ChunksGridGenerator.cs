@@ -54,7 +54,10 @@ namespace World.Organization
                 var instance = Instantiate(_chunkPrefabGO, _chunksRoot);
                 IChunk chunk = instance.GetComponent(typeof(IChunk)) as IChunk;
                 _chunksList.Add(new(chunk, instance));
-                var chunkData = await _chunksDataProvider.GetChunkData(x, y, z, _basicChunkSettings.Size);
+
+                var chunkData = new ChunkData(_basicChunkSettings.Size);
+                await _chunksDataProvider.FillChunkData(chunkData, x, y, z);
+
                 if (!_activeChunksContainer.IsChunkExist(x, y, z))
                 {
                     _activeChunksContainer.AddChunk(x, y, z, chunk);

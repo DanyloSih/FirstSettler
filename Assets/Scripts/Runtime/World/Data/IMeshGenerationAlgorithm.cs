@@ -1,11 +1,12 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 
 namespace World.Data
 {
-    public interface IMeshGenerationAlgorithm
+    public interface IMeshGenerationAlgorithm : IDisposable
     {
         GenerationAlgorithmInfo MeshGenerationAlgorithmInfo { get; }
 
-        public Task<DisposableMeshData> GenerateMeshData(ChunkData chunkData);
+        public Task<MeshData> GenerateMeshData(ChunkData chunkData);
     }
 }

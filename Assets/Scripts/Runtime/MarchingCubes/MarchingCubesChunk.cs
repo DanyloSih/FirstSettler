@@ -30,28 +30,29 @@ namespace MarchingCubesProject
         private int _filledSubmeshesCount;
         private Renderer _meshRenderer;
         private string _meshName;
-        private MarchingCubesAlgorithm _marchingCubesAlgorithm;
+        private MarchingCubesAlgorithm _meshGenerationAlgorithm;
         private Mesh _cashedMesh;
-        private DisposableMeshData _cashedDisposableMeshData;
+        private MeshData _cashedMeshData;
         private bool _isMeshDataApplying = false;
 
         public Vector3Int LocalPosition { get => _localPosition; }
         public ChunkData ChunkData { get => _chunkData; }
         public GameObject RootGameObject { get => gameObject; }
         public IMeshGenerationAlgorithm MeshGenerationAlgorithm
-            => _marchingCubesAlgorithm ?? new MarchingCubesAlgorithm(
+            => _meshGenerationAlgorithm = _meshGenerationAlgorithm ?? new MarchingCubesAlgorithm(
                 _generationAlgorithmInfo, _meshGenerationComputeShader, _basicChunkSettings.Size, 0);
 
         protected void OnDestroy()
         {
             if (ChunkData != null)
             {
-                ChunkData.VoxelsData.GetOrCreateVoxelsDataBuffer().Dispose();
+                ChunkData.Dispose();
             }
 
-            if (_cashedDisposableMeshData != null)
+            TryDisposeCahsedMeshData();
+            if (_meshGenerationAlgorithm != null)
             {
-                _cashedDisposableMeshData.DisposeAllArrays();
+                MeshGenerationAlgorithm.Dispose();
             }
         }
 
@@ -61,6 +62,11 @@ namespace MarchingCubesProject
             Vector3Int chunkPosition, 
             ChunkData chunkData)
         {
+            if (gameObject == null || gameObject.Equals(null))
+            {
+                return;
+            }
+
             _chunkData = chunkData;
             _localPosition = chunkPosition;
             InitializeNames(chunkPosition);
@@ -88,19 +94,14 @@ namespace MarchingCubesProject
                     $"chunk using this method: {nameof(InitializeBasicData)}");
             }
 
-            if (_cashedDisposableMeshData != null)
-            {
-                _cashedDisposableMeshData.DisposeAllArrays();
-                _cashedDisposableMeshData = null;
-            }
-
+            TryDisposeCahsedMeshData();
             _cashedMesh = _currentMeshComponents.MeshFilter.mesh;
-            _cashedDisposableMeshData = await MeshGenerationAlgorithm.GenerateMeshData(_chunkData);
+            _cashedMeshData = await MeshGenerationAlgorithm.GenerateMeshData(_chunkData);
         }
 
         public void ApplyMeshData()
         {
-            if (_cashedDisposableMeshData == null)
+            if (_cashedMeshData == null)
             {
                 throw new InvalidOperationException(
                     $"Before using method {nameof(ApplyMeshData)} you " +
@@ -109,20 +110,19 @@ namespace MarchingCubesProject
             _isMeshDataApplying = true;
             _cashedMesh.Clear();
 
-            ApplyVertices(_cashedDisposableMeshData.VerticesCash);
-            ApplyTriangles(_cashedDisposableMeshData.TrianglesCash);
-            ApplyUVs(_cashedDisposableMeshData.UVsCash);
+            ApplyVertices(ref _cashedMeshData.VerticesCash);
+            ApplyTriangles(ref _cashedMeshData.TrianglesCash);
+            ApplyUVs(ref _cashedMeshData.UVsCash);
             _cashedMesh.Optimize();
             _cashedMesh.RecalculateNormals(MeshUpdateFlags.DontResetBoneBounds);
             _currentMeshComponents.MeshFilter.transform.localPosition = Vector3.zero;
             if (_updatePhysicsCoroutine == null)
             {
-                int verticesCount = _cashedDisposableMeshData.VerticesCash.Length;
-                //Debug.Log($"Vertices count pre: {verticesCount}");
+                int verticesCount = _cashedMeshData.VerticesCash.Length;
                 _updatePhysicsCoroutine = StartCoroutine(UpdatePhysicsProcess(verticesCount));
             }
-            _cashedDisposableMeshData.DisposeAllArrays();
-            _cashedDisposableMeshData = null;
+
+            TryDisposeCahsedMeshData();
         }
 
         public bool IsMeshDataApplying()
@@ -130,7 +130,16 @@ namespace MarchingCubesProject
             return _isMeshDataApplying;
         }
 
-        private void ApplyVertices(NativeArray<Vector3> vertices)
+        private void TryDisposeCahsedMeshData()
+        {
+            if (_cashedMeshData != null)
+            {
+                _cashedMeshData.DisposeAllArrays();
+                _cashedMeshData = null;
+            }
+        }
+
+        private void ApplyVertices(ref NativeArray<Vector3> vertices)
         {
             if (vertices.Length == 0)
             {
@@ -140,7 +149,7 @@ namespace MarchingCubesProject
             _cashedMesh.SetVertices(vertices);
         }
 
-        private void ApplyTriangles(NativeArray<TriangleAndMaterialHash> nativeTriangles)
+        private void ApplyTriangles(ref NativeArray<TriangleAndMaterialHash> nativeTriangles)
         {
             if (nativeTriangles.Length == 0)
             {
@@ -178,7 +187,7 @@ namespace MarchingCubesProject
             _meshRenderer.materials = _currentMaterials.ToArray();
         }
 
-        private void ApplyUVs(NativeArray<Vector2> uvs)
+        private void ApplyUVs(ref NativeArray<Vector2> uvs)
         {
             if (uvs.Length == 0)
             {
@@ -197,7 +206,6 @@ namespace MarchingCubesProject
                 _currentMeshComponents.MeshCollider.sharedMesh = null;
             }
 
-            //Debug.Log($"Vertices count post: {verticesCount}");
             if (verticesCount > 2 && _filledSubmeshesCount > 0)
             {
                 _currentMeshComponents.MeshCollider.sharedMesh = _cashedMesh;

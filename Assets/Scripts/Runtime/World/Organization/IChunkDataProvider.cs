@@ -6,7 +6,7 @@ namespace World.Organization
 {
     public interface IChunkDataProvider
     {
-        public Task<ChunkData> GetChunkData(int x, int y, int z, Vector3Int chunkDataSize);
+        public Task FillChunkData(ChunkData chunkData, int chunkLocalX, int chunkLocalY, int chunkLocalZ);
 
         public MaterialKeyAndUnityMaterialAssociations MaterialAssociations { get; }
     }

@@ -10,7 +10,6 @@ namespace MarchingCubesProject
     public abstract class MarchingAlgorithm : IMeshGenerationAlgorithm
     {
         private GenerationAlgorithmInfo _generationAlgorithmInfo;
-        private ComputeBuffer _windingOrderBuffer;
 
         public float Surface { get; set; }
         public GenerationAlgorithmInfo MeshGenerationAlgorithmInfo { get => _generationAlgorithmInfo; }
@@ -21,8 +20,7 @@ namespace MarchingCubesProject
             _generationAlgorithmInfo = generationAlgorithmInfo;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public abstract Task<DisposableMeshData> GenerateMeshData(ChunkData chunkData);
-
+        public abstract Task<MeshData> GenerateMeshData(ChunkData chunkData);
+        public abstract void Dispose();
     }
 }

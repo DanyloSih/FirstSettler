@@ -9,12 +9,18 @@ namespace MarchingCubesProject.Tools
 
         protected void OnEnable()
         {
-            _markerTransform.gameObject.SetActive(true);
+            if (_markerTransform != null && !_markerTransform.Equals(null))
+            {
+                _markerTransform.gameObject.SetActive(true);
+            }
         }
 
         protected void OnDisable()
         {
-            _markerTransform.gameObject.SetActive(false);
+            if (_markerTransform != null && !_markerTransform.Equals(null))
+            {
+                _markerTransform.gameObject.SetActive(false);
+            }
         }
 
         protected void Update()

@@ -120,7 +120,7 @@ namespace MarchingCubesProject.Tools
                 }  
             }
 
-            await _marchingCubesChunksEditor.SetVoxels(_changePoints, _changePoints.Count);
+            await _marchingCubesChunksEditor.SetVoxels(_changePoints, editingArea);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

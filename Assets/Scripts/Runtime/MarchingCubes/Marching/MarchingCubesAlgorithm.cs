@@ -21,10 +21,15 @@ namespace MarchingCubesProject
             _meshDataBuffersReader = new MeshDataBuffersReader(maxVerticesCount);
         }
 
-        public override async Task<DisposableMeshData> GenerateMeshData(ChunkData chunkData)
+        public override void Dispose()
         {
-            MultidimensionalArray<VoxelData> voxels = chunkData.VoxelsData;
-            ComputeBuffer voxelsBuffer = voxels.GetOrCreateVoxelsDataBuffer();
+            _meshDataBuffersReader.Dispose();
+        }
+
+        public override async Task<MeshData> GenerateMeshData(ChunkData chunkData)
+        {
+            ThreedimensionalNativeArray<VoxelData> voxels = chunkData.VoxelsData;
+            ComputeBuffer voxelsBuffer = chunkData.GetOrCreateVoxelsDataBuffer();
             MeshBuffers meshBuffers = _meshDataBuffersReader.CreateNewMeshBuffers();
             meshBuffers.ResetCounters();
             
@@ -43,8 +48,7 @@ namespace MarchingCubesProject
                 kernelId, voxels.Width - 1, voxels.Height - 1, voxels.Depth - 1);
 
             _meshDataBuffersReader.UpdatePolygonsCount(meshBuffers);
-            var result = await _meshDataBuffersReader.GetAllDataFromBuffers(meshBuffers);
-            return result;
+            return await _meshDataBuffersReader.ReadFromBuffersToMeshData(meshBuffers);
         }
     }
 }

@@ -614,10 +614,10 @@ MonoBehaviour:
     _targetObject: {fileID: 1000216450}
     _isFolded: 1
   _chunksDataProviderHeir:
-    _selectedIndex: 1
+    _selectedIndex: 2
     _heirObject:
       rid: -2
-    _heirUnityObject: {fileID: 1174607643}
+    _heirUnityObject: {fileID: 1117199047}
     _targetObject: {fileID: 1000216450}
     _isFolded: 1
   _chunkPrefabHeir:
@@ -630,7 +630,7 @@ MonoBehaviour:
     _isFolded: 1
   _basicChunkSettings: {fileID: 11400000, guid: fef79431f067b8346aaa6fbb3ebd2d14,
     type: 2}
-  _chunksGridSize: {x: 10, y: 5, z: 10}
+  _chunksGridSize: {x: 50, y: 5, z: 50}
   references:
     version: 2
     RefIds:
@@ -858,7 +858,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _raycastPointerToChunk: {fileID: 1678089597}
   _deformForce: 0.4
-  _brushSize: 64
+  _brushSize: 16
   _drawMaterial: {fileID: 11400000, guid: 0341ba40e1383834692bb53bf930b235, type: 2}
   _marchingCubesChunksEditor: {fileID: 1196743667}
   _basicChunkSettings: {fileID: 11400000, guid: fef79431f067b8346aaa6fbb3ebd2d14,

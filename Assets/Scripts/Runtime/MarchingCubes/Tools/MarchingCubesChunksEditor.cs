@@ -7,9 +7,19 @@ using FirstSettler.Extensions;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Cysharp.Threading.Tasks;
+using Unity.Jobs;
+using Utilities.Math;
 
 namespace MarchingCubesProject.Tools
 {
+    public struct UpdateChunkDataVoxelJob : IJobParallelFor
+    {
+        public void Execute(int index)
+        {
+            throw new System.NotImplementedException();
+        }
+    }
+
     public class MarchingCubesChunksEditor : MonoBehaviour
     {
         [SerializeField] private HeirsProvider<IChunksContainer> _chunksContainerHeir;
@@ -38,7 +48,7 @@ namespace MarchingCubesProject.Tools
 
         public async Task SetVoxels(
             IEnumerable<ChunkPoint> newVoxels, 
-            int newVoxelsCount,
+            Parallelepiped editingArea,
             bool updateMeshes = true)
         {
             _isAlreadyEditingChunks = true;

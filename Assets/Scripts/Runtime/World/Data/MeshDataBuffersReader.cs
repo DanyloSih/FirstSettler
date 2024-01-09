@@ -1,11 +1,16 @@
-﻿using Cysharp.Threading.Tasks;
+﻿using System;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Rendering;
+using Utilities.Threading;
+using static UnityEngine.Mesh;
 
 namespace World.Data
 {
-    public class MeshDataBuffersReader
+    public class MeshDataBuffersReader : IDisposable
     {
+        private static MeshBuffers s_meshBuffers;
+
         private int _maxVerticesCount;
         private int[] _polygonsCount = new int[1];
         private int _currentVertices = 0;
@@ -16,11 +21,15 @@ namespace World.Data
         public MeshDataBuffersReader(int maxVerticesCount)
         {
             _maxVerticesCount = maxVerticesCount;
+            if (s_meshBuffers == null)
+            {
+                s_meshBuffers = new MeshBuffers(_maxVerticesCount);
+            }
         }
 
         public MeshBuffers CreateNewMeshBuffers()
         {
-            return new MeshBuffers(_maxVerticesCount);
+            return s_meshBuffers;
         }
 
         public void UpdatePolygonsCount(MeshBuffers meshBuffers)
@@ -32,29 +41,35 @@ namespace World.Data
             VerticesCount = PolygonsCount * 3;
         }
 
-        public async System.Threading.Tasks.Task<DisposableMeshData> GetAllDataFromBuffers(MeshBuffers meshBuffers)
+        public async System.Threading.Tasks.Task<MeshData> ReadFromBuffersToMeshData(MeshBuffers meshBuffers)
         {
-            DisposableMeshData meshDataHandler = new DisposableMeshData();
+            MeshData meshData = null;
 
             if (PolygonsCount != 0)
             {
-                AsyncGPUReadbackRequest verticesRequest = AsyncGPUReadback.Request(
-                    meshBuffers.VerticesBuffer, sizeof(float) * 3 * VerticesCount, 0, 
-                    x => { meshDataHandler.UpdateVertices(x.GetData<Vector3>()); });
- 
-                AsyncGPUReadbackRequest trianglesRequest = AsyncGPUReadback.Request(
-                    meshBuffers.TrianglesBuffer, sizeof(int) * 2 * VerticesCount, 0,
-                    x => { meshDataHandler.UpdateTriangles(x.GetData<TriangleAndMaterialHash>()); });
+                meshData = new MeshData(VerticesCount);
+                AsyncGPUReadbackRequest verticesRequest = AsyncGPUReadback.RequestIntoNativeArray(
+                    ref meshData.VerticesCash, meshBuffers.VerticesBuffer, sizeof(float) * 3 * VerticesCount, 0);
 
-                AsyncGPUReadbackRequest uvsRequest = AsyncGPUReadback.Request(
-                    meshBuffers.UVBuffer, sizeof(float) * 2 * VerticesCount, 0,
-                    x => { meshDataHandler.UpdateUVs(x.GetData<Vector2>()); });
+                AsyncGPUReadbackRequest trianglesRequest = AsyncGPUReadback.RequestIntoNativeArray(
+                    ref meshData.TrianglesCash, meshBuffers.TrianglesBuffer, sizeof(int) * 2 * VerticesCount, 0);
 
-                await UniTask.WaitWhile(() => !meshDataHandler.IsAllArraysUpdated(), PlayerLoopTiming.PreUpdate);
+                AsyncGPUReadbackRequest uvsRequest = AsyncGPUReadback.RequestIntoNativeArray(
+                    ref meshData.UVsCash, meshBuffers.UVBuffer, sizeof(float) * 2 * VerticesCount, 0);
+
+                await AsyncUtilities.WaitWhile(() => !verticesRequest.done || !trianglesRequest.done || !uvsRequest.done, 5);
+            }
+            else
+            {
+                meshData = new MeshData(0);
             }
 
-            meshBuffers.DisposeAllBuffers();
-            return meshDataHandler;
+            return meshData;
+        }
+
+        public void Dispose()
+        {
+            s_meshBuffers.DisposeAllBuffers();
         }
     }
 }
