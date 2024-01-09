@@ -6,7 +6,6 @@ using World.Organization;
 using FirstSettler.Extensions;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
-using Cysharp.Threading.Tasks;
 using Unity.Jobs;
 using Utilities.Math;
 using Unity.Collections;
@@ -26,7 +25,6 @@ namespace MarchingCubesProject.Tools
         [SerializeField] private HeirsProvider<IChunksContainer> _chunksContainerHeir;
         [SerializeField] private BasicChunkSettings _basicChunkSettings;
 
-        private AffectedNeighborData[] _affectedNeighborsDataBuffer = new AffectedNeighborData[28];
         private ChunkCoordinatesCalculator _chunkCoordinatesCalculator;
         private Vector3Int _chunkSize;
         private IChunksContainer _chunksContainer;
@@ -53,25 +51,26 @@ namespace MarchingCubesProject.Tools
             bool updateMeshes = true)
         {
             _isAlreadyEditingChunks = true;
-
-            Dictionary<long, IChunk> updatingChunks = new Dictionary<long, IChunk>();
+            NativeParallelHashMap<long, ThreedimensionalNativeArray<VoxelData>> affectedChunksData 
+                = GetAffectedChunksVoxelData(localChunksEditingArea, _basicChunkSettings.Size);
 
             foreach (var chunkDataVoxel in newVoxels)
             {
                 Vector3Int localChunkPosition = chunkDataVoxel.LocalChunkPosition.FloorToVector3Int();
                 Vector3Int localChunkDataPoint = chunkDataVoxel.LocalChunkDataPoint.FloorToVector3Int();
 
-                FillAffectedNeighborsDataBuffer(localChunkPosition, localChunkDataPoint, out int elementsCount);
+                var affectedNeighborsDataBuffer = GetAffectedNeighborsData(
+                    localChunkPosition, localChunkDataPoint, out int elementsCount);
 
                 for (int i = 0; i < elementsCount; i++)
                 {
-                    localChunkPosition = _affectedNeighborsDataBuffer[i].AffectedLocalChunkPosition;
-                    localChunkDataPoint = _affectedNeighborsDataBuffer[i].AffectedLocalChunkDataPoint;
+                    localChunkPosition = affectedNeighborsDataBuffer[i].AffectedLocalChunkPosition;
+                    localChunkDataPoint = affectedNeighborsDataBuffer[i].AffectedLocalChunkDataPoint;
 
-                    IChunk affectedChunk = _chunksContainer.GetChunk(
-                    localChunkPosition.x, localChunkPosition.y, localChunkPosition.z);
+                    long positionHash = PositionHasher.GetPositionHash(
+                        localChunkPosition.x, localChunkPosition.y, localChunkPosition.z);
 
-                    if (affectedChunk == null)
+                    if (!affectedChunksData.ContainsKey(positionHash))
                     {
                         continue;
                     }
@@ -82,22 +81,23 @@ namespace MarchingCubesProject.Tools
                         MaterialHash = chunkDataVoxel.MaterialHash
                     };
 
-                    affectedChunk.ChunkData.SetVoxelData(
+                    affectedChunksData[positionHash].SetValue(
                         localChunkDataPoint.x, localChunkDataPoint.y, localChunkDataPoint.z, voxelData
                         );
-
-                    if (!updatingChunks.ContainsKey(affectedChunk.GetUniqueIndex()))
-                    {
-                        updatingChunks.Add(affectedChunk.GetUniqueIndex(), affectedChunk);
-                    }
                 }
             }
+
+            foreach (var affectedChunkData in affectedChunksData)
+            {
+                IChunk affectedChunk = _chunksContainer.GetChunk(affectedChunkData.Key);
+                affectedChunk.ChunkData.VoxelsData.SetNewRawData(ref affectedChunkData.Value.RawData);
+            }     
 
             try
             {
                 if (updateMeshes)
                 {
-                    await UpdateMeshes(updatingChunks);
+                    await UpdateMeshes(affectedChunksData);
                 }
             }
             finally
@@ -146,24 +146,69 @@ namespace MarchingCubesProject.Tools
             return new ChunkPoint(localChunkPosition, localChunkDataPoint, voxelData.Volume, voxelData.MaterialHash);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private async Task UpdateMeshes(Dictionary<long, IChunk> updatingChunks)
+        private NativeParallelHashMap<long, ThreedimensionalNativeArray<VoxelData>> GetAffectedChunksVoxelData(
+            Area affectedArea, Vector3Int chunksSize)
         {
+            Vector3Int affectedAreaSize = affectedArea.Parallelepiped.Size;
+            int maxXChunks = affectedAreaSize.x / chunksSize.x + 1;
+            int maxYChunks = affectedAreaSize.y / chunksSize.y + 1;
+            int maxZChunks = affectedAreaSize.z / chunksSize.z + 1;
+            int maxAffectedChunksCount = maxXChunks * maxYChunks * maxZChunks;
+
+            NativeParallelHashMap<long, ThreedimensionalNativeArray<VoxelData>> result 
+                = new NativeParallelHashMap<long, ThreedimensionalNativeArray<VoxelData>>(maxAffectedChunksCount, Allocator.Persistent);
+
+            for (int y = Mathf.FloorToInt((float)affectedArea.Min.y / chunksSize.y) * chunksSize.y; y < affectedArea.Max.y; y += chunksSize.y)
+            {
+                for (int x = Mathf.FloorToInt((float)affectedArea.Min.x / chunksSize.x) * chunksSize.x; x < affectedArea.Max.x; x += chunksSize.x)
+                {
+                    for (int z = Mathf.FloorToInt((float)affectedArea.Min.z / chunksSize.z) * chunksSize.z; z < affectedArea.Max.z; z += chunksSize.z)
+                    {
+                        int localChunkX = x / chunksSize.x;
+                        int localChunkY = y / chunksSize.y;
+                        int localChunkZ = z / chunksSize.z;
+                        IChunk chunk = _chunksContainer.GetChunk(localChunkX, localChunkY, localChunkZ);
+
+                        if (chunk == null)
+                        {
+                            continue;
+                        }
+
+                        result.Add(
+                            PositionHasher.GetPositionHash(localChunkX, localChunkY, localChunkZ), 
+                            chunk.ChunkData.VoxelsData);
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private async Task UpdateMeshes(object packedThreedimensionalNativeArray)
+        {
+            NativeParallelHashMap<long, ThreedimensionalNativeArray<VoxelData>> updatingChunks 
+                = (NativeParallelHashMap<long, ThreedimensionalNativeArray<VoxelData>>)packedThreedimensionalNativeArray;
+
             foreach (var updatingChunk in updatingChunks)
             {
-                await updatingChunk.Value.GenerateNewMeshData();
+                var chunk = _chunksContainer.GetChunk(updatingChunk.Key);
+                await chunk.GenerateNewMeshData();
             }
 
             foreach (var updatingChunk in updatingChunks)
             {
-                updatingChunk.Value.ApplyMeshData();
+                var chunk = _chunksContainer.GetChunk(updatingChunk.Key);
+                chunk.ApplyMeshData();
             }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void FillAffectedNeighborsDataBuffer(
+        private NativeArray<AffectedNeighborData> GetAffectedNeighborsData(
             Vector3Int localChunkPosition, Vector3Int localChunkDataPoint, out int elementsCount)
         {
+            var affectedNeighborsData = new NativeArray<AffectedNeighborData>(28, Allocator.Temp);
+
             int count = 0;
             Vector3Int newChunkDataPoint = localChunkDataPoint;
             Vector3Int newLocalChunkPosition = localChunkPosition;
@@ -198,9 +243,9 @@ namespace MarchingCubesProject.Tools
                     }
                 }
 
-                if (!IsChunkDataInBuffer(count, tmpChunkDataPoint))
+                if (!IsChunkDataInBuffer(count, tmpChunkDataPoint, ref affectedNeighborsData))
                 {
-                    _affectedNeighborsDataBuffer[count] = new AffectedNeighborData(
+                    affectedNeighborsData[count] = new AffectedNeighborData(
                         affectMask, tmpLocalChunkPosition, tmpChunkDataPoint);
 
                     count++;
@@ -208,6 +253,7 @@ namespace MarchingCubesProject.Tools
             }
 
             elementsCount = count;
+            return affectedNeighborsData;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -228,12 +274,12 @@ namespace MarchingCubesProject.Tools
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool IsChunkDataInBuffer(int elementsInBuffer, Vector3Int chunkDataPoint)
+        private bool IsChunkDataInBuffer(int elementsInBuffer, Vector3Int chunkDataPoint, ref NativeArray<AffectedNeighborData> affectedNeighborsData)
         {
             bool isInBuffer = false;
             for (int i = 0; i < elementsInBuffer; i++)
             {
-                if (_affectedNeighborsDataBuffer[i].AffectedLocalChunkDataPoint == chunkDataPoint)
+                if (affectedNeighborsData[i].AffectedLocalChunkDataPoint == chunkDataPoint)
                 {
                     isInBuffer = true;
                     break;

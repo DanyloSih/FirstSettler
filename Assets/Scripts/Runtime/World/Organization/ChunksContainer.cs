@@ -41,10 +41,6 @@ namespace World.Organization
             _chunks.Remove(PositionHasher.GetPositionHash(x, y, z));
         }
 
-        /// <summary>
-        /// <inheritdoc cref="IChunksContainer.GetChunk(int, int, int)"/><br/>
-        /// <inheritdoc cref="MAX_CHUNK_ID_IN_ONE_DIRECTION"/><br/>
-        /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IChunk GetChunk(int x, int y, int z)
         {
@@ -54,6 +50,19 @@ namespace World.Organization
             }
 
             return null;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IChunk GetChunk(long positionHash)
+        {
+            if (_chunks.TryGetValue(positionHash, out var result))
+            {
+                return result;
+            }
+            else
+            {
+                return null;
+            }
         }
 
         /// <summary>
@@ -70,6 +79,6 @@ namespace World.Organization
         public void ClearAllRecordsAboutChunks()
         {
             _chunks.Clear();
-        }   
+        }
     }
 }

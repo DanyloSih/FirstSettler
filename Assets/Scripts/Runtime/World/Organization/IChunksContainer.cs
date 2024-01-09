@@ -15,9 +15,15 @@
 
         /// <summary>
         /// CAN RETURN NULL!<br/>
-        /// Returns chunk by its global coordinates in chunks list.
+        /// Returns chunk by its local position in chunks list.
         /// </summary>
         public IChunk GetChunk(int x, int y, int z);
+
+        /// <summary>
+        /// CAN RETURN NULL!<br/>
+        /// Returns chunk by its local position in chunks list hash.
+        /// </summary>
+        public IChunk GetChunk(long positionHash);
 
         /// <summary>
         /// THIS MEHTOD DON'T CHECK IS OTHER CHUNK AT THIS POSITION ALREADY EXIST!<br/>

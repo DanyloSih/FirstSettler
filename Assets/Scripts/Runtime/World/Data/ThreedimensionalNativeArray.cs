@@ -1,11 +1,12 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System;
+using System.Runtime.CompilerServices;
 using Unity.Collections;
 using UnityEngine;
 using Utilities.Math;
 
 namespace World.Data
 {
-    public struct ThreedimensionalNativeArray<T>
+    public struct ThreedimensionalNativeArray<T> 
         where T : struct
     {
         public NativeArray<T> RawData;
@@ -25,6 +26,7 @@ namespace World.Data
         public int WidthAndHeight => _widthAndHeight;
         public int FullLength => _fullLength;
 
+
         public ThreedimensionalNativeArray(Vector3Int size) 
             : this(size.x, size.y, size.z)
         {
@@ -41,6 +43,12 @@ namespace World.Data
             _widthAndHeight = _width * _height;
             _fullLength = _width * _height * _depth;
             RawData = new NativeArray<T>(_fullLength, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void SetNewRawData(ref NativeArray<T> newRawData)
+        {
+            RawData = newRawData;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

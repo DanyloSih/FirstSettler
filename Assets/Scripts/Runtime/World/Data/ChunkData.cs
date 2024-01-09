@@ -79,7 +79,11 @@ namespace World.Data
             {
                 _voxelsBuffer.Dispose();
             }
-            _voxelsData.RawData.Dispose();
+
+            if (_voxelsData.RawData.IsCreated)
+            {
+                _voxelsData.RawData.Dispose();
+            }
         }
     }
 }

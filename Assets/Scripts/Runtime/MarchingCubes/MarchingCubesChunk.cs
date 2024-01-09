@@ -62,11 +62,6 @@ namespace MarchingCubesProject
             Vector3Int chunkPosition, 
             ChunkData chunkData)
         {
-            if (gameObject == null || gameObject.Equals(null))
-            {
-                return;
-            }
-
             _chunkData = chunkData;
             _localPosition = chunkPosition;
             InitializeNames(chunkPosition);

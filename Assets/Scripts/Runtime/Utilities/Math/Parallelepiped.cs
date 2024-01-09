@@ -6,6 +6,7 @@ namespace Utilities.Math
     public struct Parallelepiped
     {
         public Vector3Int Size { get; private set; }
+        public Vector3Int Extents { get; private set; }
         public int Volume { get; private set; }
         public int SurfaceArea { get; private set; }
 
@@ -15,7 +16,7 @@ namespace Utilities.Math
         public Parallelepiped(Vector3Int size)
         {
             Size = size;
-           
+            Extents = Size / 2;
             _width = size.x;
             _widthAndHeight = size.x * size.y;
             Volume = Size.x * Size.y * Size.z;
