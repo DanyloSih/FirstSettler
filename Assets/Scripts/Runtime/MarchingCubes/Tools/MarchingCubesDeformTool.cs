@@ -87,11 +87,12 @@ namespace MarchingCubesProject.Tools
                 
 
 
-            Parallelepiped editingArea = new Parallelepiped(Vector3Int.one * _brushSize);
+            Parallelepiped editingParallelepiped = new Parallelepiped(Vector3Int.one * _brushSize);
+            Area editingArea = new Area(editingParallelepiped, unscaledGlobalDataPoint);
 
-            for (int i = 0; i < editingArea.Volume; i++)
+            for (int i = 0; i < editingParallelepiped.Volume; i++)
             {
-                Vector3Int pointerInArea = editingArea.IndexToVoxelPosition(i) + offset;
+                Vector3Int pointerInArea = editingParallelepiped.IndexToVoxelPosition(i) + offset;
                 float unscaledDistance = pointerInArea.magnitude;
                 float deformForce = unscaledDistance / halfBrushSize;
                 

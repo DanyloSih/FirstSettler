@@ -6,33 +6,20 @@ namespace Utilities.Math
     public struct Parallelepiped
     {
         public Vector3Int Size { get; private set; }
-        public Vector3Int Extents { get; private set; }
-        public Vector3Int Center { get; private set; }
-        public Vector3Int Min { get; private set; }
-        public Vector3Int Max { get; private set; }
         public int Volume { get; private set; }
         public int SurfaceArea { get; private set; }
 
         private int _width;
         private int _widthAndHeight;
 
-        public Parallelepiped(Vector3Int size, Vector3Int position)
+        public Parallelepiped(Vector3Int size)
         {
             Size = size;
-            Extents = size / 2;
-            Center = position;
-            Min = Center - Extents;
-            Max = Center + Extents;
+           
             _width = size.x;
             _widthAndHeight = size.x * size.y;
             Volume = Size.x * Size.y * Size.z;
             SurfaceArea = 2 * (Size.x * Size.y + Size.x * Size.z + Size.y * Size.z);
-        }
-
-        public Parallelepiped(Vector3Int size) :
-            this(size, Vector3Int.zero)
-        {
-
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

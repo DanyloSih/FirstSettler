@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Cysharp.Threading.Tasks;
 using Unity.Jobs;
 using Utilities.Math;
+using Unity.Collections;
 
 namespace MarchingCubesProject.Tools
 {
@@ -47,8 +48,8 @@ namespace MarchingCubesProject.Tools
         }
 
         public async Task SetVoxels(
-            IEnumerable<ChunkPoint> newVoxels, 
-            Parallelepiped editingArea,
+            IEnumerable<ChunkPoint> newVoxels,
+            Area localChunksEditingArea,
             bool updateMeshes = true)
         {
             _isAlreadyEditingChunks = true;
