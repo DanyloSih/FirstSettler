@@ -25,6 +25,7 @@ namespace World.Data
         public Vector3Int Size => _size;
         public int WidthAndHeight => _widthAndHeight;
         public int FullLength => _fullLength;
+        public Parallelepiped DataModel => _parallelepiped;
 
 
         public ThreedimensionalNativeArray(Vector3Int size) 

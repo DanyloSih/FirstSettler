@@ -248,7 +248,7 @@ namespace MarchingCubesProject
             for (int j = 0; j < trianglesCount; j++)
             {
                 TriangleAndMaterialHash newInfo = triangles[j];
-                if (newInfo.MaterialHash != 0)
+                if (materialKeyAndTriangleListAssociations.ContainsKey(newInfo.MaterialHash))
                 {
                     materialKeyAndTriangleListAssociations[newInfo.MaterialHash].Add(newInfo.Triangle);
                 }

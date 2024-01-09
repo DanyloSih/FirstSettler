@@ -699,8 +699,9 @@ PlayerSettings:
   webGLMemoryGeometricGrowthCap: 96
   webGLPowerPreference: 2
   scriptingDefineSymbols:
-    Standalone: ENABLE_FULL_STACKTRACES
-  additionalCompilerArguments: {}
+    Standalone: ENABLE_FULL_STACKTRACES;ENABLE_UNITY_COLLECTIONS_CHECKS
+  additionalCompilerArguments:
+    Standalone: []
   platformArchitecture: {}
   scriptingBackend: {}
   il2cppCompilerConfiguration: {}

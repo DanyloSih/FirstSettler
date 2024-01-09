@@ -1,10 +1,9 @@
 ﻿using System.Runtime.CompilerServices;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 namespace World.Organization
 {
-    public class ChunkCoordinatesCalculator
+    public struct ChunkCoordinatesCalculator
     {
         private Vector3Int _chunkSize;
         private Vector3 _scaledChunkSize;
