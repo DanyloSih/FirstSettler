@@ -20,7 +20,7 @@ namespace MarchingCubesProject
             _generationAlgorithmInfo = generationAlgorithmInfo;
         }
 
-        public abstract Task<MeshData> GenerateMeshData(ChunkData chunkData);
+        public abstract Task<MeshDataBuffer> GenerateMeshData(ChunkData chunkData);
         public abstract void Dispose();
     }
 }

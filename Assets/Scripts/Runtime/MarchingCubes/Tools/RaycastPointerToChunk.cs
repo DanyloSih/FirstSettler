@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using World.Organization;
 using World.Data;
+using Zenject;
 
 namespace MarchingCubesProject.Tools
 {
@@ -8,9 +9,15 @@ namespace MarchingCubesProject.Tools
     {
         [SerializeField] private Camera _rayThrowerCamera;
         [SerializeField] private float _maxRaycastDistance;
-        [SerializeField] private BasicChunkSettings _basicChunkSettings;
 
         private ChunkCoordinatesCalculator _chunkCoordinatesCalculator;
+        private BasicChunkSettings _basicChunkSettings;
+
+        [Inject]
+        public void Construct(BasicChunkSettings basicChunkSettings)
+        {
+            _basicChunkSettings = basicChunkSettings;
+        }
 
         protected void OnEnable()
         {

@@ -3,20 +3,19 @@ using SimpleHeirs;
 using System.Collections.Generic;
 using System;
 using World.Data;
-using FirstSettler.Extensions;
+using Zenject;
 
 namespace World.Organization
 {
-
     public class ChunksGridGenerator : MonoBehaviour
     {
         [SerializeField] private Transform _chunksRoot;
         [SerializeField] private HeirsProvider<IChunksContainer> _activeChunksContainerHeir;
         [SerializeField] private HeirsProvider<IChunkDataProvider> _chunksDataProviderHeir;
         [SerializeField] private HeirsProvider<IChunk> _chunkPrefabHeir;
-        [SerializeField] private BasicChunkSettings _basicChunkSettings;
         [SerializeField] private Vector3Int _chunksGridSize;
 
+        private BasicChunkSettings _basicChunkSettings;
         private List<(IChunk ChunkComponent, GameObject ChunkGameObject)> _chunksList
             = new List<(IChunk ChunkComponent, GameObject ChunkGameObject)>();
         private IChunksContainer _activeChunksContainer;
@@ -25,6 +24,14 @@ namespace World.Organization
         private Vector3Int _minPoint;
         private ChunkCoordinatesCalculator _chunkCoordinatesCalculator;
         private IMatrixWalker _matrixWalker;
+        private DiContainer _diContainer;
+
+        [Inject]
+        public void Construct(DiContainer diContainer, BasicChunkSettings basicChunkSettings)
+        {
+            _diContainer = diContainer;
+            _basicChunkSettings = basicChunkSettings;
+        }
 
         protected void OnEnable()
         {
@@ -51,7 +58,7 @@ namespace World.Organization
                 y -= _minPoint.y; 
                 z -= _minPoint.z;
                 Debug.Log($"{x} {y} {z}");
-                var instance = Instantiate(_chunkPrefabGO, _chunksRoot);
+                GameObject instance = _diContainer.InstantiatePrefab(_chunkPrefabGO, _chunksRoot);
                 IChunk chunk = instance.GetComponent(typeof(IChunk)) as IChunk;
                 _chunksList.Add(new(chunk, instance));
 
@@ -67,7 +74,6 @@ namespace World.Organization
                     throw new Exception("HASH COLLISSION!");
                 }
                 chunk.InitializeBasicData(
-                    _basicChunkSettings,
                     _chunksDataProvider.MaterialAssociations,
                     new Vector3Int(x, y, z),
                     chunkData);

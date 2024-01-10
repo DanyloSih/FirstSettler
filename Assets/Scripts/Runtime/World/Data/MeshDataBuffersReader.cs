@@ -1,16 +1,12 @@
 ﻿using System;
-using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Rendering;
 using Utilities.Threading;
-using static UnityEngine.Mesh;
 
 namespace World.Data
 {
     public class MeshDataBuffersReader : IDisposable
     {
-        private static MeshBuffers s_meshBuffers;
-
         private int _maxVerticesCount;
         private int[] _polygonsCount = new int[1];
         private int _currentVertices = 0;
@@ -21,15 +17,11 @@ namespace World.Data
         public MeshDataBuffersReader(int maxVerticesCount)
         {
             _maxVerticesCount = maxVerticesCount;
-            if (s_meshBuffers == null)
-            {
-                s_meshBuffers = new MeshBuffers(_maxVerticesCount);
-            }
         }
 
         public MeshBuffers CreateNewMeshBuffers()
         {
-            return s_meshBuffers;
+            return new MeshBuffers(_maxVerticesCount);
         }
 
         public void UpdatePolygonsCount(MeshBuffers meshBuffers)
@@ -41,13 +33,14 @@ namespace World.Data
             VerticesCount = PolygonsCount * 3;
         }
 
-        public async System.Threading.Tasks.Task<MeshData> ReadFromBuffersToMeshData(MeshBuffers meshBuffers)
+        public async System.Threading.Tasks.Task<MeshDataBuffer> ReadFromBuffersToMeshData(MeshBuffers meshBuffers)
         {
-            MeshData meshData = null;
-
+            MeshDataBuffer meshData = null;
             if (PolygonsCount != 0)
             {
-                meshData = new MeshData(VerticesCount);
+                meshData = new MeshDataBuffer(VerticesCount);
+                meshData.VerticesCount = VerticesCount;
+                meshData.VerticesCount = VerticesCount;
                 AsyncGPUReadbackRequest verticesRequest = AsyncGPUReadback.RequestIntoNativeArray(
                     ref meshData.VerticesCash, meshBuffers.VerticesBuffer, sizeof(float) * 3 * VerticesCount, 0);
 
@@ -61,7 +54,8 @@ namespace World.Data
             }
             else
             {
-                meshData = new MeshData(0);
+                meshData = new MeshDataBuffer(0);
+                meshData.VerticesCount = VerticesCount;
             }
 
             return meshData;
@@ -69,7 +63,7 @@ namespace World.Data
 
         public void Dispose()
         {
-            s_meshBuffers.DisposeAllBuffers();
+
         }
     }
 }

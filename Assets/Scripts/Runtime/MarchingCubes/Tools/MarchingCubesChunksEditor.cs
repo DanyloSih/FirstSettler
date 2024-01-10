@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using SimpleHeirs;
+﻿using SimpleHeirs;
 using UnityEngine;
 using World.Data;
 using World.Organization;
@@ -10,19 +9,25 @@ using Utilities.Math;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using System;
-using Cysharp.Threading.Tasks;
+using Zenject;
 
 namespace MarchingCubesProject.Tools
 {
     public class MarchingCubesChunksEditor : MonoBehaviour
     {
         [SerializeField] private HeirsProvider<IChunksContainer> _chunksContainerHeir;
-        [SerializeField] private BasicChunkSettings _basicChunkSettings;
 
         private ChunkCoordinatesCalculator _chunkCoordinatesCalculator;
         private Vector3Int _chunkSize;
         private IChunksContainer _chunksContainer;
         private bool _isAlreadyEditingChunks = false;
+        private BasicChunkSettings _basicChunkSettings;
+
+        [Inject]
+        public void Construct(BasicChunkSettings basicChunkSettings)
+        {
+            _basicChunkSettings = basicChunkSettings;
+        }
 
         protected void Awake()
         {
@@ -56,7 +61,7 @@ namespace MarchingCubesProject.Tools
             setVoxelsJob.ChunkDataModel = new Parallelepiped(_chunkSize + Vector3Int.one);
 
             JobHandle jobHandle = setVoxelsJob.Schedule(voxelsCount, 8);
-            await jobHandle.WaitAsync(PlayerLoopTiming.PreUpdate);
+            jobHandle.Complete();
 
             try
             {
@@ -163,6 +168,7 @@ namespace MarchingCubesProject.Tools
             {
                 var chunk = _chunksContainer.GetChunk(updatingChunk.Key);
                 await chunk.GenerateNewMeshData();
+                
             }
 
             foreach (var updatingChunk in affectedChunksDataPointers)

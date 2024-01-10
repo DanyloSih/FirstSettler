@@ -10,6 +10,7 @@ using UnityEngine;
 using Utilities.Math;
 using World.Data;
 using World.Organization;
+using Zenject;
 
 namespace MarchingCubesProject.Tools
 {
@@ -20,13 +21,19 @@ namespace MarchingCubesProject.Tools
         [SerializeField] private int _brushSize = 2;
         [SerializeField] private MaterialKey _drawMaterial;
         [SerializeField] private MarchingCubesChunksEditor _marchingCubesChunksEditor;
-        [SerializeField] private BasicChunkSettings _basicChunkSettings;
         [SerializeField] private HeirsProvider<IChunksContainer> _chunksContainerHeir;
 
         private Stopwatch _cooldownStopwatch = new Stopwatch();
         private int _drawMaterialHash;
         private Camera _mainCamera;
         private IChunksContainer _chunksContainer;
+        private BasicChunkSettings _basicChunkSettings;
+
+        [Inject]
+        public void Construct(BasicChunkSettings basicChunkSettings)
+        {
+            _basicChunkSettings = basicChunkSettings;
+        }
 
         protected void OnEnable()
         {

@@ -19,7 +19,6 @@ namespace World.Organization
         public ChunkData ChunkData { get; }
 
         public void InitializeBasicData(
-            BasicChunkSettings basicChunkSettings,
             MaterialKeyAndUnityMaterialAssociations materialKeyAndUnityMaterial,
             Vector3Int chunkPosition,
             ChunkData chunkData);

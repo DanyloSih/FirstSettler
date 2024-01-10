@@ -8,6 +8,7 @@ using World.Data;
 using System.Collections;
 using System.Threading.Tasks;
 using Unity.Collections;
+using Zenject;
 
 namespace MarchingCubesProject
 {
@@ -32,15 +33,23 @@ namespace MarchingCubesProject
         private string _meshName;
         private MarchingCubesAlgorithm _meshGenerationAlgorithm;
         private Mesh _cashedMesh;
-        private MeshData _cashedMeshData;
+        private MeshDataBuffer _cashedMeshData;
         private bool _isMeshDataApplying = false;
 
         public Vector3Int LocalPosition { get => _localPosition; }
         public ChunkData ChunkData { get => _chunkData; }
         public GameObject RootGameObject { get => gameObject; }
         public IMeshGenerationAlgorithm MeshGenerationAlgorithm
-            => _meshGenerationAlgorithm = _meshGenerationAlgorithm ?? new MarchingCubesAlgorithm(
+            => _meshGenerationAlgorithm;
+        
+
+        [Inject]
+        public void Construct(BasicChunkSettings basicChunkSettings)
+        {
+            _basicChunkSettings = basicChunkSettings;
+            _meshGenerationAlgorithm = new MarchingCubesAlgorithm(
                 _generationAlgorithmInfo, _meshGenerationComputeShader, _basicChunkSettings.Size, 0);
+        }
 
         protected void OnDestroy()
         {
@@ -57,7 +66,6 @@ namespace MarchingCubesProject
         }
 
         public void InitializeBasicData(
-            BasicChunkSettings basicChunkSettings, 
             MaterialKeyAndUnityMaterialAssociations materialKeyAndUnityMaterial, 
             Vector3Int chunkPosition, 
             ChunkData chunkData)
@@ -67,7 +75,6 @@ namespace MarchingCubesProject
             InitializeNames(chunkPosition);
 
             _materialAssociations = materialKeyAndUnityMaterial;
-            _basicChunkSettings = basicChunkSettings;
 
             InitializeMeshData();
 
@@ -105,9 +112,9 @@ namespace MarchingCubesProject
             _isMeshDataApplying = true;
             _cashedMesh.Clear();
 
-            ApplyVertices(ref _cashedMeshData.VerticesCash);
-            ApplyTriangles(ref _cashedMeshData.TrianglesCash);
-            ApplyUVs(ref _cashedMeshData.UVsCash);
+            ApplyVertices(_cashedMeshData.VerticesCash, _cashedMeshData.VerticesCount);
+            ApplyTriangles(_cashedMeshData.TrianglesCash, _cashedMeshData.VerticesCount);
+            ApplyUVs(_cashedMeshData.UVsCash, _cashedMeshData.VerticesCount);
             _cashedMesh.Optimize();
             _cashedMesh.RecalculateNormals(MeshUpdateFlags.DontResetBoneBounds);
             _currentMeshComponents.MeshFilter.transform.localPosition = Vector3.zero;
@@ -134,24 +141,24 @@ namespace MarchingCubesProject
             }
         }
 
-        private void ApplyVertices(ref NativeArray<Vector3> vertices)
+        private void ApplyVertices(NativeArray<Vector3> vertices, int verticesCount)
         {
-            if (vertices.Length == 0)
+            if (verticesCount == 0)
             {
                 return;
             }
 
-            _cashedMesh.SetVertices(vertices);
+            _cashedMesh.SetVertices(vertices, 0, verticesCount);
         }
 
-        private void ApplyTriangles(ref NativeArray<TriangleAndMaterialHash> nativeTriangles)
+        private void ApplyTriangles(NativeArray<TriangleAndMaterialHash> nativeTriangles, int verticesCount)
         {
-            if (nativeTriangles.Length == 0)
+            if (verticesCount == 0)
             {
                 return;
             }
 
-            var associations = CalculateMaterialKeyHashAndTriangleListAssociations(nativeTriangles);
+            var associations = CalculateMaterialKeyHashAndTriangleListAssociations(nativeTriangles, verticesCount);
             _cashedMesh.subMeshCount = associations
                 .Where(x => x.Value.Count > 2).Count();
             _currentMaterials.Clear();
@@ -182,14 +189,14 @@ namespace MarchingCubesProject
             _meshRenderer.materials = _currentMaterials.ToArray();
         }
 
-        private void ApplyUVs(ref NativeArray<Vector2> uvs)
+        private void ApplyUVs(NativeArray<Vector2> uvs, int verticesCount)
         {
-            if (uvs.Length == 0)
+            if (verticesCount == 0)
             {
                 return;
             }
 
-            _cashedMesh.SetUVs(0, uvs);
+            _cashedMesh.SetUVs(0, uvs, 0, verticesCount);
         }
 
         private IEnumerator UpdatePhysicsProcess(int verticesCount)
@@ -232,7 +239,7 @@ namespace MarchingCubesProject
         }
 
         private Dictionary<int, List<int>> CalculateMaterialKeyHashAndTriangleListAssociations(
-            NativeArray<TriangleAndMaterialHash> triangles)
+            NativeArray<TriangleAndMaterialHash> triangles, int verticesCount)
         {
             Dictionary<int, List<int>> materialKeyAndTriangleListAssociations
                 = new Dictionary<int, List<int>>(_materialAssociations.Count);
@@ -243,9 +250,7 @@ namespace MarchingCubesProject
                 materialKeyAndTriangleListAssociations.Add(item, new List<int>());
             }
 
-            int trianglesCount = triangles.Length;
-
-            for (int j = 0; j < trianglesCount; j++)
+            for (int j = 0; j < verticesCount; j++)
             {
                 TriangleAndMaterialHash newInfo = triangles[j];
                 if (materialKeyAndTriangleListAssociations.ContainsKey(newInfo.MaterialHash))
