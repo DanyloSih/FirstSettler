@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using FirstSettler.Extensions;
 using SimpleHeirs;
@@ -14,96 +13,6 @@ using World.Organization;
 
 namespace MarchingCubesProject.Tools
 {
-    public struct DeformMaskJob : IJobParallelFor
-    {
-        [ReadOnly] public Vector3Int offset;
-        [ReadOnly] public Vector3Int unscaledGlobalDataPoint;
-        [ReadOnly] public Parallelepiped editingParallelepiped;
-        [ReadOnly] public Parallelepiped chunkDataModel;
-        [ReadOnly] public Vector3Int chunkSize;
-        [ReadOnly] public int halfBrushSize;
-        [ReadOnly] public float deformFactor;
-        [ReadOnly] public int materialHash;
-        [ReadOnly] public NativeHashMap<long, IntPtr> chunksDataPointersInsideEditArea;
-
-        [WriteOnly] public NativeList<ChunkPoint>.ParallelWriter chunkPoints;
-        [WriteOnly] public int itemsCount;
-
-        public void Execute(int index)
-        {
-            Vector3Int pointerInArea = editingParallelepiped.IndexToVoxelPosition(index) + offset;
-            float unscaledDistance = pointerInArea.magnitude;
-            float deformForce = unscaledDistance / halfBrushSize;
-
-            if (unscaledDistance < halfBrushSize)
-            {
-                Vector3Int globalUnscaledDataPointPointer = unscaledGlobalDataPoint + pointerInArea;
-                Vector3Int pointedChunk = globalUnscaledDataPointPointer.GetElementwiseDividedVector(chunkSize);
-                Vector3Int pointedChunkData = globalUnscaledDataPointPointer.GetElementwiseDividingRemainder(chunkSize);
-                pointedChunkData = FixNegativePoint(pointedChunkData, chunkSize, out var chunkOffset);
-                pointedChunk += chunkOffset;
-
-                long chunkPositionHash = PositionHasher.GetPositionHash(
-                    pointedChunk.x, pointedChunk.y, pointedChunk.z);
-
-                if (!chunksDataPointersInsideEditArea.ContainsKey(chunkPositionHash))
-                {
-                    return;
-                }
-
-                IntPtr rawDataStartPointer = chunksDataPointersInsideEditArea[chunkPositionHash];
-                int chunkVoxelOffset = chunkDataModel.VoxelPositionToIndex(
-                    pointedChunk.x, pointedChunk.y, pointedChunk.z);
-
-                VoxelData data;
-
-                unsafe
-                {
-                    VoxelData* dataPointer = (VoxelData*)rawDataStartPointer.ToPointer();
-                    data = dataPointer[chunkVoxelOffset];
-                }
-
-                if (data.MaterialHash == 0)
-                {
-                    return;
-                }
-
-                float volume = Mathf.Clamp01(deformFactor);
-                int hash = data.MaterialHash;
-                if (volume > 0)
-                {
-                    hash = materialHash;
-                }
-                chunkPoints.AddNoResize(new ChunkPoint(pointedChunk, pointedChunkData, volume, hash));
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private Vector3Int FixNegativePoint(Vector3Int point, Vector3Int chunkSize, out Vector3Int chunkOffset)
-        {
-            chunkOffset = new Vector3Int();
-            if (point.x < 0)
-            {
-                point.x = chunkSize.x + point.x;
-                chunkOffset.x = -1;
-            }
-
-            if (point.y < 0)
-            {
-                point.y = chunkSize.y + point.y;
-                chunkOffset.y = -1;
-            }
-
-            if (point.z < 0)
-            {
-                point.z = chunkSize.z + point.z;
-                chunkOffset.z = -1;
-            }
-
-            return point;
-        }
-    }
-
     public class MarchingCubesDeformTool : MonoBehaviour
     {
         [SerializeField] private RaycastPointerToChunk _raycastPointerToChunk;
@@ -169,7 +78,7 @@ namespace MarchingCubesProject.Tools
             ChunkPoint initialDataPoint = _marchingCubesChunksEditor
                 .GetChunkDataPoint(globalChunkDataPoint);
 
-            if (initialDataPoint == default)
+            if (!initialDataPoint.IsInitialized)
             {
                 return;
             }
@@ -189,20 +98,28 @@ namespace MarchingCubesProject.Tools
                 = ChunksMath.GetChunksDataPointersInsideArea(editingArea, chunkSize, _chunksContainer);
 
             DeformMaskJob deformMaskJob = new DeformMaskJob();
-            deformMaskJob.deformFactor = deformFactor;
-            deformMaskJob.chunkDataModel = new Parallelepiped(chunkSize + Vector3Int.one);
-            deformMaskJob.chunksDataPointersInsideEditArea = chunksDataPointersInsideEditArea;
-            deformMaskJob.chunkSize = chunkSize;
-            deformMaskJob.editingParallelepiped = editingParallelepiped;
-            deformMaskJob.halfBrushSize = halfBrushSize;
-            deformMaskJob.materialHash = materialHash;
-            deformMaskJob.offset = offset;
-            deformMaskJob.unscaledGlobalDataPoint = unscaledGlobalDataPoint;
-            deformMaskJob.chunkPoints = chunkPoints.AsParallelWriter();
+            deformMaskJob.DeformFactor = deformFactor;
+            deformMaskJob.ChunkDataModel = new Parallelepiped(chunkSize + Vector3Int.one);
+            deformMaskJob.ChunksDataPointersInsideEditArea = chunksDataPointersInsideEditArea;
+            deformMaskJob.ChunkSize = chunkSize;
+            deformMaskJob.EditingParallelepiped = editingParallelepiped;
+            deformMaskJob.HalfBrushSize = halfBrushSize;
+            deformMaskJob.MaterialHash = materialHash;
+            deformMaskJob.Offset = offset;
+            deformMaskJob.UnscaledGlobalDataPoint = unscaledGlobalDataPoint;
+            deformMaskJob.ChunkPoints = chunkPoints.AsParallelWriter();
 
             var deformMaskJobHandler = deformMaskJob.Schedule(editingArea.Parallelepiped.Volume, 1);
             deformMaskJobHandler.Complete();
 
+            List<int> debugMat = new List<int>();
+            foreach (var point in chunkPoints)
+            {
+                if (point.MaterialHash != 0 && point.MaterialHash != materialHash)
+                {
+                    debugMat.Add(point.MaterialHash);
+                }
+            }
 
             await _marchingCubesChunksEditor.SetVoxels(
                 chunkPoints.AsArray(),

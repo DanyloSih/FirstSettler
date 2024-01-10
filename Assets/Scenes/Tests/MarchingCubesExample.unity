@@ -866,7 +866,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _raycastPointerToChunk: {fileID: 1678089597}
   _deformForce: 0.4
-  _brushSize: 16
+  _brushSize: 5
   _drawMaterial: {fileID: 11400000, guid: 0341ba40e1383834692bb53bf930b235, type: 2}
   _marchingCubesChunksEditor: {fileID: 1196743667}
   _basicChunkSettings: {fileID: 11400000, guid: fef79431f067b8346aaa6fbb3ebd2d14,

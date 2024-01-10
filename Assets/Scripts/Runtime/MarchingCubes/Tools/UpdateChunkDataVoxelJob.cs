@@ -19,6 +19,11 @@ namespace MarchingCubesProject.Tools
         public void Execute(int index)
         {
             ChunkPoint chunkVoxel = NewVoxels[index];
+            if (!chunkVoxel.IsInitialized)
+            {
+                return;
+            }
+
             Vector3Int localChunkPosition = chunkVoxel.LocalChunkPosition.FloorToVector3Int();
             Vector3Int localChunkDataPoint = chunkVoxel.LocalChunkDataPoint.FloorToVector3Int();
 

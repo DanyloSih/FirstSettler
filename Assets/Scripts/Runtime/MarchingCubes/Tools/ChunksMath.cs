@@ -15,9 +15,9 @@ namespace MarchingCubesProject.Tools
             Area area, Vector3Int chunksSize, IChunksContainer chunksContainer)
         {
             Vector3Int affectedAreaSize = area.Parallelepiped.Size;
-            int maxXChunks = affectedAreaSize.x / chunksSize.x + affectedAreaSize.x % chunksSize.x == 0 ? 0 : 1;
-            int maxYChunks = affectedAreaSize.y / chunksSize.y + affectedAreaSize.y % chunksSize.y == 0 ? 0 : 1;
-            int maxZChunks = affectedAreaSize.z / chunksSize.z + affectedAreaSize.z % chunksSize.z == 0 ? 0 : 1;
+            int maxXChunks = affectedAreaSize.x / chunksSize.x + 1;
+            int maxYChunks = affectedAreaSize.y / chunksSize.y + 1;
+            int maxZChunks = affectedAreaSize.z / chunksSize.z + 1;
             int maxAffectedChunksCount = maxXChunks * maxYChunks * maxZChunks;
 
             NativeHashMap<long, IntPtr> pointers

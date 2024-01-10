@@ -9,6 +9,8 @@ namespace MarchingCubesProject.Tools
         public float Volume;
         public int MaterialHash;
 
+        public bool IsInitialized { get; private set; }
+
         public ChunkPoint(
             Vector3 localChunkPosition,
             Vector3 localChunkDataPoint,
@@ -19,6 +21,7 @@ namespace MarchingCubesProject.Tools
             LocalChunkDataPoint = localChunkDataPoint;
             Volume = volume;
             MaterialHash = materialHash;
+            IsInitialized = true;
         }
 
         public static bool operator ==(ChunkPoint left, ChunkPoint right)
