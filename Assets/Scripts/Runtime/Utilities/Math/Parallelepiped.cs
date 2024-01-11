@@ -5,9 +5,11 @@ namespace Utilities.Math
 {
     public struct Parallelepiped
     {
-        private Vector3Int _size;
-        private Vector3Int _extents;
-        private int _volume;
+        private readonly Vector3Int _size;
+        private readonly Vector3Int _extents;
+        private readonly int _volume;
+        private readonly int _width;
+        private readonly int _widthAndHeight;
 
         public Vector3Int Size 
         {
@@ -29,9 +31,6 @@ namespace Utilities.Math
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _widthAndHeight; 
         }
-
-        private int _width;
-        private int _widthAndHeight;
 
         public Parallelepiped(Vector3Int size)
         {

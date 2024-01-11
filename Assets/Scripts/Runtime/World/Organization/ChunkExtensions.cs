@@ -5,12 +5,11 @@ namespace World.Organization
 {
     public static class ChunkExtensions
     {
-        public static long GetUniqueIndex(this IChunk chunk)
+        public static int GetUniqueIndex(this IChunk chunk)
         {
             Vector3Int chunkPosition = chunk.LocalPosition;
 
-            var index = PositionHasher.GetPositionHash(
-                chunkPosition.x, chunkPosition.y, chunkPosition.z);
+            int index = PositionHasher.GetPositionHash(chunkPosition);
 
             return index;
         }

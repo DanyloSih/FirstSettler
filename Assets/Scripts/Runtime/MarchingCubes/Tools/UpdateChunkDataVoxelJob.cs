@@ -14,7 +14,7 @@ namespace MarchingCubesProject.Tools
         [ReadOnly] public Vector3Int ChunkSize;
         [ReadOnly] public Parallelepiped ChunkDataModel;
         [ReadOnly] public NativeArray<ChunkPoint> NewVoxels;
-        [ReadOnly] public NativeHashMap<long, IntPtr> AffectedChunksDataPointers;
+        [ReadOnly] public NativeHashMap<int, IntPtr> AffectedChunksDataPointers;
 
         public void Execute(int index)
         {
@@ -49,8 +49,7 @@ namespace MarchingCubesProject.Tools
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ApplyVoxelData(Vector3Int localChunkPosition, Vector3Int localChunkDataPoint, VoxelData voxelData)
         {
-            long positionHash = PositionHasher.GetPositionHash(
-                    localChunkPosition.x, localChunkPosition.y, localChunkPosition.z);
+            int positionHash = PositionHasher.GetPositionHash(localChunkPosition);
 
             if (AffectedChunksDataPointers.ContainsKey(positionHash))
             {

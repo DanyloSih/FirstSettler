@@ -20,7 +20,7 @@ namespace MarchingCubesProject.Tools
         [ReadOnly] public int HalfBrushSize;
         [ReadOnly] public float DeformFactor;
         [ReadOnly] public int MaterialHash;
-        [ReadOnly] public NativeHashMap<long, IntPtr> ChunksDataPointersInsideEditArea;
+        [ReadOnly] public NativeHashMap<int, IntPtr> ChunksDataPointersInsideEditArea;
 
         [WriteOnly] public NativeList<ChunkPoint>.ParallelWriter ChunkPoints;
         [WriteOnly] public int ItemsCount;
@@ -39,9 +39,7 @@ namespace MarchingCubesProject.Tools
                 pointedChunkData = FixNegativePoint(pointedChunkData, ChunkSize, out var chunkOffset);
                 pointedChunk += chunkOffset;
 
-                long chunkPositionHash = PositionHasher.GetPositionHash(
-                    pointedChunk.x, pointedChunk.y, pointedChunk.z);
-
+                int chunkPositionHash = PositionHasher.GetPositionHash(pointedChunk);
                 IntPtr rawDataStartPointer;
                 if (!ChunksDataPointersInsideEditArea.TryGetValue(chunkPositionHash, out rawDataStartPointer))
                 {

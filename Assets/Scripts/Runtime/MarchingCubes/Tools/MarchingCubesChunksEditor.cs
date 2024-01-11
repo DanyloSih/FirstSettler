@@ -50,7 +50,7 @@ namespace MarchingCubesProject.Tools
         public async Task SetVoxels(
             NativeArray<ChunkPoint> newVoxels,
             int voxelsCount,
-            NativeHashMap<long, IntPtr> chunksDataPointersInsideEditArea,
+            NativeHashMap<int, IntPtr> chunksDataPointersInsideEditArea,
             bool updateMeshes = true)
         {
             _isAlreadyEditingChunks = true;
@@ -141,7 +141,7 @@ namespace MarchingCubesProject.Tools
                         int localChunkX = x / chunksSize.x;
                         int localChunkY = y / chunksSize.y;
                         int localChunkZ = z / chunksSize.z;
-                        long positionHash = PositionHasher.GetPositionHash(localChunkX, localChunkY, localChunkZ);
+                        int positionHash = PositionHasher.GetPositionHash(localChunkX, localChunkY, localChunkZ);
                         IChunk chunk = chunksContainer.GetChunk(positionHash);
 
                         if (chunk == null)
@@ -161,7 +161,7 @@ namespace MarchingCubesProject.Tools
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private async Task UpdateMeshes(NativeHashMap<long, IntPtr> affectedChunksDataPointers)
+        private async Task UpdateMeshes(NativeHashMap<int, IntPtr> affectedChunksDataPointers)
         {
             foreach (var updatingChunk in affectedChunksDataPointers)
             {

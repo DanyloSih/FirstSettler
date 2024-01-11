@@ -16,7 +16,7 @@ namespace World.Organization
         private static readonly int s_maxChunkID = MAX_CHUNK_ID_IN_ONE_DIRECTION;
         private static readonly int s_maxChunkIDSquared = s_maxChunkID * s_maxChunkID;
 
-        private Dictionary<long, IChunk> _chunks = new Dictionary<long, IChunk>();
+        private Dictionary<int, IChunk> _chunks = new Dictionary<int, IChunk>();
 
         public int MaxCoordinateValue { get => MAX_CHUNK_ID_IN_ONE_DIRECTION; }
         public int MinCoordinate { get => -MAX_CHUNK_ID_IN_ONE_DIRECTION; }
@@ -53,7 +53,7 @@ namespace World.Organization
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IChunk GetChunk(long positionHash)
+        public IChunk GetChunk(int positionHash)
         {
             if (_chunks.TryGetValue(positionHash, out var result))
             {

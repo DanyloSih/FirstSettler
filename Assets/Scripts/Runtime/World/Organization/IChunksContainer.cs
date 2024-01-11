@@ -23,7 +23,7 @@
         /// CAN RETURN NULL!<br/>
         /// Returns chunk by its local position in chunks list hash.
         /// </summary>
-        public IChunk GetChunk(long positionHash);
+        public IChunk GetChunk(int positionHash);
 
         /// <summary>
         /// THIS MEHTOD DON'T CHECK IS OTHER CHUNK AT THIS POSITION ALREADY EXIST!<br/>

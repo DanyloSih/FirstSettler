@@ -103,7 +103,7 @@ namespace MarchingCubesProject.Tools
             Area editingArea = new Area(editingParallelepiped, unscaledGlobalDataPoint);
 
             NativeList<ChunkPoint> chunkPoints = new NativeList<ChunkPoint>(editingParallelepiped.Volume, Allocator.Persistent);
-            NativeHashMap<long, IntPtr> chunksDataPointersInsideEditArea 
+            NativeHashMap<int, IntPtr> chunksDataPointersInsideEditArea 
                 = ChunksMath.GetChunksDataPointersInsideArea(editingArea, chunkSize, _chunksContainer);
 
             DeformMaskJob deformMaskJob = new DeformMaskJob();
