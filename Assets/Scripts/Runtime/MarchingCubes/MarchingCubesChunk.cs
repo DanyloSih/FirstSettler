@@ -53,12 +53,13 @@ namespace MarchingCubesProject
 
         protected void OnDestroy()
         {
+            TryDisposeCahsedMeshData();
+
             if (ChunkData != null)
             {
                 ChunkData.Dispose();
             }
 
-            TryDisposeCahsedMeshData();
             if (_meshGenerationAlgorithm != null)
             {
                 MeshGenerationAlgorithm.Dispose();
@@ -111,20 +112,22 @@ namespace MarchingCubesProject
             }
             _isMeshDataApplying = true;
             _cashedMesh.Clear();
-
+            int verticesCount = _cashedMeshData.VerticesCash.Length;
             ApplyVertices(_cashedMeshData.VerticesCash, _cashedMeshData.VerticesCount);
             ApplyTriangles(_cashedMeshData.TrianglesCash, _cashedMeshData.VerticesCount);
             ApplyUVs(_cashedMeshData.UVsCash, _cashedMeshData.VerticesCount);
+            TryDisposeCahsedMeshData();
+
             _cashedMesh.Optimize();
             _cashedMesh.RecalculateNormals(MeshUpdateFlags.DontResetBoneBounds);
+
             _currentMeshComponents.MeshFilter.transform.localPosition = Vector3.zero;
             if (_updatePhysicsCoroutine == null)
             {
-                int verticesCount = _cashedMeshData.VerticesCash.Length;
                 _updatePhysicsCoroutine = StartCoroutine(UpdatePhysicsProcess(verticesCount));
             }
 
-            TryDisposeCahsedMeshData();
+            
         }
 
         public bool IsMeshDataApplying()

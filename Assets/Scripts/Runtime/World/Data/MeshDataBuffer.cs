@@ -19,23 +19,10 @@ namespace World.Data
         }
 
         public void DisposeAllArrays()
-        {      
-            if (VerticesCash != default && !VerticesCash.Equals(null))
-            {
-                VerticesCash.Dispose();
-            }
-
-            if (TrianglesCash != default && !TrianglesCash.Equals(null))
-            {
-                TrianglesCash.Dispose();
-            }
-
-            if (UVsCash != default && !UVsCash.Equals(null))
-            {
-                UVsCash.Dispose();
-            }
-
-            VerticesCount = 0;
+        {
+            VerticesCash.Dispose();
+            TrianglesCash.Dispose();
+            UVsCash.Dispose();
         }
     }
 }

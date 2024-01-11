@@ -2,12 +2,14 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 using FirstSettler.Extensions;
 using SimpleHeirs;
 using Unity.Collections;
 using Unity.Jobs;
 using UnityEngine;
 using Utilities.Math;
+using Utilities.Threading;
 using World.Data;
 using World.Organization;
 using Zenject;
@@ -116,7 +118,8 @@ namespace MarchingCubesProject.Tools
             deformMaskJob.UnscaledGlobalDataPoint = unscaledGlobalDataPoint;
             deformMaskJob.ChunkPoints = chunkPoints.AsParallelWriter();
 
-            var deformMaskJobHandler = deformMaskJob.Schedule(editingArea.Parallelepiped.Volume, 1);
+            JobHandle deformMaskJobHandler = deformMaskJob.Schedule(editingArea.Parallelepiped.Volume, 1);
+            await AsyncUtilities.WaitWhile(() => !deformMaskJobHandler.IsCompleted);
             deformMaskJobHandler.Complete();
 
             List<int> debugMat = new List<int>();

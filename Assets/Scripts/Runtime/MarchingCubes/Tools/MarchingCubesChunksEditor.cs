@@ -10,6 +10,8 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using System;
 using Zenject;
+using Utilities.Threading;
+using Cysharp.Threading.Tasks;
 
 namespace MarchingCubesProject.Tools
 {
@@ -61,6 +63,7 @@ namespace MarchingCubesProject.Tools
             setVoxelsJob.ChunkDataModel = new Parallelepiped(_chunkSize + Vector3Int.one);
 
             JobHandle jobHandle = setVoxelsJob.Schedule(voxelsCount, 8);
+            await AsyncUtilities.WaitWhile(() => !jobHandle.IsCompleted);
             jobHandle.Complete();
 
             try
