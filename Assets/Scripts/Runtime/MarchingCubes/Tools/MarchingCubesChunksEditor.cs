@@ -11,7 +11,6 @@ using Unity.Collections.LowLevel.Unsafe;
 using System;
 using Zenject;
 using Utilities.Threading;
-using Cysharp.Threading.Tasks;
 
 namespace MarchingCubesProject.Tools
 {
@@ -95,9 +94,8 @@ namespace MarchingCubesProject.Tools
 
             if (chunk != null)
             {
-                var voxelData = chunk.ChunkData.GetVoxelData(
-                    localChunkDataPoint.x, localChunkDataPoint.y, localChunkDataPoint.z);
-                return new ChunkPoint(localChunkPosition, localChunkDataPoint, voxelData.Volume, voxelData.MaterialHash);
+                VoxelData voxelData = chunk.ChunkData.GetVoxelData(localChunkDataPoint);
+                return new ChunkPoint(localChunkPosition, localChunkDataPoint, voxelData);
             }
             else
             {
@@ -117,10 +115,8 @@ namespace MarchingCubesProject.Tools
                 return default;
             }
 
-            var voxelData = chunk.ChunkData.GetVoxelData(
-                    localChunkDataPoint.x, localChunkDataPoint.y, localChunkDataPoint.z);
-
-            return new ChunkPoint(localChunkPosition, localChunkDataPoint, voxelData.Volume, voxelData.MaterialHash);
+            var voxelData = chunk.ChunkData.GetVoxelData(localChunkDataPoint);
+            return new ChunkPoint(localChunkPosition, localChunkDataPoint, voxelData);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

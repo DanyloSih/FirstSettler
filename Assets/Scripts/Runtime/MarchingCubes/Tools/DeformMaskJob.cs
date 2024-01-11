@@ -48,8 +48,7 @@ namespace MarchingCubesProject.Tools
                     return;
                 }
 
-                int chunkVoxelOffset = ChunkDataModel.VoxelPositionToIndex(
-                    pointedChunkData.x, pointedChunkData.y, pointedChunkData.z);
+                int chunkVoxelOffset = ChunkDataModel.VoxelPositionToIndex(pointedChunkData);
 
                 VoxelData data;
                 unsafe
@@ -63,9 +62,9 @@ namespace MarchingCubesProject.Tools
                     return;
                 }
 
-                float volume = Mathf.Clamp01(DeformFactor);
+                data.Volume = Mathf.Clamp01(DeformFactor);
 
-                ChunkPoints.AddNoResize(new ChunkPoint(pointedChunk, pointedChunkData, volume, MaterialHash));
+                ChunkPoints.AddNoResize(new ChunkPoint(pointedChunk, pointedChunkData, data));
             }
         }
 

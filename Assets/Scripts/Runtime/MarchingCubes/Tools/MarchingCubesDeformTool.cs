@@ -122,15 +122,6 @@ namespace MarchingCubesProject.Tools
             await AsyncUtilities.WaitWhile(() => !deformMaskJobHandler.IsCompleted);
             deformMaskJobHandler.Complete();
 
-            List<int> debugMat = new List<int>();
-            foreach (var point in chunkPoints)
-            {
-                if (point.MaterialHash != 0 && point.MaterialHash != materialHash)
-                {
-                    debugMat.Add(point.MaterialHash);
-                }
-            }
-
             await _marchingCubesChunksEditor.SetVoxels(
                 chunkPoints.AsArray(),
                 chunkPoints.Length, 

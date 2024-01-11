@@ -68,6 +68,13 @@ namespace World.Data
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public VoxelData GetVoxelData(Vector3Int voxelLocalPosition)
+        {
+            return _voxelsData.GetValue(
+                voxelLocalPosition.x, voxelLocalPosition.y, voxelLocalPosition.z);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetVoxelData(int x, int y, int z, VoxelData value)
         {
             _voxelsData.SetValue(x, y, z, value);

@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using World.Data;
 
 namespace MarchingCubesProject.Tools
 {
@@ -6,21 +7,17 @@ namespace MarchingCubesProject.Tools
     {
         public Vector3 LocalChunkPosition;
         public Vector3 LocalChunkDataPoint;
-        public float Volume;
-        public int MaterialHash;
-
-        public bool IsInitialized { get; private set; }
+        public VoxelData VoxelData;
+        public bool IsInitialized;
 
         public ChunkPoint(
             Vector3 localChunkPosition,
             Vector3 localChunkDataPoint,
-            float volume,
-            int materialHash)
+            VoxelData voxelData)
         {
             LocalChunkPosition = localChunkPosition;
             LocalChunkDataPoint = localChunkDataPoint;
-            Volume = volume;
-            MaterialHash = materialHash;
+            VoxelData = voxelData;
             IsInitialized = true;
         }
 
@@ -28,8 +25,7 @@ namespace MarchingCubesProject.Tools
         {
             return left.LocalChunkPosition == right.LocalChunkPosition 
                 && left.LocalChunkDataPoint == right.LocalChunkDataPoint
-                && left.Volume == right.Volume
-                && left.MaterialHash == right.MaterialHash;
+                && left.VoxelData == right.VoxelData;
         }
 
         public static bool operator !=(ChunkPoint left, ChunkPoint right)

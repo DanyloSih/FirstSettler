@@ -27,41 +27,43 @@ namespace MarchingCubesProject.Tools
             Vector3Int localChunkPosition = chunkVoxel.LocalChunkPosition.FloorToVector3Int();
             Vector3Int localChunkDataPoint = chunkVoxel.LocalChunkDataPoint.FloorToVector3Int();
 
-            NativeList<AffectedNeighborData> affectedNeighborsDataBuffer = GetAffectedNeighborsData(
-                localChunkPosition, localChunkDataPoint, out int elementsCount);
-
-            for (int i = 0; i < elementsCount; i++)
+            if (ChunkDataModel.IsSurfacePoint(localChunkDataPoint))
             {
-                localChunkPosition = affectedNeighborsDataBuffer[i].AffectedLocalChunkPosition;
-                localChunkDataPoint = affectedNeighborsDataBuffer[i].AffectedLocalChunkDataPoint;
+                NativeList<AffectedNeighborData> affectedNeighborsDataBuffer = GetAffectedNeighborsData(
+                    localChunkPosition, localChunkDataPoint, out int elementsCount);
 
-                long positionHash = PositionHasher.GetPositionHash(
+                for (int i = 0; i < elementsCount; i++)
+                {
+                    localChunkPosition = affectedNeighborsDataBuffer[i].AffectedLocalChunkPosition;
+                    localChunkDataPoint = affectedNeighborsDataBuffer[i].AffectedLocalChunkDataPoint;
+                    ApplyVoxelData(localChunkPosition, localChunkDataPoint, chunkVoxel.VoxelData);
+                }
+                affectedNeighborsDataBuffer.Dispose();
+            }
+            else
+            {
+                ApplyVoxelData(localChunkPosition, localChunkDataPoint, chunkVoxel.VoxelData);
+            }   
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void ApplyVoxelData(Vector3Int localChunkPosition, Vector3Int localChunkDataPoint, VoxelData voxelData)
+        {
+            long positionHash = PositionHasher.GetPositionHash(
                     localChunkPosition.x, localChunkPosition.y, localChunkPosition.z);
 
-                if (!AffectedChunksDataPointers.ContainsKey(positionHash))
-                {
-                    continue;
-                }
-
+            if (AffectedChunksDataPointers.ContainsKey(positionHash))
+            {
                 IntPtr rawDataStartPointer = AffectedChunksDataPointers[positionHash];
-   
-                var voxelData = new VoxelData()
-                {
-                    Volume = chunkVoxel.Volume,
-                    MaterialHash = chunkVoxel.MaterialHash
-                };
 
-                int voxelDataOffset = ChunkDataModel.VoxelPositionToIndex(
-                    localChunkDataPoint.x, localChunkDataPoint.y, localChunkDataPoint.z);
+                int voxelDataOffset = ChunkDataModel.VoxelPositionToIndex(localChunkDataPoint);
 
                 unsafe
                 {
                     VoxelData* dataPointer = (VoxelData*)rawDataStartPointer.ToPointer();
                     dataPointer[voxelDataOffset] = voxelData;
                 }
-            }
-
-            affectedNeighborsDataBuffer.Dispose();
+            }  
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -106,8 +108,7 @@ namespace MarchingCubesProject.Tools
 
                 if (!IsChunkDataInBuffer(count, tmpChunkDataPoint, affectedNeighborsData))
                 {
-                    affectedNeighborsData.Add(new AffectedNeighborData(
-                        affectMask, tmpLocalChunkPosition, tmpChunkDataPoint));
+                    affectedNeighborsData.Add(new AffectedNeighborData(tmpLocalChunkPosition, tmpChunkDataPoint));
 
                     count++;
                 }
