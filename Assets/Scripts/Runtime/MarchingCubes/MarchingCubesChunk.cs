@@ -39,8 +39,6 @@ namespace MarchingCubesProject
         public Vector3Int LocalPosition { get => _localPosition; }
         public ChunkData ChunkData { get => _chunkData; }
         public GameObject RootGameObject { get => gameObject; }
-        public IMeshGenerationAlgorithm MeshGenerationAlgorithm
-            => _meshGenerationAlgorithm;
         
 
         [Inject]
@@ -62,7 +60,7 @@ namespace MarchingCubesProject
 
             if (_meshGenerationAlgorithm != null)
             {
-                MeshGenerationAlgorithm.Dispose();
+                _meshGenerationAlgorithm.Dispose();
             }
         }
 
@@ -97,9 +95,8 @@ namespace MarchingCubesProject
                     $"chunk using this method: {nameof(InitializeBasicData)}");
             }
 
-            TryDisposeCahsedMeshData();
-            _cashedMesh = _currentMeshComponents.MeshFilter.mesh;
-            _cashedMeshData = await MeshGenerationAlgorithm.GenerateMeshData(_chunkData);
+            TryDisposeCahsedMeshData();    
+            _cashedMeshData = await _meshGenerationAlgorithm.GenerateMeshData(_chunkData);
         }
 
         public void ApplyMeshData()
@@ -111,6 +108,7 @@ namespace MarchingCubesProject
                     $"should invoke {nameof(GenerateNewMeshData)} method!");
             }
             _isMeshDataApplying = true;
+            _cashedMesh = _currentMeshComponents.MeshFilter.mesh;
             _cashedMesh.Clear();
             int verticesCount = _cashedMeshData.VerticesCash.Length;
             ApplyVertices(_cashedMeshData.VerticesCash, _cashedMeshData.VerticesCount);

@@ -86,10 +86,7 @@ namespace World.Data
                 _voxelsBuffer.Dispose();
             }
 
-            if (_voxelsData.RawData.IsCreated)
-            {
-                _voxelsData.RawData.Dispose();
-            }
+            _voxelsData.RawData.Dispose();
         }
     }
 }

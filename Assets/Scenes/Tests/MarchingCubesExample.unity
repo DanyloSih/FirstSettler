@@ -628,7 +628,8 @@ MonoBehaviour:
       type: 3}
     _targetObject: {fileID: 1000216450}
     _isFolded: 1
-  _chunksGridSize: {x: 22, y: 5, z: 22}
+  _chunksGridSize: {x: 15, y: 5, z: 15}
+  _chunksPerCall: 40
   references:
     version: 2
     RefIds:

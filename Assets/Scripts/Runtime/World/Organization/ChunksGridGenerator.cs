@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System;
 using World.Data;
 using Zenject;
+using System.Threading.Tasks;
 
 namespace World.Organization
 {
@@ -14,6 +15,7 @@ namespace World.Organization
         [SerializeField] private HeirsProvider<IChunkDataProvider> _chunksDataProviderHeir;
         [SerializeField] private HeirsProvider<IChunk> _chunkPrefabHeir;
         [SerializeField] private Vector3Int _chunksGridSize;
+        [SerializeField] private int _chunksPerCall = 3;
 
         private BasicChunkSettings _basicChunkSettings;
         private List<(IChunk ChunkComponent, GameObject ChunkGameObject)> _chunksList
@@ -53,40 +55,52 @@ namespace World.Organization
 
         private async void InitializeChunks()
         {
+            List<Task> generationTasks = new List<Task>();
             await _matrixWalker.WalkMatrix(_chunksGridSize, async (x, y, z) => {
-                x -= _minPoint.x; 
-                y -= _minPoint.y; 
-                z -= _minPoint.z;
-                Debug.Log($"{x} {y} {z}");
-                GameObject instance = _diContainer.InstantiatePrefab(_chunkPrefabGO, _chunksRoot);
-                IChunk chunk = instance.GetComponent(typeof(IChunk)) as IChunk;
-                _chunksList.Add(new(chunk, instance));
-
-                var chunkData = new ChunkData(_basicChunkSettings.Size);
-                await _chunksDataProvider.FillChunkData(chunkData, x, y, z);
-
-                if (!_activeChunksContainer.IsChunkExist(x, y, z))
+                if (generationTasks.Count >= _chunksPerCall)
                 {
-                    _activeChunksContainer.AddChunk(x, y, z, chunk);
+                    await Task.WhenAll(generationTasks);
+                    generationTasks.Clear();
                 }
-                else
-                {
-                    throw new Exception("HASH COLLISSION!");
-                }
-                chunk.InitializeBasicData(
-                    _chunksDataProvider.MaterialAssociations,
-                    new Vector3Int(x, y, z),
-                    chunkData);
 
-                await chunk.GenerateNewMeshData();
-                chunk.ApplyMeshData();
-
-                chunk.RootGameObject.transform.localScale
-                    = Vector3.one * _basicChunkSettings.Scale;
-
-                chunk.RootGameObject.transform.position
-                    = _chunkCoordinatesCalculator.GetGlobalChunkPositionByLocal(new Vector3Int(x, y, z));
+                generationTasks.Add(GenerateChunk(x, y, z));
             });
+        }
+
+        private async Task GenerateChunk(int x, int y, int z)
+        {
+            x -= _minPoint.x;
+            y -= _minPoint.y;
+            z -= _minPoint.z;
+            Debug.Log($"{x} {y} {z}");
+            GameObject instance = _diContainer.InstantiatePrefab(_chunkPrefabGO, _chunksRoot);
+            IChunk chunk = instance.GetComponent(typeof(IChunk)) as IChunk;
+            _chunksList.Add(new(chunk, instance));
+
+            var chunkData = new ChunkData(_basicChunkSettings.Size);
+            await _chunksDataProvider.FillChunkData(chunkData, x, y, z);
+
+            if (!_activeChunksContainer.IsChunkExist(x, y, z))
+            {
+                _activeChunksContainer.AddChunk(x, y, z, chunk);
+            }
+            else
+            {
+                throw new Exception("HASH COLLISSION!");
+            }
+            chunk.InitializeBasicData(
+                _chunksDataProvider.MaterialAssociations,
+                new Vector3Int(x, y, z),
+                chunkData);
+
+            await chunk.GenerateNewMeshData();
+            chunk.ApplyMeshData();
+
+            chunk.RootGameObject.transform.localScale
+                = Vector3.one * _basicChunkSettings.Scale;
+
+            chunk.RootGameObject.transform.position
+                = _chunkCoordinatesCalculator.GetGlobalChunkPositionByLocal(new Vector3Int(x, y, z));
         }
 
         private void DestroyOldChunks()

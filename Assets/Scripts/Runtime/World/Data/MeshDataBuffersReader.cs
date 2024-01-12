@@ -40,7 +40,6 @@ namespace World.Data
             {
                 meshData = new MeshDataBuffer(VerticesCount);
                 meshData.VerticesCount = VerticesCount;
-                meshData.VerticesCount = VerticesCount;
                 AsyncGPUReadbackRequest verticesRequest = AsyncGPUReadback.RequestIntoNativeArray(
                     ref meshData.VerticesCash, meshBuffers.VerticesBuffer, sizeof(float) * 3 * VerticesCount, 0);
 
@@ -55,7 +54,7 @@ namespace World.Data
             else
             {
                 meshData = new MeshDataBuffer(0);
-                meshData.VerticesCount = VerticesCount;
+                meshData.VerticesCount = 0;
             }
 
             return meshData;

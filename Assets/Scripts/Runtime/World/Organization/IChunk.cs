@@ -6,7 +6,6 @@ namespace World.Organization
 {
     public interface IChunk
     {
-        public IMeshGenerationAlgorithm MeshGenerationAlgorithm { get; }
         public GameObject RootGameObject { get; }
         /// <summary>
         /// Coordinates of the chunk relative to other chunks.<br/>

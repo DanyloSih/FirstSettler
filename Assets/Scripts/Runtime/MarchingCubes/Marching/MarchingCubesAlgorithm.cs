@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 using UnityEngine;
+using Utilities.Threading;
 using World.Data;
 
 namespace MarchingCubesProject
@@ -8,6 +9,7 @@ namespace MarchingCubesProject
     {
         private ComputeShader _meshGenerationComputeShader;
         private MeshDataBuffersReader _meshDataBuffersReader;
+        private bool _isAlreadyGeneratingData;
 
         public MarchingCubesAlgorithm(
 			GenerationAlgorithmInfo generationAlgorithmInfo, 
@@ -48,7 +50,7 @@ namespace MarchingCubesProject
                 kernelId, voxels.Width - 1, voxels.Height - 1, voxels.Depth - 1);
 
             _meshDataBuffersReader.UpdatePolygonsCount(meshBuffers);
-            var result = await _meshDataBuffersReader.ReadFromBuffersToMeshData(meshBuffers);
+            MeshDataBuffer result = await _meshDataBuffersReader.ReadFromBuffersToMeshData(meshBuffers);
             meshBuffers.DisposeAllBuffers();
             return result;
         }

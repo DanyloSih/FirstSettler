@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
-using Cysharp.Threading.Tasks;
 using FirstSettler.Extensions;
 using SimpleHeirs;
 using Unity.Collections;
@@ -57,7 +55,7 @@ namespace MarchingCubesProject.Tools
             {
                 await ThrowRayAndDeform(0);
             }
-            else if (Input.GetMouseButtonDown(0))
+            else if (Input.GetMouseButton(0))
             {
                 await ThrowRayAndDeform(-Mathf.Abs(_deformForce));
             }
@@ -126,6 +124,9 @@ namespace MarchingCubesProject.Tools
                 chunkPoints.AsArray(),
                 chunkPoints.Length, 
                 chunksDataPointersInsideEditArea);
+
+            chunkPoints.Dispose();
+            chunksDataPointersInsideEditArea.Dispose();
         }
     }
 }
