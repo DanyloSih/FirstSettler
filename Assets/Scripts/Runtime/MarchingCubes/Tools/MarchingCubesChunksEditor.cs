@@ -11,6 +11,7 @@ using Unity.Collections.LowLevel.Unsafe;
 using System;
 using Zenject;
 using Utilities.Threading;
+using System.Collections.Generic;
 
 namespace MarchingCubesProject.Tools
 {
@@ -163,12 +164,18 @@ namespace MarchingCubesProject.Tools
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private async Task UpdateMeshes(NativeHashMap<int, IntPtr> affectedChunksDataPointers)
         {
+            int length = affectedChunksDataPointers.Count;
+            Task[] generationTasks = new Task[length];
+
+            int counter = 0;
             foreach (var updatingChunk in affectedChunksDataPointers)
             {
                 var chunk = _chunksContainer.GetChunk(updatingChunk.Key);
-                await chunk.GenerateNewMeshData();
-                
+                generationTasks[counter] = chunk.GenerateNewMeshData();
+                counter++;
             }
+
+            await Task.WhenAll(generationTasks);
 
             foreach (var updatingChunk in affectedChunksDataPointers)
             {

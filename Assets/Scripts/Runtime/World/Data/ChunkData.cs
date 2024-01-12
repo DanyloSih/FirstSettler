@@ -1,7 +1,6 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
-using Cysharp.Threading.Tasks;
 using FirstSettler.Extensions;
 using UnityEngine;
 using UnityEngine.Rendering;
