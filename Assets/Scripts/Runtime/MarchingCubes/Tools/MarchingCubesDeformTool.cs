@@ -55,7 +55,7 @@ namespace MarchingCubesProject.Tools
             {
                 await ThrowRayAndDeform(0);
             }
-            else if (Input.GetMouseButton(0))
+            else if (Input.GetMouseButtonDown(0))
             {
                 await ThrowRayAndDeform(-Mathf.Abs(_deformForce));
             }

@@ -1,0 +1,16 @@
+{
+    "name": "Utilities.Math.Tests",
+    "rootNamespace": "",
+    "references": [
+        "GUID:e89a81b99e33ef84cbdcd4160e019157"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
