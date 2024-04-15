@@ -8,17 +8,18 @@ namespace World.Organization
 {
     public class SpiralMatrixWalker : IMatrixWalker
     {
-        public async Task WalkMatrix(Vector3Int size, Func<int, int, int, Task> matrixWalkingCallbackAsync)
+        public IEnumerable<Vector3Int> WalkMatrix(Vector3Int size)
         {
-            await WalkMatrix2D(new Vector2Int(size.x, size.z), async (x, z) => {
+            foreach (var pos2D in WalkMatrix2D(new Vector2Int(size.x, size.z)))
+            {
                 for (int y = 0; y < size.y; y++)
                 {
-                    await matrixWalkingCallbackAsync(x, y, z);
+                    yield return new Vector3Int(pos2D.x, y, pos2D.y);
                 }
-            });
+            }    
         }
 
-        public async Task WalkMatrix2D(Vector2Int size, Func<int, int, Task> matrixWalkingCallbackAsync)
+        public IEnumerable<Vector2Int> WalkMatrix2D(Vector2Int size)
         {
             List<Vector2Int> cash = new List<Vector2Int>();
             int centerX = size.x / 2;
@@ -28,7 +29,7 @@ namespace World.Organization
             int x = centerX;
             int y = centerY;
 
-            await matrixWalkingCallbackAsync(x, y);
+            yield return new Vector2Int(x, y);
             
             while (true)
             {
@@ -39,7 +40,7 @@ namespace World.Organization
                     if (IsValidIndex(x, y, size, cash))
                     {
                         cash.Add(new Vector2Int(x, y));
-                        await matrixWalkingCallbackAsync(x, y);
+                        yield return new Vector2Int(x, y);
                     }
                     else
                     {
@@ -54,7 +55,7 @@ namespace World.Organization
                     if (IsValidIndex(x, y, size, cash))
                     {
                         cash.Add(new Vector2Int(x, y));
-                        await matrixWalkingCallbackAsync(x, y);
+                        yield return new Vector2Int(x, y);
                     }
                     else
                     {
@@ -69,7 +70,7 @@ namespace World.Organization
                     if (IsValidIndex(x, y, size, cash))
                     {
                         cash.Add(new Vector2Int(x, y));
-                        await matrixWalkingCallbackAsync(x, y);
+                        yield return new Vector2Int(x, y);
                     }
                     else
                     {
@@ -84,7 +85,7 @@ namespace World.Organization
                     if (IsValidIndex(x, y, size, cash))
                     {
                         cash.Add(new Vector2Int(x, y));
-                        await matrixWalkingCallbackAsync(x, y);
+                        yield return new Vector2Int(x, y);
                     }
                     else
                     {

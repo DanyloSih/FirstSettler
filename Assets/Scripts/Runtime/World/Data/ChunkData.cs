@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using FirstSettler.Extensions;
 using UnityEngine;
 using UnityEngine.Rendering;
+using Utilities.Math;
 using Utilities.Threading;
 
 namespace World.Data

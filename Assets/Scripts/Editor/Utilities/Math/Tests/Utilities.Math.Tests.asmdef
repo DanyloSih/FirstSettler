@@ -2,7 +2,8 @@
     "name": "Utilities.Math.Tests",
     "rootNamespace": "",
     "references": [
-        "GUID:e89a81b99e33ef84cbdcd4160e019157"
+        "GUID:e89a81b99e33ef84cbdcd4160e019157",
+        "GUID:776d03a35f1b52c4a9aed9f56d7b4229"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

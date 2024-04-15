@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using Unity.Collections;
 using UnityEngine;
 
@@ -113,11 +114,34 @@ namespace Utilities.Math
                 _dataMap[newNodeHash] = newNode;
             }
 
-            CollapseIdenticalData(rootNode.Data, parentRank, position);
-
             if (_subnodesMap.ContainsKey(newNodeHash))
             {
                 RemoveSubnodesRecursively(newNodeHash);
+            }
+
+            CollapseIdenticalData(rootNode.Data, parentRank, position); 
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public async Task SetDataFromArray(
+            ThreedimensionalNativeArray<T> array, 
+            Vector3Int arrayOffset = new Vector3Int(), 
+            Vector3Int? size = null)
+        {
+            Vector3Int realSize = size == null ? array.Size : (Vector3Int)size;
+            realSize += arrayOffset;
+
+            for (int x = arrayOffset.x; x < realSize.x; x++)
+            {
+                for (int y = arrayOffset.y; y < realSize.y; y++)
+                {
+                    for (int z = arrayOffset.z; z < realSize.z; z++)
+                    {
+                        T value = array.GetValue(x, y, z);
+                        SetData(value, 0, new Vector3Int(x, y, z));
+                        await Task.Delay(5);
+                    }
+                }
             }
         }
 
@@ -142,8 +166,16 @@ namespace Utilities.Math
             _subnodesMap[subnodesKeeperHash] = subnodes;
         }
 
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
+        //private SubnodesContainer GenerateSubnodes(int rank, Vector3Int position)
+        //{
+        //    Vector3Int roundedPosition = RoundVectorToRank(rank, position);
+            
+
+        //}
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void CollapseIdenticalData(T data, int parentRank, Vector3Int position)
+        private void CollapseIdenticalData(T defaultData, int parentRank, Vector3Int position)
         {
             Vector3Int parentRoundedPosition = RoundVectorToRank(parentRank, position);
             int parentHash = GetNodeHash(parentRank, parentRoundedPosition);
@@ -152,6 +184,7 @@ namespace Utilities.Math
             SubnodesContainer container = _subnodesMap[parentHash];
             if (IsAllDataInContainerEqual(ref container))
             {
+                T data = container.Length < 1 ? defaultData : _dataMap[container.UnsafeGetValueAt(0)].Data;
                 RemoveSubnodes(ref container);
                 _subnodesMap[parentHash] = container;
                 AddNode(new OctreeNode<T>(data, parentRank, parentRoundedPosition), parentHash);
@@ -164,7 +197,7 @@ namespace Utilities.Math
 
                     return;
                 }
-                CollapseIdenticalData(data, parentRank + 1, position);
+                CollapseIdenticalData(defaultData, parentRank + 1, position);
             }
         }
 

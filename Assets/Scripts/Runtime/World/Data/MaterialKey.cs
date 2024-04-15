@@ -15,8 +15,6 @@ namespace World.Data
         {
             int hashCode = 0;
 
-            var obj = this;
-
             try
             {
                 hashCode = _materialName.GetHashCode();
@@ -27,6 +25,12 @@ namespace World.Data
             }
 
             return hashCode;
+        }
+
+        public override bool Equals(object other)
+        {
+            return other is MaterialKey 
+                && ((MaterialKey)other)._materialName.Equals(_materialName);
         }
     }
 }

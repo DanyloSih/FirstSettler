@@ -56,15 +56,16 @@ namespace World.Organization
         private async void InitializeChunks()
         {
             List<Task> generationTasks = new List<Task>();
-            await _matrixWalker.WalkMatrix(_chunksGridSize, async (x, y, z) => {
+            foreach(var pos in _matrixWalker.WalkMatrix(_chunksGridSize))
+            {
                 if (generationTasks.Count >= _chunksPerCall)
                 {
                     await Task.WhenAll(generationTasks);
                     generationTasks.Clear();
                 }
 
-                generationTasks.Add(GenerateChunk(x, y, z));
-            });
+                generationTasks.Add(GenerateChunk(pos.x, pos.y, pos.z));
+            }
         }
 
         private async Task GenerateChunk(int x, int y, int z)

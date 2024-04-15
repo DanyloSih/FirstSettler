@@ -1,6 +1,6 @@
 using System.Threading.Tasks;
 using UnityEngine;
-using Utilities.Threading;
+using Utilities.Math;
 using World.Data;
 
 namespace MarchingCubesProject

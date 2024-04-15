@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace World.Data
@@ -14,11 +15,20 @@ namespace World.Data
         private KeyValuePair<float, int>? _minAssociation;
         private KeyValuePair<float, int>? _maxAssociation;
 
+        [NonSerialized] private bool _isInitialized = false;
+
+        public int Count => _heightAndMaterialKeyAssociations.Count;
+        public KeyValuePair<float, int>? MinAssociation { get => _minAssociation; }
+        public KeyValuePair<float, int>? MaxAssociation { get => _maxAssociation; }
+
         protected void OnEnable()
         {
-            SortHeightAndMaterialKeyAssociations();
-            ClearOrCreateAssociations();
-            InititalizeAssociationsWithHash();
+            Initialize();
+        }
+
+        public IEnumerable<HeightAndMaterialKeyAssociation> GetEnumerable()
+        {
+            return _heightAndMaterialKeyAssociations;
         }
 
         public int GetMaterialKeyHashByHeight(float height)
@@ -35,6 +45,17 @@ namespace World.Data
             {
                 return _heightAndMaterialKeyHashAssociations
                        .FindLast(association => association.Key > height).Value;
+            }
+        }
+
+        public void Initialize()
+        {
+            if (!_isInitialized)
+            {
+                _isInitialized = true;
+                SortHeightAndMaterialKeyAssociations();
+                ClearOrCreateAssociations();
+                InititalizeAssociationsWithHash();
             }
         }
 
