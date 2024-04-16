@@ -19,11 +19,9 @@ namespace MarchingCubesProject
         [SerializeField] private float _frequency = 1.0f;
         [SerializeField] private float _amplitude = 1.0f;
         [SerializeField] private int _seed = 0;
-        [SerializeField] private Vector3Int _chunksOffset;
+        [SerializeField] private Vector3Int _voxelsOffset;
         [SerializeField] private MaterialKeyAndUnityMaterialAssociations _materialAssociations;
         [SerializeField] private MaterialKeyAndHeightAssociations _heightAssociations;
-
-
 
         private FractalNoise _fractal;
         private ComputeBuffer _heightHashAssociationsBuffer;
@@ -44,7 +42,7 @@ namespace MarchingCubesProject
             _minMaxAssociations.Dispose();
         }
 
-        public async Task FillChunkData(ChunkData chunkData, int chunkLocalX, int chunkLocalY, int chunkLocalZ)
+        public async Task FillChunkData(ChunkData chunkData, Vector3Int chunkGlobalPosition)
         {
             if (!enabled)
             {
@@ -64,9 +62,9 @@ namespace MarchingCubesProject
             _generationComputeShader.SetInt("ChunkWidth", voxels.Width);
             _generationComputeShader.SetInt("ChunkHeight", voxels.Height);
             _generationComputeShader.SetInt("ChunkDepth", voxels.Depth);
-            _generationComputeShader.SetInt("ChunkGlobalPositionX", (_chunksOffset.x + chunkLocalX) * (voxels.Width - 1));
-            _generationComputeShader.SetInt("ChunkGlobalPositionY", (_chunksOffset.y + chunkLocalY) * (voxels.Height - 1));
-            _generationComputeShader.SetInt("ChunkGlobalPositionZ", (_chunksOffset.z + chunkLocalZ) * (voxels.Depth - 1));
+            _generationComputeShader.SetInt("ChunkGlobalPositionX", _voxelsOffset.x + chunkGlobalPosition.x);
+            _generationComputeShader.SetInt("ChunkGlobalPositionY", _voxelsOffset.y + chunkGlobalPosition.y);
+            _generationComputeShader.SetInt("ChunkGlobalPositionZ", _voxelsOffset.z + chunkGlobalPosition.z);
             _generationComputeShader.SetInt("AssociationsCount", _heightAssociations.Count);
             _generationComputeShader.SetInt("Octaves", _octaves);
             _generationComputeShader.SetFloat("Persistence", _persistence);

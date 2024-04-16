@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using Unity.Collections;
+using Unity.Jobs;
 using UnityEngine;
 
 namespace Utilities.Math
@@ -24,8 +26,7 @@ namespace Utilities.Math
         public Vector3Int Size => _size;
         public int WidthAndHeight => _widthAndHeight;
         public int FullLength => _fullLength;
-        public Parallelepiped DataModel => _parallelepiped;
-
+        public Parallelepiped Parallelepiped => _parallelepiped;
 
         public ThreedimensionalNativeArray(Vector3Int size) 
             : this(size.x, size.y, size.z)
@@ -45,6 +46,18 @@ namespace Utilities.Math
             RawData = new NativeArray<T>(_fullLength, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
         }
 
+        /// <param name="minPosition">Start position of data copying.</param>
+        /// <param name="resultArray">The array into which the data will be copied</param>
+        public JobHandle CreateCopyPartJob(
+            Vector3Int minPosition,
+            ThreedimensionalNativeArray<T> resultArray,
+            int innerLoopBatchCount = 4)
+        {
+            var copyArrayPartJob = new CopyArrayPartJob<T>(this, resultArray, minPosition);
+            JobHandle copyJobHandle = copyArrayPartJob.Schedule(resultArray._parallelepiped.Volume, innerLoopBatchCount);
+            return copyJobHandle;
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetNewRawData(ref NativeArray<T> newRawData)
         {
@@ -54,7 +67,7 @@ namespace Utilities.Math
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public T GetValue(int x, int y, int z)
         {
-            int id = XYZToIndex(x, y, z);
+            int id = PositionToIndex(x, y, z);
             return RawData[id];
         }
 
@@ -67,7 +80,7 @@ namespace Utilities.Math
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetValue(int x, int y, int z, T value)
         {
-            int id = XYZToIndex(x, y, z);
+            int id = PositionToIndex(x, y, z);
             RawData[id] = value;
         }
 
@@ -78,15 +91,21 @@ namespace Utilities.Math
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public int XYZToIndex(int x, int y, int z)
+        public int PositionToIndex(Vector3Int position)
         {
-            return _parallelepiped.VoxelPositionToIndex(x, y, z);
+            return _parallelepiped.PointToIndex(position.x, position.y, position.z);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Vector3Int IndexToXYZ(int index)
+        public int PositionToIndex(int x, int y, int z)
         {
-            return _parallelepiped.IndexToVoxelPosition(index);
+            return _parallelepiped.PointToIndex(x, y, z);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Vector3Int IndexToPostion(int index)
+        {
+            return _parallelepiped.IndexToPoint(index);
         }
 
         public void Dispose()

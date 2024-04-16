@@ -1,7 +1,9 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 using FirstSettler.Extensions;
+using Unity.Jobs;
 using UnityEngine;
 using UnityEngine.Rendering;
 using Utilities.Math;
@@ -42,6 +44,34 @@ namespace World.Data
         {
             get => _flipNormals;
             set => _flipNormals = value;
+        }
+
+        /// <param name="startPosition">Start position of data copying.</param>
+        /// <param name="size">Size of the copied area.</param>
+        public ChunkData CopyPart(
+            Vector3Int startPosition,
+            Vector3Int size,
+            int innerLoopBatchCount = 1)
+        {
+            var result = new ChunkData(size);
+            var jobHandle = VoxelsData.CreateCopyPartJob(startPosition, result.VoxelsData, innerLoopBatchCount);
+            jobHandle.Complete();
+            return result;
+        }
+
+        /// <param name="startPosition">Start position of data copying.</param>
+        /// <param name="size">Size of the copied area.</param>
+        public async Task<ChunkData> CopyPartAsync(
+            Vector3Int startPosition,
+            Vector3Int size,
+            int innerLoopBatchCount = 1,
+            int waitDelayInMilliseconds = 1)
+        {
+            var result = new ChunkData(size);
+            JobHandle jobHandle = VoxelsData.CreateCopyPartJob(startPosition, result.VoxelsData, innerLoopBatchCount);
+            await AsyncUtilities.WaitWhile(() => !jobHandle.IsCompleted, waitDelayInMilliseconds);
+            jobHandle.Complete();
+            return result;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

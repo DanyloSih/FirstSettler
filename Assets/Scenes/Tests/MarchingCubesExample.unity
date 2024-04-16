@@ -628,8 +628,8 @@ MonoBehaviour:
       type: 3}
     _targetObject: {fileID: 1000216450}
     _isFolded: 1
-  _chunksGridSize: {x: 64, y: 5, z: 64}
-  _chunksPerCall: 32
+  _chunksGridSize: {x: 32, y: 8, z: 32}
+  _chunksLoadingVolumePerCall: {x: 4, y: 4, z: 4}
   references:
     version: 2
     RefIds:
@@ -730,6 +730,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: SimpleControl
       objectReference: {fileID: 0}
+    - target: {fileID: 6672425774132763964, guid: 2fd2b819a490be74998aead912c56eb4,
+        type: 3}
+      propertyPath: far clip plane
+      value: 1500
+      objectReference: {fileID: 0}
     - target: {fileID: 7303670956601241961, guid: 2fd2b819a490be74998aead912c56eb4,
         type: 3}
       propertyPath: m_IsActive
@@ -818,7 +823,7 @@ MonoBehaviour:
   _frequency: 0.995
   _amplitude: 4
   _seed: 0
-  _chunksOffset: {x: 16, y: 0, z: 16}
+  _voxelsOffset: {x: 0, y: 0, z: 0}
   _materialAssociations: {fileID: 11400000, guid: 666ef968199c91a4182bc98a711d7d8e,
     type: 2}
   _heightAssociations: {fileID: 11400000, guid: 1247a779be5a5f3448531b07ef66707c,
@@ -943,12 +948,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 15612e18c1c3ab74fac995bafafe7c5e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _maxHeight: 32
-  _minHeight: 16
-  _octaves: 3
-  _frequency: 0.6
-  _seed: 0
-  _chunksOffset: {x: 0, y: 0, z: 0}
+  _chunkGenerationSettings:
+    MaxHeight: 0
+    MinHeight: 0
+    PerlinNoiseSettings:
+      Octaves: 0
+      Persistence: 0
+      Frequency: 0
+      Amplitude: 0
+    Seed: 0
+    VoxelsOffset: {x: 0, y: 0, z: 0}
   _materialAssociations: {fileID: 11400000, guid: 666ef968199c91a4182bc98a711d7d8e,
     type: 2}
   _heightAssociations: {fileID: 11400000, guid: 1247a779be5a5f3448531b07ef66707c,

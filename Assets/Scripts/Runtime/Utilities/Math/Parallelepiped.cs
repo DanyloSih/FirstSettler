@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace Utilities.Math
@@ -42,25 +43,42 @@ namespace Utilities.Math
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IEnumerable<Vector3Int> GetEveryPoint()
+        {
+            for (int i = 0; i < Volume; i++)
+            {
+                yield return IndexToPoint(i);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool IsContainsPoint(Vector3Int point)
+        {
+            return point.x >= 0 && point.x < _size.x 
+                && point.y >= 0 && point.y < _size.y
+                && point.z >= 0 && point.z < _size.z;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsSurfacePoint(Vector3Int point)
         {
             return (point.x % _size.x == 0 | point.y % _size.y == 0 | point.z % _size.z == 0);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public int VoxelPositionToIndex(int x, int y, int z)
+        public int PointToIndex(int x, int y, int z)
         {
             return x + y * _width + z * _widthAndHeight;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public int VoxelPositionToIndex(Vector3Int point)
+        public int PointToIndex(Vector3Int point)
         {
-            return VoxelPositionToIndex(point.x, point.y, point.z);
+            return PointToIndex(point.x, point.y, point.z);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Vector3Int IndexToVoxelPosition(int index)
+        public Vector3Int IndexToPoint(int index)
         {
             int z = index / WidthAndHeight;
             int remainder = index % WidthAndHeight;

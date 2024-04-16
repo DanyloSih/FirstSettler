@@ -5,7 +5,7 @@ namespace MarchingCubesProject.Tools
 {
     public struct ChunkRaycastingResult
     {
-        public bool IsChunkHited;
+        public bool IsChunkHit;
         public IChunk Chunk;
         public Ray Ray;
         public RaycastHit Hit;

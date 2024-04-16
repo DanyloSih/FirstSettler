@@ -70,7 +70,7 @@ namespace MarchingCubesProject.Tools
 
             ChunkRaycastingResult chunkRaycastResult = _raycastPointerToChunk.ThrowRaycast();
 
-            if (!chunkRaycastResult.IsChunkHited)
+            if (!chunkRaycastResult.IsChunkHit)
             {
                 return;
             }

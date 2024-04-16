@@ -55,7 +55,7 @@ namespace MarchingCubesProject.Tools
             {
                 IntPtr rawDataStartPointer = AffectedChunksDataPointers[positionHash];
 
-                int voxelDataOffset = ChunkDataModel.VoxelPositionToIndex(localChunkDataPoint);
+                int voxelDataOffset = ChunkDataModel.PointToIndex(localChunkDataPoint);
 
                 unsafe
                 {

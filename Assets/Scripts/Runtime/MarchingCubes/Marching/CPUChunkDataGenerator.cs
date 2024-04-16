@@ -1,5 +1,8 @@
 ﻿using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 using ProceduralNoiseProject;
+using Unity.Collections;
+using Unity.Jobs;
 using UnityEngine;
 using Utilities.Math;
 using World.Data;
@@ -9,50 +12,36 @@ namespace MarchingCubesProject
 {
     public class CPUChunkDataGenerator : MonoBehaviour, IChunkDataProvider
     {
-        [SerializeField] private float _maxHeight = 256;
-        [SerializeField] private float _minHeight;
-        [SerializeField] private int _octaves;
-        [SerializeField] private float _frequency;
-        [SerializeField] private int _seed = 0;
-        [SerializeField] private Vector3Int _chunksOffset;
+        [SerializeField] private ChunkGenerationSettings _chunkGenerationSettings;
         [SerializeField] private MaterialKeyAndUnityMaterialAssociations _materialAssociations;
         [SerializeField] private MaterialKeyAndHeightAssociations _heightAssociations;
 
         private FractalNoise _fractal;
+        private NativeHeightAndMaterialHashAssociations _nativeHeightAndMaterialHashAssociations;
 
         public MaterialKeyAndUnityMaterialAssociations MaterialAssociations
             => _materialAssociations;
 
-        public Task FillChunkData(ChunkData chunkData, int chunkLocalX, int chunkLocalY, int chunkLocalZ)
+        protected void OnDisable()
         {
+            _nativeHeightAndMaterialHashAssociations.Dispose();
+        }
+
+        public async Task FillChunkData(ChunkData chunkData, Vector3Int chunkGlobalPosition)
+        {
+            _nativeHeightAndMaterialHashAssociations = _heightAssociations
+                .GetOrCreateNative(Allocator.Persistent);
+
             ThreedimensionalNativeArray<VoxelData> voxels = chunkData.VoxelsData;
-            int width = (voxels.Width - 1);
-            int height = (voxels.Height - 1);
-            int depth = (voxels.Depth - 1);
-            int chunkGlobalX = chunkLocalX * width;
-            int chunkGlobalY = chunkLocalY * height;
-            int chunkGlobalZ = chunkLocalZ * depth;
+            var generationJob = new CPUChunkDataGenerationJob(
+                voxels.RawData,
+                voxels.Parallelepiped,
+                chunkGlobalPosition,
+                _chunkGenerationSettings,
+                _nativeHeightAndMaterialHashAssociations);
 
-            for (int y = 0; y <= height; y++)
-            {
-                float voxelGlobalY = chunkGlobalY + y;
-                for (int x = 0; x <= width; x++)
-                {
-                    float voxelGlobalX = chunkGlobalX + x;
-                    for (int z = 0; z <= depth; z++)
-                    {
-                        float voxelGlobalZ = chunkGlobalZ + z;
-                        VoxelData result = new VoxelData();
-
-                        result.Volume = voxelGlobalY <= _minHeight ? 1 : 0;
-                        result.MaterialHash = _heightAssociations.GetMaterialKeyHashByHeight(voxelGlobalY);
-
-                        voxels.SetValue(x, y, z, result);
-                    }
-                }
-            }
-
-            return Task.CompletedTask;
+            var jobHandler = generationJob.Schedule(voxels.RawData.Length, 128);
+            await jobHandler.WaitAsync(PlayerLoopTiming.EarlyUpdate);
         }
     }
 }

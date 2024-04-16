@@ -50,7 +50,7 @@ namespace MarchingCubesProject.Tools
                     .GetLocalChunkDataPointByGlobalPoint(hit.point);
 
                 result.Scale = _basicChunkSettings.Scale;
-                result.IsChunkHited = true;
+                result.IsChunkHit = true;
             }
 
             return result;

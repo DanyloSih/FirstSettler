@@ -123,9 +123,7 @@ namespace MarchingCubesProject
             if (_updatePhysicsCoroutine == null)
             {
                 _updatePhysicsCoroutine = StartCoroutine(UpdatePhysicsProcess(verticesCount));
-            }
-
-            
+            }            
         }
 
         public bool IsMeshDataApplying()

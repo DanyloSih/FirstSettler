@@ -27,7 +27,7 @@ namespace MarchingCubesProject.Tools
 
         public void Execute(int index)
         {
-            Vector3Int pointerInArea = EditingParallelepiped.IndexToVoxelPosition(index) + Offset;
+            Vector3Int pointerInArea = EditingParallelepiped.IndexToPoint(index) + Offset;
             float unscaledDistance = pointerInArea.magnitude;
             float deformForce = unscaledDistance / HalfBrushSize;
 
@@ -46,7 +46,7 @@ namespace MarchingCubesProject.Tools
                     return;
                 }
 
-                int chunkVoxelOffset = ChunkDataModel.VoxelPositionToIndex(pointedChunkData);
+                int chunkVoxelOffset = ChunkDataModel.PointToIndex(pointedChunkData);
 
                 VoxelData data;
                 unsafe

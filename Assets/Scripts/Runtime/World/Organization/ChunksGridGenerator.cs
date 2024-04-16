@@ -1,10 +1,12 @@
-﻿using UnityEngine;
-using SimpleHeirs;
+﻿using System;
 using System.Collections.Generic;
-using System;
+using System.Threading.Tasks;
+using SimpleHeirs;
+using UnityEngine;
+using Utilities.Math;
+using Utilities.Math.Extensions;
 using World.Data;
 using Zenject;
-using System.Threading.Tasks;
 
 namespace World.Organization
 {
@@ -15,8 +17,10 @@ namespace World.Organization
         [SerializeField] private HeirsProvider<IChunkDataProvider> _chunksDataProviderHeir;
         [SerializeField] private HeirsProvider<IChunk> _chunkPrefabHeir;
         [SerializeField] private Vector3Int _chunksGridSize;
-        [SerializeField] private int _chunksPerCall = 3;
+        [Tooltip("Determines the volume of the loaded zone in one pass. The value is indicated in chunks.")]
+        [SerializeField] private Vector3Int _chunksLoadingVolumePerCall = Vector3Int.one * 2;
 
+        private Vector3Int _loadingGridSize;
         private BasicChunkSettings _basicChunkSettings;
         private List<(IChunk ChunkComponent, GameObject ChunkGameObject)> _chunksList
             = new List<(IChunk ChunkComponent, GameObject ChunkGameObject)>();
@@ -27,12 +31,16 @@ namespace World.Organization
         private ChunkCoordinatesCalculator _chunkCoordinatesCalculator;
         private IMatrixWalker _matrixWalker;
         private DiContainer _diContainer;
+        private ChunkData _chunksDataSource;
 
         [Inject]
         public void Construct(DiContainer diContainer, BasicChunkSettings basicChunkSettings)
         {
             _diContainer = diContainer;
             _basicChunkSettings = basicChunkSettings;
+            _loadingGridSize = _chunksGridSize.GetElementwiseFloorDividedVector(_chunksLoadingVolumePerCall);
+            _chunksGridSize = Vector3Int.Scale(_loadingGridSize, _chunksLoadingVolumePerCall);
+            _minPoint = _chunksGridSize / 2;
         }
 
         protected void OnEnable()
@@ -47,7 +55,7 @@ namespace World.Organization
                 throw new ArgumentException($"{nameof(_chunkPrefabHeir)} should be prefab gameObject!");
             }
             _chunksDataProvider = _chunksDataProviderHeir.GetValue();
-            _minPoint = _chunksGridSize / 2;
+
 
             DestroyOldChunks();
             InitializeChunks();
@@ -55,53 +63,109 @@ namespace World.Organization
 
         private async void InitializeChunks()
         {
-            List<Task> generationTasks = new List<Task>();
-            foreach(var pos in _matrixWalker.WalkMatrix(_chunksGridSize))
+            System.Diagnostics.Stopwatch stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            foreach (var batchPos in _matrixWalker.WalkMatrix(_loadingGridSize))
             {
-                if (generationTasks.Count >= _chunksPerCall)
-                {
-                    await Task.WhenAll(generationTasks);
-                    generationTasks.Clear();
-                }
+                Vector3Int loadingChunksStartPos = Vector3Int.Scale(batchPos, _chunksLoadingVolumePerCall);
+                Vector3Int loadingChunksEndPos = loadingChunksStartPos + _chunksLoadingVolumePerCall;
+                await GenerateChunksBatch(loadingChunksStartPos, loadingChunksEndPos);
+            }
+            stopwatch.Stop();
 
-                generationTasks.Add(GenerateChunk(pos.x, pos.y, pos.z));
+            Debug.Log($"Chunks loading ended in: {stopwatch.Elapsed.TotalSeconds} seconds");
+        }
+
+        private async Task GenerateChunksBatch(Vector3Int minPos, Vector3Int maxPos)
+        {
+            minPos -= _minPoint;
+            maxPos -= _minPoint;
+            Area loadingArea = new Area(minPos, maxPos);
+
+            _chunksDataSource = new ChunkData(loadingArea.Parallelepiped.Size * _basicChunkSettings.Size);
+            Task<List<ChunkData>> GenerateChunksDataTask = GenerateChunksData(loadingArea);
+
+            var chunks = CreateChunksGameObject(loadingArea);
+
+            List<ChunkData> chunksData = await GenerateChunksDataTask;
+            _chunksDataSource.Dispose();
+            //await GenerateChunksMeshes(loadingArea, chunks, chunksData);
+
+            //ApplyChunksMeshData(loadingArea, chunks);
+        }
+
+        private void ApplyChunksMeshData(Area loadingArea, List<IChunk> chunks)
+        {
+            int counter = 0;
+            foreach (var loadingPos in loadingArea.GetEveryVoxel())
+            {
+                var chunk = chunks[counter];
+
+                chunk.ApplyMeshData();
+                chunk.RootGameObject.transform.localScale
+                       = Vector3.one * _basicChunkSettings.Scale;
+
+                chunk.RootGameObject.transform.position
+                    = _chunkCoordinatesCalculator.GetGlobalChunkPositionByLocal(loadingPos);
+
+                counter++;
             }
         }
 
-        private async Task GenerateChunk(int x, int y, int z)
+        private async Task GenerateChunksMeshes(Area loadingArea, List<IChunk> chunks, List<ChunkData> chunksData)
         {
-            x -= _minPoint.x;
-            y -= _minPoint.y;
-            z -= _minPoint.z;
-            Debug.Log($"{x} {y} {z}");
-            GameObject instance = _diContainer.InstantiatePrefab(_chunkPrefabGO, _chunksRoot);
-            IChunk chunk = instance.GetComponent(typeof(IChunk)) as IChunk;
-            _chunksList.Add(new(chunk, instance));
-
-            var chunkData = new ChunkData(_basicChunkSettings.Size);
-            await _chunksDataProvider.FillChunkData(chunkData, x, y, z);
-
-            if (!_activeChunksContainer.IsChunkExist(x, y, z))
+            int counter = 0;
+            List<Task> tasks = new List<Task>();
+            foreach (var loadingPos in loadingArea.GetEveryVoxel())
             {
-                _activeChunksContainer.AddChunk(x, y, z, chunk);
+                IChunk chunk = chunks[counter];
+                ChunkData chunkData = chunksData[counter];
+
+                chunk.InitializeBasicData(
+                        _chunksDataProvider.MaterialAssociations,
+                        loadingPos,
+                        chunkData);
+
+                tasks.Add(chunk.GenerateNewMeshData());
+                counter++;
             }
-            else
+
+            await Task.WhenAll(tasks);
+        }
+
+        private List<IChunk> CreateChunksGameObject(Area loadingArea)
+        {
+            List<IChunk> createdChunks = new List<IChunk>();
+            foreach (var loadingPos in loadingArea.GetEveryVoxel())
             {
-                throw new Exception("HASH COLLISSION!");
+                GameObject instance = _diContainer.InstantiatePrefab(_chunkPrefabGO, _chunksRoot);
+                IChunk chunk = instance.GetComponent(typeof(IChunk)) as IChunk;
+                createdChunks.Add(chunk);
+                _chunksList.Add(new(chunk, instance));
+
+                if (!_activeChunksContainer.IsChunkExist(loadingPos.x, loadingPos.y, loadingPos.z))
+                {
+                    _activeChunksContainer.AddChunk(loadingPos.x, loadingPos.y, loadingPos.z, chunk);
+                }
+                else
+                {
+                    throw new Exception("HASH COLLISSION!");
+                }
             }
-            chunk.InitializeBasicData(
-                _chunksDataProvider.MaterialAssociations,
-                new Vector3Int(x, y, z),
-                chunkData);
+            return createdChunks;
+        }
 
-            await chunk.GenerateNewMeshData();
-            chunk.ApplyMeshData();
+        private async Task<List<ChunkData>> GenerateChunksData(Area loadingArea)
+        {
+            await _chunksDataProvider.FillChunkData(_chunksDataSource, loadingArea.Min * _basicChunkSettings.Size);
 
-            chunk.RootGameObject.transform.localScale
-                = Vector3.one * _basicChunkSettings.Scale;
+            List<ChunkData> chunksData = new List<ChunkData>();
+            foreach (var loadingPos in loadingArea.Parallelepiped.GetEveryPoint())
+            {
+                chunksData.Add(_chunksDataSource.CopyPart(
+                    loadingPos * _basicChunkSettings.Size, _basicChunkSettings.Size, 32));
+            }
 
-            chunk.RootGameObject.transform.position
-                = _chunkCoordinatesCalculator.GetGlobalChunkPositionByLocal(new Vector3Int(x, y, z));
+            return chunksData;
         }
 
         private void DestroyOldChunks()

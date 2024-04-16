@@ -70,10 +70,10 @@ namespace Utilities.Math.Tests
         {
             ThreedimensionalNativeArray<int> result = new ThreedimensionalNativeArray<int>(size);
             int midHeight = size.y / 2;
-            Parallelepiped dataModel = result.DataModel;
+            Parallelepiped dataModel = result.Parallelepiped;
             for (int i = 0; i < dataModel.Volume; i++)
             {
-                Vector3Int point = dataModel.IndexToVoxelPosition(i);
+                Vector3Int point = dataModel.IndexToPoint(i);
                 float threshold = midHeight + Mathf.Sin(point.x / 2f) * waveAmplitude;
                 //float threshold = midHeight;
                 int value = point.y < threshold ? valueA : valueB;
