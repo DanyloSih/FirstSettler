@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Utilities.Math
 {
-    public struct Parallelepiped
+    public struct RectPrism
     {
         private readonly Vector3Int _size;
         private readonly Vector3Int _extents;
@@ -33,13 +33,22 @@ namespace Utilities.Math
             get => _widthAndHeight; 
         }
 
-        public Parallelepiped(Vector3Int size)
+        public RectPrism(Vector3Int size)
         {
             _size = size;
             _extents = size / 2;
             _width = size.x;
             _widthAndHeight = size.x * size.y;
             _volume = size.x * size.y * size.z;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IEnumerable<int> GetEveryIndex()
+        {
+            for (int i = 0; i < Volume; i++)
+            {
+                yield return i;
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -10,7 +10,7 @@ using World.Organization;
 
 namespace MarchingCubesProject
 {
-    public class CPUChunkDataGenerator : MonoBehaviour, IChunkDataProvider
+    public class CPUChunkDataGenerator : MonoBehaviour
     {
         [SerializeField] private ChunkGenerationSettings _chunkGenerationSettings;
         [SerializeField] private MaterialKeyAndUnityMaterialAssociations _materialAssociations;
@@ -27,7 +27,7 @@ namespace MarchingCubesProject
             _nativeHeightAndMaterialHashAssociations.Dispose();
         }
 
-        public async Task FillChunkData(ChunkData chunkData, Vector3Int chunkGlobalPosition)
+        public async Task GenerateChunksRawData(ChunkData chunkData, Vector3Int chunkGlobalPosition)
         {
             _nativeHeightAndMaterialHashAssociations = _heightAssociations
                 .GetOrCreateNative(Allocator.Persistent);
@@ -35,7 +35,7 @@ namespace MarchingCubesProject
             ThreedimensionalNativeArray<VoxelData> voxels = chunkData.VoxelsData;
             var generationJob = new CPUChunkDataGenerationJob(
                 voxels.RawData,
-                voxels.Parallelepiped,
+                voxels.RectPrism,
                 chunkGlobalPosition,
                 _chunkGenerationSettings,
                 _nativeHeightAndMaterialHashAssociations);

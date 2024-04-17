@@ -70,7 +70,7 @@ namespace Utilities.Math.Tests
         {
             ThreedimensionalNativeArray<int> result = new ThreedimensionalNativeArray<int>(size);
             int midHeight = size.y / 2;
-            Parallelepiped dataModel = result.Parallelepiped;
+            RectPrism dataModel = result.RectPrism;
             for (int i = 0; i < dataModel.Volume; i++)
             {
                 Vector3Int point = dataModel.IndexToPoint(i);

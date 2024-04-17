@@ -1,0 +1,48 @@
+struct RectPrism
+{
+    int3 Size;
+    int3 Extents;
+    int Volume;
+    int Width;
+    int WidthAndHeight;
+};
+
+RectPrism CreateRectPrism(int3 size)
+{
+    RectPrism result;
+    result.Size = size;
+    result.Extents = size / 2;
+    result.Width = size.x;
+    result.WidthAndHeight = size.x * size.y;
+    result.Volume = size.x * size.y * size.z;
+    return result;
+}
+
+bool IsContainsPoint(RectPrism prism, int3 pos)
+{
+    return pos.x >= 0 && pos.x < prism.Size.x 
+        && pos.y >= 0 && pos.y < prism.Size.y
+        && pos.z >= 0 && pos.z < prism.Size.z;
+}
+    
+bool IsSurfacePoint(RectPrism prism, int3 pos)
+{
+    return (pos.x % prism.Size.x == 0
+        | pos.y % prism.Size.y == 0
+        | pos.z % prism.Size.z == 0);
+}
+    
+int PointToIndex(RectPrism prism, int3 pos)
+{
+    return pos.x + pos.y * prism.Width + pos.z * prism.WidthAndHeight;
+}
+
+int3 IndexToPoint(RectPrism prism, int index)
+{
+    int z = index / prism.WidthAndHeight;
+    int remainder = index % prism.WidthAndHeight;
+    int y = remainder / prism.Width;
+    int x = remainder % prism.Width;
+    return int3(x, y, z);
+}
+

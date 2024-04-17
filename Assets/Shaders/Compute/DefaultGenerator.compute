@@ -1,5 +1,6 @@
 #pragma kernel CSMain
 #include "PerlinNoise2D.compute"
+#include "RectPrism.compute"
 
 struct VoxelData
 {
@@ -16,13 +17,10 @@ struct HeightAndMaterialHashAssociation
 RWStructuredBuffer<VoxelData> ChunkData;
 StructuredBuffer<HeightAndMaterialHashAssociation> HeightAndHashAssociations;
 StructuredBuffer<HeightAndMaterialHashAssociation> MinMaxAssociations;
-int ChunkWidth;
-int ChunkHeight;
-int ChunkDepth;
+StructuredBuffer<RectPrism> ChunkSizeAndChunkOffsetAndGlobalAndLoadingAreaRectPrisms;
 int ChunkGlobalPositionX;
 int ChunkGlobalPositionY;
 int ChunkGlobalPositionZ;
-int MatHash;
 int AssociationsCount;
 int Octaves;
 float Persistence;
@@ -30,6 +28,26 @@ float Frequency;
 float Amplitude;
 float MaxHeight;
 float MinHeight;
+
+RectPrism GetChunkRectPrism()
+{
+    return ChunkSizeAndChunkOffsetAndGlobalAndLoadingAreaRectPrisms[0];
+}
+
+RectPrism GetChunkOffsetRectPrism()
+{
+    return ChunkSizeAndChunkOffsetAndGlobalAndLoadingAreaRectPrisms[1];
+}
+
+RectPrism GetGlobalGenerationAreaRectPrism()
+{
+    return ChunkSizeAndChunkOffsetAndGlobalAndLoadingAreaRectPrisms[2];
+}
+
+RectPrism GetChunksLoadingAreaRectPrism()
+{
+    return ChunkSizeAndChunkOffsetAndGlobalAndLoadingAreaRectPrisms[3];
+}
 
 int GetMaterialKeyHashByHeight(float height)
 {
@@ -70,11 +88,28 @@ int GetMaterialKeyHashByHeight(float height)
 [numthreads(1, 1, 1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
-    int i = id.x + id.y * ChunkWidth + id.z * (ChunkWidth * ChunkHeight);
-    int3 globalPos = int3(ChunkGlobalPositionX + id.x, ChunkGlobalPositionY + id.y, ChunkGlobalPositionZ + id.z);
+    RectPrism chunkRectPrism = GetChunkRectPrism();
+    RectPrism chunkOffsetRectPrism = GetChunkOffsetRectPrism();
+    RectPrism globalGenerationAreaRectPrism = GetGlobalGenerationAreaRectPrism();
+    RectPrism loadAreaRectPrism = GetChunksLoadingAreaRectPrism();
+    
+    int3 chunkDataSize = chunkRectPrism.Size;
+    int3 chunkOffsetSize = chunkOffsetRectPrism.Size;
+    
+    int3 localChunkPos = int3(id.x / chunkDataSize.x, id.y / chunkDataSize.y, id.z / chunkDataSize.z);
+    int3 localVoxelPos = int3(id.x % chunkDataSize.x, id.y % chunkDataSize.y, id.z % chunkDataSize.z);
+    
+    int i = PointToIndex(loadAreaRectPrism, localChunkPos) * chunkRectPrism.Volume 
+        + PointToIndex(chunkRectPrism, localVoxelPos);
+    
+    int3 globalPos = int3(
+        ChunkGlobalPositionX + localVoxelPos.x + (localChunkPos.x * chunkOffsetSize.x),
+        ChunkGlobalPositionY + localVoxelPos.y + (localChunkPos.y * chunkOffsetSize.y),
+        ChunkGlobalPositionZ + localVoxelPos.z + (localChunkPos.z * chunkOffsetSize.z));
     
     float heightThreshold = CalculatePerlinNoise2D(
         float2(globalPos.x, globalPos.z), Amplitude, Frequency, Persistence, Octaves) * MaxHeight;
+    
     
     VoxelData voxel;
     voxel.Volume = 0;

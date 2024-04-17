@@ -16,26 +16,26 @@ namespace MarchingCubesProject
         private NativeArray<VoxelData> _voxels;
         [ReadOnly]
         private NativeHeightAndMaterialHashAssociations _associations;
-        private Parallelepiped _voxelsParallelepiped;
+        private RectPrism _voxelsPrism;
 
         public CPUChunkDataGenerationJob(
             NativeArray<VoxelData> voxels,
-            Parallelepiped voxelsParallelepiped,
+            RectPrism voxelsPrism,
             Vector3Int chunkGlobalPosition,
             ChunkGenerationSettings chunkGenerationSettings,
             NativeHeightAndMaterialHashAssociations associations)
         {
             _voxels = voxels;
             ChunkGlobalPosition = chunkGlobalPosition;
-            _voxelsParallelepiped = voxelsParallelepiped;
-            _chunkSize = voxelsParallelepiped.Size - Vector3Int.one;
+            _voxelsPrism = voxelsPrism;
+            _chunkSize = voxelsPrism.Size - Vector3Int.one;
             ChunkGenerationSettings = chunkGenerationSettings;
             _associations = associations;
         }
 
         public void Execute(int index)
         {
-            Vector3Int localVoxelPos = _voxelsParallelepiped.IndexToPoint(index);
+            Vector3Int localVoxelPos = _voxelsPrism.IndexToPoint(index);
             Vector3Int globalVoxelPos = ChunkGlobalPosition + localVoxelPos;
             VoxelData result = new VoxelData();
 

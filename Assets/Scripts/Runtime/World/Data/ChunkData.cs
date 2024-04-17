@@ -25,9 +25,14 @@ namespace World.Data
         private readonly int _height;
         private readonly int _depth;
 
-        public ChunkData(Vector3Int chunkSize)
+        public ChunkData(Vector3Int chunkSize) 
+            : this(new ThreedimensionalNativeArray<VoxelData>(chunkSize + new Vector3Int(1, 1, 1)))
         {
-            _voxelsData = new ThreedimensionalNativeArray<VoxelData>(chunkSize + new Vector3Int(1, 1, 1));
+        }
+
+        public ChunkData(ThreedimensionalNativeArray<VoxelData> voxelsData)
+        {
+            _voxelsData = voxelsData;
             _size = _voxelsData.Size;
             _width = _voxelsData.Size.x;
             _height = _voxelsData.Size.y;
@@ -74,7 +79,6 @@ namespace World.Data
             return result;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ComputeBuffer GetOrCreateVoxelsDataBuffer()
         {
             _voxelsBuffer = _voxelsBuffer ?? ComputeBufferExtensions.Create(VoxelsData.FullLength, typeof(VoxelData));

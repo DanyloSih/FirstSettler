@@ -97,26 +97,26 @@ namespace MarchingCubesProject.Tools
             Vector3Int localChunkDataPoint = initialDataPoint.LocalChunkDataPoint.FloorToVector3Int();
             Vector3Int unscaledGlobalDataPoint = unscaledGlobalChunkPosition + localChunkDataPoint;            
 
-            Parallelepiped editingParallelepiped = new Parallelepiped(Vector3Int.one * _brushSize);
-            Area editingArea = new Area(editingParallelepiped, unscaledGlobalDataPoint);
+            RectPrism editingPrism = new RectPrism(Vector3Int.one * _brushSize);
+            Area editingArea = new Area(editingPrism, unscaledGlobalDataPoint);
 
-            NativeList<ChunkPoint> chunkPoints = new NativeList<ChunkPoint>(editingParallelepiped.Volume, Allocator.Persistent);
+            NativeList<ChunkPoint> chunkPoints = new NativeList<ChunkPoint>(editingPrism.Volume, Allocator.Persistent);
             NativeHashMap<int, IntPtr> chunksDataPointersInsideEditArea 
                 = ChunksMath.GetChunksDataPointersInsideArea(editingArea, chunkSize, _chunksContainer);
 
             DeformMaskJob deformMaskJob = new DeformMaskJob();
             deformMaskJob.DeformFactor = deformFactor;
-            deformMaskJob.ChunkDataModel = new Parallelepiped(chunkSize + Vector3Int.one);
+            deformMaskJob.ChunkDataModel = new RectPrism(chunkSize + Vector3Int.one);
             deformMaskJob.ChunksDataPointersInsideEditArea = chunksDataPointersInsideEditArea;
             deformMaskJob.ChunkSize = chunkSize;
-            deformMaskJob.EditingParallelepiped = editingParallelepiped;
+            deformMaskJob.EditingPrism = editingPrism;
             deformMaskJob.HalfBrushSize = halfBrushSize;
             deformMaskJob.MaterialHash = materialHash;
             deformMaskJob.Offset = offset;
             deformMaskJob.UnscaledGlobalDataPoint = unscaledGlobalDataPoint;
             deformMaskJob.ChunkPoints = chunkPoints.AsParallelWriter();
 
-            JobHandle deformMaskJobHandler = deformMaskJob.Schedule(editingArea.Parallelepiped.Volume, 1);
+            JobHandle deformMaskJobHandler = deformMaskJob.Schedule(editingArea.RectPrism.Volume, 1);
             await AsyncUtilities.WaitWhile(() => !deformMaskJobHandler.IsCompleted);
             deformMaskJobHandler.Complete();
 

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
 using Unity.Collections;
 using Unity.Jobs;
 using UnityEngine;
@@ -11,12 +10,13 @@ namespace Utilities.Math
         where T : struct
     {
         public NativeArray<T> RawData;
-
+        private int _dataAreaStartIndex;
+        private int _dataAreaEndIndex;
         private readonly int _width;
         private readonly int _height;
         private readonly int _depth;
         private readonly Vector3Int _size;
-        private readonly Parallelepiped _parallelepiped;
+        private readonly RectPrism _rectPrism;
         private readonly int _widthAndHeight;
         private readonly int _fullLength;
 
@@ -26,24 +26,54 @@ namespace Utilities.Math
         public Vector3Int Size => _size;
         public int WidthAndHeight => _widthAndHeight;
         public int FullLength => _fullLength;
-        public Parallelepiped Parallelepiped => _parallelepiped;
+        public RectPrism RectPrism => _rectPrism;
+
+        public ThreedimensionalNativeArray(int width, int height, int depth)
+            : this(new Vector3Int(width, height, depth))
+        {
+
+        }
 
         public ThreedimensionalNativeArray(Vector3Int size) 
-            : this(size.x, size.y, size.z)
+            : this(new NativeArray<T>(size.x * size.y * size.z, Allocator.Persistent, NativeArrayOptions.UninitializedMemory),
+                  size, 0)
         {
            
         }
 
-        public ThreedimensionalNativeArray(int width, int height, int depth)
+        /// <param name="rawData"></param>
+        /// <param name="size"></param>
+        /// <param name="startIndex">Determines from which element in the <paramref name="rawData"/> starts data area
+        /// for this object.</param>
+        public ThreedimensionalNativeArray(NativeArray<T> rawData, Vector3Int size, int startIndex = 0)
         {
-            _width = width;
-            _height = height;
-            _depth = depth;
+            _width = size.x;
+            _height = size.y;
+            _depth = size.z;
             _size = new Vector3Int(_width, _height, _depth);
-            _parallelepiped = new Parallelepiped(_size);
+            _rectPrism = new RectPrism(_size);
             _widthAndHeight = _width * _height;
             _fullLength = _width * _height * _depth;
-            RawData = new NativeArray<T>(_fullLength, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+
+            _dataAreaStartIndex = startIndex;
+            _dataAreaEndIndex = _dataAreaStartIndex + _fullLength;
+
+            CheckDataAreaBordersCorectness(rawData, size, startIndex, _dataAreaEndIndex);
+            RawData = rawData;
+        }
+
+        private static void CheckDataAreaBordersCorectness(NativeArray<T> rawData, Vector3Int size, int startIndex, int endIndex)
+        {
+            if (startIndex < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(startIndex));
+            }
+
+            if (endIndex > rawData.Length)
+            {
+                throw new ArgumentException($"Data area end index greater then {nameof(rawData)} length!" +
+                    $"Check correctness of this parameters: \"{nameof(size)}\", \"{nameof(startIndex)}\"");
+            }
         }
 
         /// <param name="minPosition">Start position of data copying.</param>
@@ -54,7 +84,7 @@ namespace Utilities.Math
             int innerLoopBatchCount = 4)
         {
             var copyArrayPartJob = new CopyArrayPartJob<T>(this, resultArray, minPosition);
-            JobHandle copyJobHandle = copyArrayPartJob.Schedule(resultArray._parallelepiped.Volume, innerLoopBatchCount);
+            JobHandle copyJobHandle = copyArrayPartJob.Schedule(resultArray._rectPrism.Volume, innerLoopBatchCount);
             return copyJobHandle;
         }
 
@@ -93,24 +123,27 @@ namespace Utilities.Math
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int PositionToIndex(Vector3Int position)
         {
-            return _parallelepiped.PointToIndex(position.x, position.y, position.z);
+            return _rectPrism.PointToIndex(position.x, position.y, position.z);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int PositionToIndex(int x, int y, int z)
         {
-            return _parallelepiped.PointToIndex(x, y, z);
+            return _rectPrism.PointToIndex(x, y, z);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Vector3Int IndexToPostion(int index)
         {
-            return _parallelepiped.IndexToPoint(index);
+            return _rectPrism.IndexToPoint(index);
         }
 
         public void Dispose()
         {
-            RawData.Dispose();
+            if (RawData.IsCreated)
+            {
+                RawData.Dispose();
+            }
         }
     }
 }

@@ -14,7 +14,7 @@ namespace MarchingCubesProject.Tools
         public static NativeHashMap<int, IntPtr> GetChunksDataPointersInsideArea(
             Area area, Vector3Int chunksSize, IChunksContainer chunksContainer)
         {
-            Vector3Int affectedAreaSize = area.Parallelepiped.Size;
+            Vector3Int affectedAreaSize = area.RectPrism.Size;
             int maxXChunks = affectedAreaSize.x / chunksSize.x + 1;
             int maxYChunks = affectedAreaSize.y / chunksSize.y + 1;
             int maxZChunks = affectedAreaSize.z / chunksSize.z + 1;

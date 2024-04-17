@@ -1,9 +1,15 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using FirstSettler.Extensions;
 using ProceduralNoiseProject;
+using Unity.Collections;
 using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.UIElements;
+using Utilities.Math;
+using Utilities.Threading;
 using World.Data;
 using World.Organization;
 
@@ -23,10 +29,13 @@ namespace MarchingCubesProject
         [SerializeField] private MaterialKeyAndUnityMaterialAssociations _materialAssociations;
         [SerializeField] private MaterialKeyAndHeightAssociations _heightAssociations;
 
-        private FractalNoise _fractal;
         private ComputeBuffer _heightHashAssociationsBuffer;
         private ComputeBuffer _minMaxAssociations;
         private bool _isInitialized;
+        private NativeArray<VoxelData> _voxelsArray;
+        private ComputeBuffer _voxelsBuffer;
+        private int _voxelsBufferLength;
+        private ComputeBuffer _rectPrisms;
 
         public MaterialKeyAndUnityMaterialAssociations MaterialAssociations
             => _materialAssociations;
@@ -38,33 +47,46 @@ namespace MarchingCubesProject
 
         protected void OnDisable()
         {
+            _voxelsBuffer.Dispose();
+            _voxelsArray.Dispose();
+            _voxelsBuffer = null;
             _heightHashAssociationsBuffer.Dispose();
             _minMaxAssociations.Dispose();
+            _rectPrisms.Dispose();
         }
 
-        public async Task FillChunkData(ChunkData chunkData, Vector3Int chunkGlobalPosition)
+        public async Task<List<ThreedimensionalNativeArray<VoxelData>>> GenerateChunksRawData(
+            Area loadingArea, Vector3Int chunkOffset, Vector3Int chunkDataSize)
         {
             if (!enabled)
             {
                 throw new System.InvalidOperationException($"Object with name \"{name}\" disabled!");
             }
 
+            int chunkDataVolume = chunkDataSize.x * chunkDataSize.y * chunkDataSize.z;
+            Vector3Int globalStartPoint = loadingArea.Min * chunkOffset;
+            Vector3Int globalSize = (loadingArea.Max - loadingArea.Min) * chunkDataSize;
+            int globalVolume = globalSize.x * globalSize.y * globalSize.z;
+
             InitializeBuffers();
             var kernelId = _generationComputeShader.FindKernel("CSMain");
             int mat = _heightAssociations.GetMaterialKeyHashByHeight(0);
-            var voxels = chunkData.VoxelsData;
-            var chunkDataBuffer = chunkData.GetOrCreateVoxelsDataBuffer();
+            _rectPrisms.SetData(new RectPrism[] {
+                new RectPrism(chunkDataSize),
+                new RectPrism(chunkOffset),
+                new RectPrism(globalSize),
+                loadingArea.RectPrism
+            });
 
-            _generationComputeShader.SetBuffer(kernelId, "ChunkData", chunkDataBuffer);
+            _ = GetOrCreateVoxelsDataBuffer(globalVolume);
+
+            _generationComputeShader.SetBuffer(kernelId, "ChunkData", _voxelsBuffer);
             _generationComputeShader.SetBuffer(kernelId, "HeightAndHashAssociations", _heightHashAssociationsBuffer);
             _generationComputeShader.SetBuffer(kernelId, "MinMaxAssociations", _minMaxAssociations);
-            _generationComputeShader.SetInt("MatHash", mat);
-            _generationComputeShader.SetInt("ChunkWidth", voxels.Width);
-            _generationComputeShader.SetInt("ChunkHeight", voxels.Height);
-            _generationComputeShader.SetInt("ChunkDepth", voxels.Depth);
-            _generationComputeShader.SetInt("ChunkGlobalPositionX", _voxelsOffset.x + chunkGlobalPosition.x);
-            _generationComputeShader.SetInt("ChunkGlobalPositionY", _voxelsOffset.y + chunkGlobalPosition.y);
-            _generationComputeShader.SetInt("ChunkGlobalPositionZ", _voxelsOffset.z + chunkGlobalPosition.z);
+            _generationComputeShader.SetBuffer(kernelId, "ChunkSizeAndChunkOffsetAndGlobalAndLoadingAreaRectPrisms", _rectPrisms);
+            _generationComputeShader.SetInt("ChunkGlobalPositionX", _voxelsOffset.x + globalStartPoint.x);
+            _generationComputeShader.SetInt("ChunkGlobalPositionY", _voxelsOffset.y + globalStartPoint.y);
+            _generationComputeShader.SetInt("ChunkGlobalPositionZ", _voxelsOffset.z + globalStartPoint.z);
             _generationComputeShader.SetInt("AssociationsCount", _heightAssociations.Count);
             _generationComputeShader.SetInt("Octaves", _octaves);
             _generationComputeShader.SetFloat("Persistence", _persistence);
@@ -73,9 +95,26 @@ namespace MarchingCubesProject
             _generationComputeShader.SetFloat("MaxHeight", _maxHeight);
             _generationComputeShader.SetFloat("MinHeight", _minHeight);
             _generationComputeShader.Dispatch(
-                kernelId, voxels.Width, voxels.Height, voxels.Depth);
+                kernelId, globalSize.x, globalSize.y, globalSize.z);
 
-            await chunkData.GetDataFromVoxelsBuffer(chunkDataBuffer);
+            AsyncGPUReadbackRequest request = AsyncGPUReadback.RequestIntoNativeArray(
+                ref _voxelsArray, _voxelsBuffer);
+
+            await AsyncUtilities.WaitWhile(() => !request.done, 1);
+
+            List<ThreedimensionalNativeArray<VoxelData>> result
+                = new List<ThreedimensionalNativeArray<VoxelData>>();
+
+
+            for (int i = 0; i < loadingArea.RectPrism.Volume; i++)
+            {
+                NativeArray<VoxelData> subarray = new NativeArray<VoxelData>(
+                    _voxelsArray.GetSubArray(i * chunkDataVolume, chunkDataVolume), Allocator.Persistent);
+
+                result.Add(new ThreedimensionalNativeArray<VoxelData>(subarray, chunkDataSize));
+            }
+
+            return result;
         }
 
         private void InitializeBuffers()
@@ -86,7 +125,29 @@ namespace MarchingCubesProject
                 _heightAssociations.Initialize();
                 InitializeAssociationsBuffer();
                 InitializeMinMaxBuffer();
+                InitializeParallelepipedsBuffer();
             }
+        }
+
+        private (ComputeBuffer, NativeArray<VoxelData>) GetOrCreateVoxelsDataBuffer(int length)
+        {
+            if (_voxelsBuffer == null)
+            {
+                _voxelsArray = new NativeArray<VoxelData>(length, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+                _voxelsBuffer = ComputeBufferExtensions.Create(length, typeof(VoxelData));
+            }
+            else if (_voxelsBufferLength != length)
+            {
+                _voxelsArray.Dispose();
+                _voxelsBuffer.Dispose();
+                _voxelsBuffer = null;
+                _voxelsArray = new NativeArray<VoxelData>(length, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+                _voxelsBuffer = ComputeBufferExtensions.Create(length, typeof(VoxelData));
+            }
+
+            _voxelsBufferLength = length;
+
+            return (_voxelsBuffer, _voxelsArray);
         }
 
         private void InitializeAssociationsBuffer()
@@ -110,6 +171,11 @@ namespace MarchingCubesProject
                 _heightAssociations.MinAssociation,
                 _heightAssociations.MaxAssociation
             }.Select(x => new HeightAndMaterialHashAssociation(x.Value.Key, x.Value.Value)).ToArray());
+        }
+
+        private void InitializeParallelepipedsBuffer()
+        {
+            _rectPrisms = ComputeBufferExtensions.Create(4, typeof(RectPrism));
         }
     }
 }

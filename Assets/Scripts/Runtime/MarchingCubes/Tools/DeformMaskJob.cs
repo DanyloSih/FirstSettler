@@ -14,8 +14,8 @@ namespace MarchingCubesProject.Tools
     {
         [ReadOnly] public Vector3Int Offset;
         [ReadOnly] public Vector3Int UnscaledGlobalDataPoint;
-        [ReadOnly] public Parallelepiped EditingParallelepiped;
-        [ReadOnly] public Parallelepiped ChunkDataModel;
+        [ReadOnly] public RectPrism EditingPrism;
+        [ReadOnly] public RectPrism ChunkDataModel;
         [ReadOnly] public Vector3Int ChunkSize;
         [ReadOnly] public int HalfBrushSize;
         [ReadOnly] public float DeformFactor;
@@ -27,7 +27,7 @@ namespace MarchingCubesProject.Tools
 
         public void Execute(int index)
         {
-            Vector3Int pointerInArea = EditingParallelepiped.IndexToPoint(index) + Offset;
+            Vector3Int pointerInArea = EditingPrism.IndexToPoint(index) + Offset;
             float unscaledDistance = pointerInArea.magnitude;
             float deformForce = unscaledDistance / HalfBrushSize;
 

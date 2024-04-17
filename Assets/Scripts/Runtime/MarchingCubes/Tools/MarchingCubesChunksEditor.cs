@@ -58,7 +58,7 @@ namespace MarchingCubesProject.Tools
             setVoxelsJob.NewVoxels = newVoxels;
             setVoxelsJob.AffectedChunksDataPointers = chunksDataPointersInsideEditArea;
             setVoxelsJob.ChunkSize = _chunkSize;
-            setVoxelsJob.ChunkDataModel = new Parallelepiped(_chunkSize + Vector3Int.one);
+            setVoxelsJob.ChunkDataModel = new RectPrism(_chunkSize + Vector3Int.one);
 
             JobHandle jobHandle = setVoxelsJob.Schedule(voxelsCount, 8);
             await AsyncUtilities.WaitWhile(() => !jobHandle.IsCompleted);

@@ -31,7 +31,8 @@ namespace World.Organization
         private ChunkCoordinatesCalculator _chunkCoordinatesCalculator;
         private IMatrixWalker _matrixWalker;
         private DiContainer _diContainer;
-        private ChunkData _chunksDataSource;
+        private Vector3Int _chunkSize;
+        private Vector3Int _chunkSizePlusOne;
 
         [Inject]
         public void Construct(DiContainer diContainer, BasicChunkSettings basicChunkSettings)
@@ -45,7 +46,9 @@ namespace World.Organization
 
         protected void OnEnable()
         {
-            _chunkCoordinatesCalculator = new ChunkCoordinatesCalculator(_basicChunkSettings.Size, _basicChunkSettings.Scale);
+            _chunkSize = _basicChunkSettings.Size;
+            _chunkSizePlusOne = _basicChunkSettings.SizePlusOne;
+            _chunkCoordinatesCalculator = new ChunkCoordinatesCalculator(_chunkSize, _basicChunkSettings.Scale);
             _matrixWalker = new SpiralMatrixWalker();
             _activeChunksContainer = _activeChunksContainerHeir.GetValue();
             IChunk chunkPrefab = _chunkPrefabHeir.GetValue();
@@ -81,16 +84,14 @@ namespace World.Organization
             maxPos -= _minPoint;
             Area loadingArea = new Area(minPos, maxPos);
 
-            _chunksDataSource = new ChunkData(loadingArea.Parallelepiped.Size * _basicChunkSettings.Size);
             Task<List<ChunkData>> GenerateChunksDataTask = GenerateChunksData(loadingArea);
 
             var chunks = CreateChunksGameObject(loadingArea);
 
             List<ChunkData> chunksData = await GenerateChunksDataTask;
-            _chunksDataSource.Dispose();
-            //await GenerateChunksMeshes(loadingArea, chunks, chunksData);
-
-            //ApplyChunksMeshData(loadingArea, chunks);
+            //chunksData.ForEach(x => x.Dispose());
+            await GenerateChunksMeshes(loadingArea, chunks, chunksData);
+            ApplyChunksMeshData(loadingArea, chunks);
         }
 
         private void ApplyChunksMeshData(Area loadingArea, List<IChunk> chunks)
@@ -156,13 +157,18 @@ namespace World.Organization
 
         private async Task<List<ChunkData>> GenerateChunksData(Area loadingArea)
         {
-            await _chunksDataProvider.FillChunkData(_chunksDataSource, loadingArea.Min * _basicChunkSettings.Size);
+            var chunksRawData = await _chunksDataProvider.GenerateChunksRawData(
+                loadingArea, _chunkSize, _chunkSizePlusOne);
 
             List<ChunkData> chunksData = new List<ChunkData>();
-            foreach (var loadingPos in loadingArea.Parallelepiped.GetEveryPoint())
+            foreach (var index in loadingArea.RectPrism.GetEveryIndex())
             {
-                chunksData.Add(_chunksDataSource.CopyPart(
-                    loadingPos * _basicChunkSettings.Size, _basicChunkSettings.Size, 32));
+                //var chunk = _chunksDataSource.CopyPart(
+                //    loadingPos * _basicChunkSettings.Size, _basicChunkSettings.Size, 32);
+
+                chunksData.Add(new ChunkData(chunksRawData[index]));
+
+                //chunksData.Add(new ChunkData(_basicChunkSettings.Size));
             }
 
             return chunksData;
