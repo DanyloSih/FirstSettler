@@ -13,8 +13,6 @@ namespace World.Organization
     public class ChunksGridGenerator : MonoBehaviour
     {
         [SerializeField] private Transform _chunksRoot;
-        [SerializeField] private HeirsProvider<IChunksContainer> _activeChunksContainerHeir;
-        [SerializeField] private HeirsProvider<IChunkDataProvider> _chunksDataProviderHeir;
         [SerializeField] private HeirsProvider<IChunk> _chunkPrefabHeir;
         [SerializeField] private Vector3Int _chunksGridSize;
         [Tooltip("Determines the volume of the loaded zone in one pass. The value is indicated in chunks.")]
@@ -24,24 +22,29 @@ namespace World.Organization
         private BasicChunkSettings _basicChunkSettings;
         private List<(IChunk ChunkComponent, GameObject ChunkGameObject)> _chunksList
             = new List<(IChunk ChunkComponent, GameObject ChunkGameObject)>();
-        private IChunksContainer _activeChunksContainer;
         private GameObject _chunkPrefabGO;
+        private IChunksContainer _activeChunksContainer;
         private IChunkDataProvider _chunksDataProvider;
+        private IMatrixWalker _matrixWalker;
         private Vector3Int _minPoint;
         private ChunkCoordinatesCalculator _chunkCoordinatesCalculator;
-        private IMatrixWalker _matrixWalker;
         private DiContainer _diContainer;
         private Vector3Int _chunkSize;
         private Vector3Int _chunkSizePlusOne;
 
         [Inject]
-        public void Construct(DiContainer diContainer, BasicChunkSettings basicChunkSettings)
+        public void Construct(DiContainer diContainer, 
+            BasicChunkSettings basicChunkSettings, 
+            IChunksContainer chunksContainer,
+            IChunkDataProvider chunkDataProvider)
         {
             _diContainer = diContainer;
             _basicChunkSettings = basicChunkSettings;
             _loadingGridSize = _chunksGridSize.GetElementwiseFloorDividedVector(_chunksLoadingVolumePerCall);
             _chunksGridSize = Vector3Int.Scale(_loadingGridSize, _chunksLoadingVolumePerCall);
             _minPoint = _chunksGridSize / 2;
+            _activeChunksContainer = chunksContainer;
+            _chunksDataProvider = chunkDataProvider;
         }
 
         protected void OnEnable()
@@ -50,15 +53,12 @@ namespace World.Organization
             _chunkSizePlusOne = _basicChunkSettings.SizePlusOne;
             _chunkCoordinatesCalculator = new ChunkCoordinatesCalculator(_chunkSize, _basicChunkSettings.Scale);
             _matrixWalker = new SpiralMatrixWalker();
-            _activeChunksContainer = _activeChunksContainerHeir.GetValue();
             IChunk chunkPrefab = _chunkPrefabHeir.GetValue();
             _chunkPrefabGO = (chunkPrefab as Component)?.gameObject;
             if (_chunkPrefabGO == null)
             {
                 throw new ArgumentException($"{nameof(_chunkPrefabHeir)} should be prefab gameObject!");
             }
-            _chunksDataProvider = _chunksDataProviderHeir.GetValue();
-
 
             DestroyOldChunks();
             InitializeChunks();
