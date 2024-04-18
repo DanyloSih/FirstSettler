@@ -623,21 +623,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _chunksRoot: {fileID: 1639549069}
-  _chunkPrefabHeir:
-    _selectedIndex: 1
-    _heirObject:
-      rid: -2
-    _heirUnityObject: {fileID: 6759228416812596541, guid: 161e48ac2f1b7444086f4a516b9df352,
-      type: 3}
-    _targetObject: {fileID: 1000216452}
-    _isFolded: 1
-  _chunksGridSize: {x: 32, y: 8, z: 32}
   _chunksLoadingVolumePerCall: {x: 4, y: 4, z: 4}
-  references:
-    version: 2
-    RefIds:
-    - rid: -2
-      type: {class: , ns: , asm: }
+  _chunksGridSize: {x: 32, y: 8, z: 32}
 --- !u!1001 &1065049939
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1258,6 +1245,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _chunksContainer: {fileID: 1351798334}
   _gpuChunkDataGenerator: {fileID: 1117199047}
+  _chunkPrefab: {fileID: 6759228416812596541, guid: 161e48ac2f1b7444086f4a516b9df352,
+    type: 3}
 --- !u!4 &1650170032
 Transform:
   m_ObjectHideFlags: 0

@@ -9,6 +9,7 @@ namespace FirstSettler.Installers
     {
         [SerializeField] private ChunksContainer _chunksContainer;
         [SerializeField] private GPUChunkDataGenerator _gpuChunkDataGenerator;
+        [SerializeField] private MarchingCubesChunk _chunkPrefab;
 
         public override void InstallBindings()
         {
@@ -17,6 +18,9 @@ namespace FirstSettler.Installers
 
             Container.BindInterfacesAndSelfTo<GPUChunkDataGenerator>()
                 .FromInstance(_gpuChunkDataGenerator).AsSingle();
+
+            Container.BindInterfacesAndSelfTo<MarchingCubesChunk>()
+                .FromInstance(_chunkPrefab).AsSingle();
         }
     }
 }
