@@ -12,7 +12,7 @@ namespace MarchingCubesProject.Tools
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static NativeHashMap<int, IntPtr> GetChunksDataPointersInsideArea(
-            Area area, Vector3Int chunksSize, IChunksContainer chunksContainer)
+            RectPrismAreaInt area, Vector3Int chunksSize, IChunksContainer chunksContainer)
         {
             Vector3Int affectedAreaSize = area.RectPrism.Size;
             int maxXChunks = affectedAreaSize.x / chunksSize.x + 1;

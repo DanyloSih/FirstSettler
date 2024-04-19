@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Utilities.Math
 {
-    public struct RectPrism
+    public struct RectPrismInt
     {
         private readonly Vector3Int _size;
         private readonly Vector3Int _extents;
@@ -33,7 +33,7 @@ namespace Utilities.Math
             get => _widthAndHeight; 
         }
 
-        public RectPrism(Vector3Int size)
+        public RectPrismInt(Vector3Int size)
         {
             _size = size;
             _extents = size / 2;

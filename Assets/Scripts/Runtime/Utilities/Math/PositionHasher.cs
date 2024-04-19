@@ -17,10 +17,18 @@ namespace Utilities.Math
         /// Z axis limit (-1023, 1023)
         /// </summary>
         public const int Z_UNSIGNED_LIMIT = 2047;
-
-        private const int _X_MAX_LIMIT =  (X_UNSIGNED_LIMIT / 2);
-        private const int _Y_MAX_LIMIT =  (Y_UNSIGNED_LIMIT / 2);
-        private const int _Z_MAX_LIMIT =  (Z_UNSIGNED_LIMIT / 2);
+        /// <summary>
+        /// <inheritdoc cref="X_UNSIGNED_LIMIT"/>
+        /// </summary>
+        public const int X_MAX =  (X_UNSIGNED_LIMIT / 2);
+        /// <summary>
+        /// <inheritdoc cref="Y_UNSIGNED_LIMIT"/>
+        /// </summary>
+        public const int Y_MAX =  (Y_UNSIGNED_LIMIT / 2);
+        /// <summary>
+        /// <inheritdoc cref="Z_UNSIGNED_LIMIT"/>
+        /// </summary>
+        public const int Z_MAX =  (Z_UNSIGNED_LIMIT / 2);
 
         /// <summary>
         /// This hash function guarantees unique values if the axis 
@@ -32,12 +40,15 @@ namespace Utilities.Math
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int GetPositionHash(int x, int y, int z)
         {
-            int xFormated = (((x + _X_MAX_LIMIT) % X_UNSIGNED_LIMIT) & X_UNSIGNED_LIMIT) << 21;
-            int yFormated = (((y + _Y_MAX_LIMIT) % Y_UNSIGNED_LIMIT) & Y_UNSIGNED_LIMIT) << 11;
-            int zFormated = ((z + _Z_MAX_LIMIT) % Z_UNSIGNED_LIMIT) & Z_UNSIGNED_LIMIT;
+            int xFormated = (((x + X_MAX) % X_UNSIGNED_LIMIT) & X_UNSIGNED_LIMIT) << 21;
+            int yFormated = (((y + Y_MAX) % Y_UNSIGNED_LIMIT) & Y_UNSIGNED_LIMIT) << 11;
+            int zFormated = ((z + Z_MAX) % Z_UNSIGNED_LIMIT) & Z_UNSIGNED_LIMIT;
             return xFormated | yFormated | zFormated;
         }
 
+        /// <summary>
+        /// <inheritdoc cref="GetPositionHash(int, int, int)"/>
+        /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int GetPositionHash(Vector3Int position)
         {

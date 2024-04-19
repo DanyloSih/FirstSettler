@@ -16,11 +16,11 @@ namespace MarchingCubesProject
         private NativeArray<VoxelData> _voxels;
         [ReadOnly]
         private NativeHeightAndMaterialHashAssociations _associations;
-        private RectPrism _voxelsPrism;
+        private RectPrismInt _voxelsPrism;
 
         public CPUChunkDataGenerationJob(
             NativeArray<VoxelData> voxels,
-            RectPrism voxelsPrism,
+            RectPrismInt voxelsPrism,
             Vector3Int chunkGlobalPosition,
             ChunkGenerationSettings chunkGenerationSettings,
             NativeHeightAndMaterialHashAssociations associations)

@@ -44,16 +44,24 @@ namespace MarchingCubesProject
 
         protected void OnDisable()
         {
-            _voxelsBuffer.Dispose();
-            _voxelsArray.Dispose();
-            _voxelsBuffer = null;
+            if (_voxelsBuffer != null && _voxelsBuffer.IsValid())
+            {
+                _voxelsBuffer.Dispose();
+                _voxelsBuffer = null;
+            }
+
+            if (_voxelsArray.IsCreated)
+            {
+                _voxelsArray.Dispose();
+            }
+
             _heightHashAssociationsBuffer.Dispose();
             _minMaxAssociations.Dispose();
             _rectPrisms.Dispose();
         }
 
         public async Task<List<ThreedimensionalNativeArray<VoxelData>>> GenerateChunksRawData(
-            Area loadingArea, Vector3Int chunkOffset, Vector3Int chunkDataSize)
+            RectPrismAreaInt loadingArea, Vector3Int chunkOffset, Vector3Int chunkDataSize)
         {
             if (!enabled)
             {
@@ -68,10 +76,10 @@ namespace MarchingCubesProject
             InitializeBuffers();
             var kernelId = _generationComputeShader.FindKernel("CSMain");
             int mat = _heightAssociations.GetMaterialKeyHashByHeight(0);
-            _rectPrisms.SetData(new RectPrism[] {
-                new RectPrism(chunkDataSize),
-                new RectPrism(chunkOffset),
-                new RectPrism(globalSize),
+            _rectPrisms.SetData(new RectPrismInt[] {
+                new RectPrismInt(chunkDataSize),
+                new RectPrismInt(chunkOffset),
+                new RectPrismInt(globalSize),
                 loadingArea.RectPrism
             });
 
@@ -172,7 +180,7 @@ namespace MarchingCubesProject
 
         private void InitializeParallelepipedsBuffer()
         {
-            _rectPrisms = ComputeBufferExtensions.Create(4, typeof(RectPrism));
+            _rectPrisms = ComputeBufferExtensions.Create(4, typeof(RectPrismInt));
         }
     }
 }

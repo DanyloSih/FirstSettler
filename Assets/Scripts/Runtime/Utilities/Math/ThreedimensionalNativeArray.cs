@@ -16,7 +16,7 @@ namespace Utilities.Math
         private readonly int _height;
         private readonly int _depth;
         private readonly Vector3Int _size;
-        private readonly RectPrism _rectPrism;
+        private readonly RectPrismInt _rectPrism;
         private readonly int _widthAndHeight;
         private readonly int _fullLength;
 
@@ -26,7 +26,7 @@ namespace Utilities.Math
         public Vector3Int Size => _size;
         public int WidthAndHeight => _widthAndHeight;
         public int FullLength => _fullLength;
-        public RectPrism RectPrism => _rectPrism;
+        public RectPrismInt RectPrism => _rectPrism;
 
         public ThreedimensionalNativeArray(int width, int height, int depth)
             : this(new Vector3Int(width, height, depth))
@@ -51,7 +51,7 @@ namespace Utilities.Math
             _height = size.y;
             _depth = size.z;
             _size = new Vector3Int(_width, _height, _depth);
-            _rectPrism = new RectPrism(_size);
+            _rectPrism = new RectPrismInt(_size);
             _widthAndHeight = _width * _height;
             _fullLength = _width * _height * _depth;
 

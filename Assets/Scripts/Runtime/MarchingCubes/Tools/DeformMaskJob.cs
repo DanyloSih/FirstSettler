@@ -14,8 +14,8 @@ namespace MarchingCubesProject.Tools
     {
         [ReadOnly] public Vector3Int Offset;
         [ReadOnly] public Vector3Int UnscaledGlobalDataPoint;
-        [ReadOnly] public RectPrism EditingPrism;
-        [ReadOnly] public RectPrism ChunkDataModel;
+        [ReadOnly] public RectPrismInt EditingPrism;
+        [ReadOnly] public RectPrismInt ChunkDataModel;
         [ReadOnly] public Vector3Int ChunkSize;
         [ReadOnly] public int HalfBrushSize;
         [ReadOnly] public float DeformFactor;

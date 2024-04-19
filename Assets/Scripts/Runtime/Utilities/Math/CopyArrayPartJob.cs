@@ -12,7 +12,7 @@ namespace Utilities.Math
         [WriteOnly]
         private ThreedimensionalNativeArray<T> _result;
         private Vector3Int _minPosition;
-        private RectPrism _resultParallelepiped;
+        private RectPrismInt _resultParallelepiped;
 
         /// <param name="donor">The array FROM which the data will be copied.</param>
         /// <param name="result">The array TO which the data will be copied</param>

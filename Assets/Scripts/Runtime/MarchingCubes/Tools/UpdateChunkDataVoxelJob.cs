@@ -12,7 +12,7 @@ namespace MarchingCubesProject.Tools
     public struct UpdateChunkDataVoxelJob : IJobParallelFor
     {
         [ReadOnly] public Vector3Int ChunkSize;
-        [ReadOnly] public RectPrism ChunkDataModel;
+        [ReadOnly] public RectPrismInt ChunkDataModel;
         [ReadOnly] public NativeArray<ChunkPoint> NewVoxels;
         [ReadOnly] public NativeHashMap<int, IntPtr> AffectedChunksDataPointers;
 

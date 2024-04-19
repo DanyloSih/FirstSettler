@@ -4,15 +4,15 @@ using UnityEngine;
 
 namespace Utilities.Math
 {
-    public struct Area
+    public struct RectPrismAreaInt
     {
-        public RectPrism RectPrism { get; private set; }
+        public RectPrismInt RectPrism { get; private set; }
 
         public Vector3Int Center { get; private set; }
         public Vector3Int Min { get; private set; }
         public Vector3Int Max { get; private set; }
 
-        public Area(RectPrism parallelepiped, Vector3Int centerPosition)
+        public RectPrismAreaInt(RectPrismInt parallelepiped, Vector3Int centerPosition)
         {
             RectPrism = parallelepiped;
             Center = centerPosition;
@@ -20,10 +20,10 @@ namespace Utilities.Math
             Max = Center + parallelepiped.Extents;
         }
 
-        public Area(Vector3Int min, Vector3Int max)
+        public RectPrismAreaInt(Vector3Int min, Vector3Int max)
         {
             Vector3Int areaSize = max - min;
-            RectPrism = new RectPrism(areaSize);
+            RectPrism = new RectPrismInt(areaSize);
             Center = min + areaSize / 2;
             Min = min;
             Max = max;

@@ -97,8 +97,8 @@ namespace MarchingCubesProject.Tools
             Vector3Int localChunkDataPoint = initialDataPoint.LocalChunkDataPoint.FloorToVector3Int();
             Vector3Int unscaledGlobalDataPoint = unscaledGlobalChunkPosition + localChunkDataPoint;            
 
-            RectPrism editingPrism = new RectPrism(Vector3Int.one * _brushSize);
-            Area editingArea = new Area(editingPrism, unscaledGlobalDataPoint);
+            RectPrismInt editingPrism = new RectPrismInt(Vector3Int.one * _brushSize);
+            RectPrismAreaInt editingArea = new RectPrismAreaInt(editingPrism, unscaledGlobalDataPoint);
 
             NativeList<ChunkPoint> chunkPoints = new NativeList<ChunkPoint>(editingPrism.Volume, Allocator.Persistent);
             NativeHashMap<int, IntPtr> chunksDataPointersInsideEditArea 
@@ -106,7 +106,7 @@ namespace MarchingCubesProject.Tools
 
             DeformMaskJob deformMaskJob = new DeformMaskJob();
             deformMaskJob.DeformFactor = deformFactor;
-            deformMaskJob.ChunkDataModel = new RectPrism(chunkSize + Vector3Int.one);
+            deformMaskJob.ChunkDataModel = new RectPrismInt(chunkSize + Vector3Int.one);
             deformMaskJob.ChunksDataPointersInsideEditArea = chunksDataPointersInsideEditArea;
             deformMaskJob.ChunkSize = chunkSize;
             deformMaskJob.EditingPrism = editingPrism;

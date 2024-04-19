@@ -34,6 +34,7 @@ namespace World.Organization
         protected DiContainer DiContainer { get => _diContainer; }
         protected Vector3Int ChunkSize { get => _chunkSize; }
         protected Vector3Int ChunkSizePlusOne { get => _chunkSizePlusOne; }
+        protected ChunkCoordinatesCalculator ChunkCoordinatesCalculator { get => _chunkCoordinatesCalculator; }
 
         [Inject]
         public void Construct(DiContainer diContainer,
@@ -66,7 +67,7 @@ namespace World.Organization
 
         protected async Task GenerateChunksBatch(Vector3Int minPos, Vector3Int maxPos)
         {
-            Area loadingArea = new Area(minPos, maxPos);
+            RectPrismAreaInt loadingArea = new RectPrismAreaInt(minPos, maxPos);
 
             Task<List<ChunkData>> GenerateChunksDataTask = GenerateChunksData(loadingArea);
 
@@ -80,7 +81,7 @@ namespace World.Organization
 
         protected abstract void InitializeChunks();
 
-        private void ApplyChunksMeshData(Area loadingArea, List<IChunk> chunks)
+        private void ApplyChunksMeshData(RectPrismAreaInt loadingArea, List<IChunk> chunks)
         {
             int counter = 0;
             foreach (var loadingPos in loadingArea.GetEveryVoxel())
@@ -98,7 +99,7 @@ namespace World.Organization
             }
         }
 
-        private async Task GenerateChunksMeshes(Area loadingArea, List<IChunk> chunks, List<ChunkData> chunksData)
+        private async Task GenerateChunksMeshes(RectPrismAreaInt loadingArea, List<IChunk> chunks, List<ChunkData> chunksData)
         {
             int counter = 0;
             List<Task> tasks = new List<Task>();
@@ -119,7 +120,7 @@ namespace World.Organization
             await Task.WhenAll(tasks);
         }
 
-        private List<IChunk> CreateChunksGameObject(Area loadingArea)
+        private List<IChunk> CreateChunksGameObject(RectPrismAreaInt loadingArea)
         {
             List<IChunk> createdChunks = new List<IChunk>();
             foreach (var loadingPos in loadingArea.GetEveryVoxel())
@@ -141,7 +142,7 @@ namespace World.Organization
             return createdChunks;
         }
 
-        private async Task<List<ChunkData>> GenerateChunksData(Area loadingArea)
+        private async Task<List<ChunkData>> GenerateChunksData(RectPrismAreaInt loadingArea)
         {
             var chunksRawData = await _chunksDataProvider.GenerateChunksRawData(
                 loadingArea, _chunkSize, _chunkSizePlusOne);

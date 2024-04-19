@@ -3,6 +3,7 @@ using Utilities.Math.Extensions;
 
 namespace World.Organization
 {
+
     public class ChunksGridGenerator : ChunksGeneratorBase
     {
         [SerializeField] private Vector3Int _chunksGridSize;
