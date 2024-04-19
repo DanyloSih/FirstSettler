@@ -21,7 +21,6 @@ namespace MarchingCubesProject
         [SerializeField] private float _persistence = 0.5f;
         [SerializeField] private float _frequency = 1.0f;
         [SerializeField] private float _amplitude = 1.0f;
-        [SerializeField] private int _seed = 0;
         [SerializeField] private Vector3Int _voxelsOffset;
         [SerializeField] private MaterialKeyAndUnityMaterialAssociations _materialAssociations;
         [SerializeField] private MaterialKeyAndHeightAssociations _heightAssociations;
@@ -61,7 +60,7 @@ namespace MarchingCubesProject
         }
 
         public async Task<List<ThreedimensionalNativeArray<VoxelData>>> GenerateChunksRawData(
-            RectPrismAreaInt loadingArea, Vector3Int chunkOffset, Vector3Int chunkDataSize)
+            RectPrismInt loadingArea, Vector3Int anchor, Vector3Int chunkOffset, Vector3Int chunkDataSize)
         {
             if (!enabled)
             {
@@ -69,8 +68,8 @@ namespace MarchingCubesProject
             }
 
             int chunkDataVolume = chunkDataSize.x * chunkDataSize.y * chunkDataSize.z;
-            Vector3Int globalStartPoint = loadingArea.Min * chunkOffset;
-            Vector3Int globalSize = (loadingArea.Max - loadingArea.Min) * chunkDataSize;
+            Vector3Int globalStartPoint = anchor * chunkOffset;
+            Vector3Int globalSize = loadingArea.Size * chunkDataSize;
             int globalVolume = globalSize.x * globalSize.y * globalSize.z;
 
             InitializeBuffers();
@@ -80,7 +79,7 @@ namespace MarchingCubesProject
                 new RectPrismInt(chunkDataSize),
                 new RectPrismInt(chunkOffset),
                 new RectPrismInt(globalSize),
-                loadingArea.RectPrism
+                loadingArea
             });
 
             _ = GetOrCreateVoxelsDataBuffer(globalVolume);
@@ -111,7 +110,7 @@ namespace MarchingCubesProject
                 = new List<ThreedimensionalNativeArray<VoxelData>>();
 
 
-            for (int i = 0; i < loadingArea.RectPrism.Volume; i++)
+            for (int i = 0; i < loadingArea.Volume; i++)
             {
                 NativeArray<VoxelData> subarray = new NativeArray<VoxelData>(
                     _voxelsArray.GetSubArray(i * chunkDataVolume, chunkDataVolume), Allocator.Persistent);

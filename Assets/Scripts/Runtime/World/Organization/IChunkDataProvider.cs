@@ -9,7 +9,7 @@ namespace World.Organization
     public interface IChunkDataProvider
     {
         public Task<List<ThreedimensionalNativeArray<VoxelData>>> GenerateChunksRawData(
-            RectPrismAreaInt loadingArea, Vector3Int chunkOffset, Vector3Int chunkDataSize);
+            RectPrismInt loadingArea, Vector3Int anchor, Vector3Int chunkOffset, Vector3Int chunkDataSize);
 
         public MaterialKeyAndUnityMaterialAssociations MaterialAssociations { get; }
     }

@@ -98,7 +98,8 @@ namespace MarchingCubesProject.Tools
             Vector3Int unscaledGlobalDataPoint = unscaledGlobalChunkPosition + localChunkDataPoint;            
 
             RectPrismInt editingPrism = new RectPrismInt(Vector3Int.one * _brushSize);
-            RectPrismAreaInt editingArea = new RectPrismAreaInt(editingPrism, unscaledGlobalDataPoint);
+            ShapeIntArea<RectPrismInt> editingArea = new ShapeIntArea<RectPrismInt>(
+                editingPrism, unscaledGlobalDataPoint - editingPrism.HalfSize);
 
             NativeList<ChunkPoint> chunkPoints = new NativeList<ChunkPoint>(editingPrism.Volume, Allocator.Persistent);
             NativeHashMap<int, IntPtr> chunksDataPointersInsideEditArea 
@@ -116,7 +117,7 @@ namespace MarchingCubesProject.Tools
             deformMaskJob.UnscaledGlobalDataPoint = unscaledGlobalDataPoint;
             deformMaskJob.ChunkPoints = chunkPoints.AsParallelWriter();
 
-            JobHandle deformMaskJobHandler = deformMaskJob.Schedule(editingArea.RectPrism.Volume, 1);
+            JobHandle deformMaskJobHandler = deformMaskJob.Schedule(editingArea.Shape.Volume, 1);
             await AsyncUtilities.WaitWhile(() => !deformMaskJobHandler.IsCompleted);
             deformMaskJobHandler.Complete();
 

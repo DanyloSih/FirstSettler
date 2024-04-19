@@ -67,24 +67,24 @@ namespace World.Organization
 
         protected async Task GenerateChunksBatch(Vector3Int minPos, Vector3Int maxPos)
         {
-            RectPrismAreaInt loadingArea = new RectPrismAreaInt(minPos, maxPos);
+            RectPrismInt loadingArea = new RectPrismInt(maxPos - minPos);
 
-            Task<List<ChunkData>> GenerateChunksDataTask = GenerateChunksData(loadingArea);
+            Task<List<ChunkData>> GenerateChunksDataTask = GenerateChunksData(loadingArea, minPos);
 
-            var chunks = CreateChunksGameObject(loadingArea);
+            var chunks = CreateChunksGameObject(loadingArea, minPos);
 
             List<ChunkData> chunksData = await GenerateChunksDataTask;
             //chunksData.ForEach(x => x.Dispose());
-            await GenerateChunksMeshes(loadingArea, chunks, chunksData);
-            ApplyChunksMeshData(loadingArea, chunks);
+            await GenerateChunksMeshes(loadingArea, minPos, chunks, chunksData);
+            ApplyChunksMeshData(loadingArea, minPos, chunks);
         }
 
         protected abstract void InitializeChunks();
 
-        private void ApplyChunksMeshData(RectPrismAreaInt loadingArea, List<IChunk> chunks)
+        private void ApplyChunksMeshData(RectPrismInt loadingArea, Vector3Int anchor, List<IChunk> chunks)
         {
             int counter = 0;
-            foreach (var loadingPos in loadingArea.GetEveryVoxel())
+            foreach (var loadingPos in loadingArea.GetEveryPoint())
             {
                 var chunk = chunks[counter];
 
@@ -93,24 +93,25 @@ namespace World.Organization
                        = Vector3.one * _basicChunkSettings.Scale;
 
                 chunk.RootGameObject.transform.position
-                    = _chunkCoordinatesCalculator.GetGlobalChunkPositionByLocal(loadingPos);
+                    = _chunkCoordinatesCalculator.GetGlobalChunkPositionByLocal(loadingPos + anchor);
 
                 counter++;
             }
         }
 
-        private async Task GenerateChunksMeshes(RectPrismAreaInt loadingArea, List<IChunk> chunks, List<ChunkData> chunksData)
+        private async Task GenerateChunksMeshes(RectPrismInt loadingArea, Vector3Int anchor, List<IChunk> chunks, List<ChunkData> chunksData)
         {
             int counter = 0;
             List<Task> tasks = new List<Task>();
-            foreach (var loadingPos in loadingArea.GetEveryVoxel())
+            foreach (var loadingPos in loadingArea.GetEveryPoint())
             {
+                var pos = loadingPos + anchor;
                 IChunk chunk = chunks[counter];
                 ChunkData chunkData = chunksData[counter];
 
                 chunk.InitializeBasicData(
                         _chunksDataProvider.MaterialAssociations,
-                        loadingPos,
+                        pos,
                         chunkData);
 
                 tasks.Add(chunk.GenerateNewMeshData());
@@ -120,19 +121,20 @@ namespace World.Organization
             await Task.WhenAll(tasks);
         }
 
-        private List<IChunk> CreateChunksGameObject(RectPrismAreaInt loadingArea)
+        private List<IChunk> CreateChunksGameObject(RectPrismInt loadingArea, Vector3Int anchor)
         {
             List<IChunk> createdChunks = new List<IChunk>();
-            foreach (var loadingPos in loadingArea.GetEveryVoxel())
+            foreach (var loadingPos in loadingArea.GetEveryPoint())
             {
+                var pos = loadingPos + anchor;
                 GameObject instance = _diContainer.InstantiatePrefab(_chunkPrefabGO, _chunksRoot);
                 IChunk chunk = instance.GetComponent(typeof(IChunk)) as IChunk;
                 createdChunks.Add(chunk);
                 _chunksList.Add(new(chunk, instance));
 
-                if (!_activeChunksContainer.IsChunkExist(loadingPos.x, loadingPos.y, loadingPos.z))
+                if (!_activeChunksContainer.IsChunkExist(pos.x, pos.y, pos.z))
                 {
-                    _activeChunksContainer.AddChunk(loadingPos.x, loadingPos.y, loadingPos.z, chunk);
+                    _activeChunksContainer.AddChunk(pos.x, pos.y, pos.z, chunk);
                 }
                 else
                 {
@@ -142,13 +144,13 @@ namespace World.Organization
             return createdChunks;
         }
 
-        private async Task<List<ChunkData>> GenerateChunksData(RectPrismAreaInt loadingArea)
+        private async Task<List<ChunkData>> GenerateChunksData(RectPrismInt loadingArea, Vector3Int anchor)
         {
             var chunksRawData = await _chunksDataProvider.GenerateChunksRawData(
-                loadingArea, _chunkSize, _chunkSizePlusOne);
+                loadingArea, anchor, _chunkSize, _chunkSizePlusOne);
 
             List<ChunkData> chunksData = new List<ChunkData>();
-            foreach (var index in loadingArea.RectPrism.GetEveryIndex())
+            foreach (var index in loadingArea.GetEveryIndex())
             {
                 chunksData.Add(new ChunkData(chunksRawData[index]));
             }

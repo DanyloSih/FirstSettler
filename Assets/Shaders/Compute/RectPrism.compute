@@ -2,9 +2,9 @@ struct RectPrism
 {
     int3 Size;
     int3 Extents;
-    int Volume;
     int Width;
     int WidthAndHeight;
+    int Volume;
 };
 
 RectPrism CreateRectPrism(int3 size)

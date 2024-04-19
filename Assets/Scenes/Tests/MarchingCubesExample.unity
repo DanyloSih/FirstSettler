@@ -826,7 +826,6 @@ MonoBehaviour:
   _persistence: 0.2
   _frequency: 160
   _amplitude: 2
-  _seed: 0
   _voxelsOffset: {x: 0, y: 0, z: 0}
   _materialAssociations: {fileID: 11400000, guid: 666ef968199c91a4182bc98a711d7d8e,
     type: 2}

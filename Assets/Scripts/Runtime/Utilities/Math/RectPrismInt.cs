@@ -4,41 +4,22 @@ using UnityEngine;
 
 namespace Utilities.Math
 {
-    public struct RectPrismInt
+    public struct RectPrismInt : IShapeInt
     {
-        private readonly Vector3Int _size;
-        private readonly Vector3Int _extents;
+        public readonly Vector3Int Size;
+        public readonly Vector3Int HalfSize;
+        public readonly int Width;
+        public readonly int WidthAndHeight;
         private readonly int _volume;
-        private readonly int _width;
-        private readonly int _widthAndHeight;
 
-        public Vector3Int Size 
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _size; 
-        }
-        public Vector3Int Extents 
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _extents; 
-        }
-        public int Volume 
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _volume; 
-        }
-        public int WidthAndHeight 
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _widthAndHeight; 
-        }
+        public int Volume => _volume;
 
         public RectPrismInt(Vector3Int size)
         {
-            _size = size;
-            _extents = size / 2;
-            _width = size.x;
-            _widthAndHeight = size.x * size.y;
+            Size = size;
+            HalfSize = size / 2;
+            Width = size.x;
+            WidthAndHeight = size.x * size.y;
             _volume = size.x * size.y * size.z;
         }
 
@@ -63,21 +44,21 @@ namespace Utilities.Math
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsContainsPoint(Vector3Int point)
         {
-            return point.x >= 0 && point.x < _size.x 
-                && point.y >= 0 && point.y < _size.y
-                && point.z >= 0 && point.z < _size.z;
+            return point.x >= 0 && point.x < Size.x 
+                && point.y >= 0 && point.y < Size.y
+                && point.z >= 0 && point.z < Size.z;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsSurfacePoint(Vector3Int point)
         {
-            return (point.x % _size.x == 0 | point.y % _size.y == 0 | point.z % _size.z == 0);
+            return (point.x % Size.x == 0 | point.y % Size.y == 0 | point.z % Size.z == 0);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int PointToIndex(int x, int y, int z)
         {
-            return x + y * _width + z * _widthAndHeight;
+            return x + y * Width + z * WidthAndHeight;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -91,8 +72,8 @@ namespace Utilities.Math
         {
             int z = index / WidthAndHeight;
             int remainder = index % WidthAndHeight;
-            int y = remainder / _width;
-            int x = remainder % _width;
+            int y = remainder / Width;
+            int x = remainder % Width;
 
             return new Vector3Int(x, y, z);
         }
