@@ -1,12 +1,10 @@
 ﻿using UnityEngine;
-using System;
-using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace World.Organization
+namespace Utilities.Math
 {
-    public class SpiralMatrixWalker : IMatrixWalker
+    public struct SpiralMatrixWalker : IMatrixWalker
     {
         public IEnumerable<Vector3Int> WalkMatrix(Vector3Int size)
         {

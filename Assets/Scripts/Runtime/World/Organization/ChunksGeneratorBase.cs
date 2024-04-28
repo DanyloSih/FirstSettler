@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 using Utilities.Math;
 using World.Data;
+using World.Organization.Extensions;
 using Zenject;
 
 namespace World.Organization
@@ -24,7 +26,10 @@ namespace World.Organization
         private DiContainer _diContainer;
         private Vector3Int _chunkSize;
         private Vector3Int _chunkSizePlusOne;
+        private CancellationTokenSource _generationTokenSource;
+        private bool _isGenerationProcessStarted;
 
+        public bool IsGenerationProcessStarted { get => _isGenerationProcessStarted; }
         protected Vector3Int ChunksLoadingVolumePerCall { get => _chunksLoadingVolumePerCall; }
         protected Transform ChunksRoot { get => _chunksRoot; }
         protected BasicChunkSettings BasicChunkSettings { get => _basicChunkSettings; }
@@ -35,6 +40,7 @@ namespace World.Organization
         protected Vector3Int ChunkSize { get => _chunkSize; }
         protected Vector3Int ChunkSizePlusOne { get => _chunkSizePlusOne; }
         protected ChunkCoordinatesCalculator ChunkCoordinatesCalculator { get => _chunkCoordinatesCalculator; }
+        protected CancellationTokenSource GenerationTokenSource { get => _generationTokenSource; }
 
         [Inject]
         public void Construct(DiContainer diContainer,
@@ -59,27 +65,78 @@ namespace World.Organization
             _chunkCoordinatesCalculator = new ChunkCoordinatesCalculator(_chunkSize, _basicChunkSettings.Scale);
         }
 
-        protected void OnEnable()
+        public void StartGenerationProcess()
         {
+            if (_isGenerationProcessStarted)
+            {
+                throw new InvalidOperationException(
+                    $"Generation process already started. " +
+                    $"To use this method, you must first call method {nameof(StopGenerationProcess)}");
+            }
+            _generationTokenSource = new CancellationTokenSource();
+            _isGenerationProcessStarted = true;
             DestroyOldChunks();
-            InitializeChunks();
+            OnGenerationProcessStart();
         }
 
-        protected async Task GenerateChunksBatch(Vector3Int minPos, Vector3Int maxPos)
+        public void StopGenerationProcess()
         {
-            RectPrismInt loadingArea = new RectPrismInt(maxPos - minPos);
+            if (!_isGenerationProcessStarted)
+            {
+                throw new InvalidOperationException(
+                    $"The generation process has not started yet. " +
+                    $"To use this method, you must first call method {nameof(StartGenerationProcess)}");
+            }
+            _generationTokenSource.Cancel();
+            OnGenerationProcessStop();
+            _generationTokenSource.Dispose();
+            _generationTokenSource = null;
+            _isGenerationProcessStarted = false;
+        }
 
-            Task<List<ChunkData>> GenerateChunksDataTask = GenerateChunksData(loadingArea, minPos);
+        protected async Task GenerateChunksBatch(Vector3Int localChunkMinPos, Vector3Int localChunkMaxPos)
+        {
+            RectPrismInt localChunksLoadingArea = new RectPrismInt(localChunkMaxPos - localChunkMinPos);
 
-            var chunks = CreateChunksGameObject(loadingArea, minPos);
+            Task<List<ChunkData>> GenerateChunksDataTask
+                = GenerateChunksData(localChunksLoadingArea, localChunkMinPos);
+
+            var chunks = CreateChunksGameObject(localChunksLoadingArea, localChunkMinPos);
 
             List<ChunkData> chunksData = await GenerateChunksDataTask;
-            //chunksData.ForEach(x => x.Dispose());
-            await GenerateChunksMeshes(loadingArea, minPos, chunks, chunksData);
-            ApplyChunksMeshData(loadingArea, minPos, chunks);
+
+            await GenerateChunksMeshes(localChunksLoadingArea, localChunkMinPos, chunks, chunksData);
+            ApplyChunksMeshData(localChunksLoadingArea, localChunkMinPos, chunks);
         }
 
-        protected abstract void InitializeChunks();
+        protected async Task DisposeArea(IEnumerable<Vector3Int> disposeArea, int batchLength, int batchDelay)
+        {
+            int i = 0;
+            foreach (var position in disposeArea)
+            {
+                if (!ActiveChunksContainer.IsChunkExist(position))
+                {
+                    continue;
+                }
+
+                IChunk chunk = ActiveChunksContainer.GetChunk(position);
+                Destroy(chunk.RootGameObject);
+                ActiveChunksContainer.RemoveChunk(position);
+
+                if (i % batchLength == 0 && batchDelay > 0)
+                {
+                    await Task.Delay(batchDelay);
+                }
+
+                i++;
+            }
+        }
+
+        public abstract Task AwaitGenerationProcess();
+
+        protected abstract void OnGenerationProcessStart();
+
+        protected abstract void OnGenerationProcessStop();
 
         private void ApplyChunksMeshData(RectPrismInt loadingArea, Vector3Int anchor, List<IChunk> chunks)
         {
@@ -144,13 +201,14 @@ namespace World.Organization
             return createdChunks;
         }
 
-        private async Task<List<ChunkData>> GenerateChunksData(RectPrismInt loadingArea, Vector3Int anchor)
+        private async Task<List<ChunkData>> GenerateChunksData(
+            RectPrismInt localChunksLoadingArea, Vector3Int localChunkAnchor)
         {
             var chunksRawData = await _chunksDataProvider.GenerateChunksRawData(
-                loadingArea, anchor, _chunkSize, _chunkSizePlusOne);
+                localChunksLoadingArea, localChunkAnchor, _chunkSize, _chunkSizePlusOne);
 
             List<ChunkData> chunksData = new List<ChunkData>();
-            foreach (var index in loadingArea.GetEveryIndex())
+            foreach (var index in localChunksLoadingArea.GetEveryIndex())
             {
                 chunksData.Add(new ChunkData(chunksRawData[index]));
             }

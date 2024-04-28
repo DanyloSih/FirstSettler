@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
-namespace World.Organization
+namespace Utilities.Math
 {
     public interface IMatrixWalker
     {

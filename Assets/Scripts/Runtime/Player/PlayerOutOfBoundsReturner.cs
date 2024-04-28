@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace World.Entities.Player
+namespace FirstSettler.Player
 {
 	public class PlayerOutOfBoundsReturner : MonoBehaviour
 	{

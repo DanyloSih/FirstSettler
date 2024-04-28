@@ -20,19 +20,23 @@ namespace MarchingCubesProject.Tools
         [SerializeField] [Range(0, 1)] private float _deformForce = 0.2f;
         [SerializeField] private int _brushSize = 2;
         [SerializeField] private MaterialKey _drawMaterial;
-        [SerializeField] private MarchingCubesChunksEditor _marchingCubesChunksEditor;
-        [SerializeField] private HeirsProvider<IChunksContainer> _chunksContainerHeir;
 
         private Stopwatch _cooldownStopwatch = new Stopwatch();
         private int _drawMaterialHash;
         private Camera _mainCamera;
         private IChunksContainer _chunksContainer;
         private BasicChunkSettings _basicChunkSettings;
+        private MarchingCubesChunksEditor _marchingCubesChunksEditor;
 
         [Inject]
-        public void Construct(BasicChunkSettings basicChunkSettings)
+        public void Construct(
+            BasicChunkSettings basicChunkSettings, 
+            MarchingCubesChunksEditor marchingCubesChunksEditor,
+            IChunksContainer chunksContainer)
         {
             _basicChunkSettings = basicChunkSettings;
+            _marchingCubesChunksEditor = marchingCubesChunksEditor;
+            _chunksContainer = chunksContainer;
         }
 
         protected void OnEnable()
@@ -42,7 +46,6 @@ namespace MarchingCubesProject.Tools
                 _drawMaterialHash = _drawMaterial.GetHashCode();
             }
             _mainCamera = Camera.main;
-            _chunksContainer = _chunksContainerHeir.GetValue();
         }
 
         protected async void Update()

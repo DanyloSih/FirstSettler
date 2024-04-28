@@ -1,0 +1,18 @@
+{
+    "name": "FirstSettler.Bootstrappers",
+    "rootNamespace": "",
+    "references": [
+        "GUID:6096afa8afe5fec46943bbeb8218b1ca",
+        "GUID:2f01249bc33ccac42b27a432fda1ba0c",
+        "GUID:8388429f16c51724e82247226b227d9c"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

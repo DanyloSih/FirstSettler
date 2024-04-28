@@ -4,16 +4,15 @@ using UnityEngine;
 
 namespace Utilities.Math
 {
-
     public struct SphereInt : IShapeInt
     {
         private readonly int _radius;
         private readonly int _diameter;
         private readonly int _volume;
         [ReadOnly]
-        private readonly NativeParallelHashMap<int, Vector3Int> _indexToPointAssociations;
+        private readonly NativeHashMap<int, Vector3Int> _indexToPointAssociations;
         [ReadOnly]
-        private readonly NativeParallelHashMap<Vector3Int, int> _pointToIndexAssociations;
+        private readonly NativeHashMap<Vector3Int, int> _pointToIndexAssociations;
 
         public static int MaxRadius => PositionHasher.Y_MAX;
         public int Radius => _radius;
@@ -27,7 +26,7 @@ namespace Utilities.Math
 
             if (!SphereCash.IndexToPointAssociationsContainer.ContainsKey(_radius))
             {
-                var associations = CreateAssociations(_radius);
+                var associations = CreateAssociations(_radius, new SpiralMatrixWalker());
 
                 SphereCash.IndexToPointAssociationsContainer.Add(_radius, associations.Item1);
                 SphereCash.PointToIndexAssociationsContainer.Add(_radius, associations.Item2);
@@ -36,26 +35,31 @@ namespace Utilities.Math
             _indexToPointAssociations = SphereCash.IndexToPointAssociationsContainer[_radius];
             _pointToIndexAssociations = SphereCash.PointToIndexAssociationsContainer[_radius];
 
-            _volume = _indexToPointAssociations.Capacity;
+            _volume = _indexToPointAssociations.Count;
         }  
 
-        private static (NativeParallelHashMap<int, Vector3Int>, NativeParallelHashMap<Vector3Int, int>) CreateAssociations(int radius)
+        private static (NativeHashMap<int, Vector3Int>, NativeHashMap<Vector3Int, int>) CreateAssociations(
+            int radius, IMatrixWalker matrixWalker)
         {
             var volume = GetVolume(radius);
-            var prism = new RectPrismInt(Vector3Int.one * radius * 2);
-            var result = (new NativeParallelHashMap<int, Vector3Int>(volume, Allocator.Persistent), 
-                new NativeParallelHashMap<Vector3Int, int>(volume, Allocator.Persistent));
+            Vector3Int boxSize = Vector3Int.one * radius * 2;
+            Vector3Int boxHalfSize = Vector3Int.one * radius;
+            
+            var result = (new NativeHashMap<int, Vector3Int>(volume, Allocator.Persistent), 
+                new NativeHashMap<Vector3Int, int>(volume, Allocator.Persistent));
 
             int counter = 0;
-            foreach (var pos in prism.GetEveryPoint())
+
+            foreach (Vector3Int pos in matrixWalker.WalkMatrix(boxSize))
             {
-                if (Vector3Int.Distance(prism.HalfSize, pos) <= radius)
+                if (Vector3Int.Distance(boxHalfSize, pos) <= radius)
                 {
                     result.Item1.Add(counter, pos);
                     result.Item2.Add(pos, counter);
                     counter++;
                 }
             }
+
             return result;
         }
 

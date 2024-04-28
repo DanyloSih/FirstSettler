@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 using Unity.Collections;
 using UnityEngine;
 
@@ -6,21 +8,38 @@ namespace Utilities.Math
 {
     public struct DisposableArbitraryShapeInt : IShapeInt, IDisposable
     {
-        private NativeParallelHashMap<Vector3Int, int> _pointToIndexAssociations;
-        private NativeParallelHashMap<int, Vector3Int> _indexToPointAssociations;
+        private NativeHashMap<Vector3Int, int> _pointToIndexAssociations;
+        private NativeHashMap<int, Vector3Int> _indexToPointAssociations;
 
         public int Volume { get; }
 
         public DisposableArbitraryShapeInt(
-            NativeParallelHashMap<Vector3Int, int> pointToIndexAssociations, 
-            NativeParallelHashMap<int, Vector3Int> indexToPointAssociations) : this()
+           IEnumerable<Vector3Int> points, Allocator allocator) : this()
         {
-            if (pointToIndexAssociations.Count() != indexToPointAssociations.Count())
+            _pointToIndexAssociations = new NativeHashMap<Vector3Int, int>(20, allocator);
+            _indexToPointAssociations = new NativeHashMap<int, Vector3Int>(20, allocator);
+
+            int counter = 0;
+            foreach (var point in points)
+            {
+                _pointToIndexAssociations.Add(point, counter);
+                _indexToPointAssociations.Add(counter, point);
+                counter++;
+            }
+
+            Volume = counter;
+        }
+
+        public DisposableArbitraryShapeInt(
+            NativeHashMap<Vector3Int, int> pointToIndexAssociations,
+            NativeHashMap<int, Vector3Int> indexToPointAssociations) : this()
+        {
+            if (pointToIndexAssociations.Count != indexToPointAssociations.Count)
             {
                 throw new ArgumentException($"Hash maps must have the same number of elements!");
             }
 
-            Volume = pointToIndexAssociations.Count();
+            Volume = pointToIndexAssociations.Count;
 
             _pointToIndexAssociations = pointToIndexAssociations;
             _indexToPointAssociations = indexToPointAssociations;

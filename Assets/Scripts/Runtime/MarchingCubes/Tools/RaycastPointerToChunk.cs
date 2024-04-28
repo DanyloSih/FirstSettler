@@ -7,9 +7,9 @@ namespace MarchingCubesProject.Tools
 {
     public class RaycastPointerToChunk : MonoBehaviour
     {
-        [SerializeField] private Camera _rayThrowerCamera;
         [SerializeField] private float _maxRaycastDistance;
 
+        private Camera _rayThrowerCamera;
         private ChunkCoordinatesCalculator _chunkCoordinatesCalculator;
         private BasicChunkSettings _basicChunkSettings;
 
@@ -21,6 +21,7 @@ namespace MarchingCubesProject.Tools
 
         protected void OnEnable()
         {
+            _rayThrowerCamera = Camera.main;
             _chunkCoordinatesCalculator = new ChunkCoordinatesCalculator(
                 _basicChunkSettings.Size, _basicChunkSettings.Scale);
         }

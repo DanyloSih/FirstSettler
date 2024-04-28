@@ -13,10 +13,8 @@ using Utilities.Threading;
 
 namespace MarchingCubesProject.Tools
 {
-    public class MarchingCubesChunksEditor : MonoBehaviour
+    public class MarchingCubesChunksEditor
     {
-        [SerializeField] private HeirsProvider<IChunksContainer> _chunksContainerHeir;
-
         private ChunkCoordinatesCalculator _chunkCoordinatesCalculator;
         private Vector3Int _chunkSize;
         private IChunksContainer _chunksContainer;
@@ -24,16 +22,13 @@ namespace MarchingCubesProject.Tools
         private BasicChunkSettings _basicChunkSettings;
 
         [Inject]
-        public void Construct(BasicChunkSettings basicChunkSettings)
+        public MarchingCubesChunksEditor(BasicChunkSettings basicChunkSettings, IChunksContainer chunksContainer)
         {
             _basicChunkSettings = basicChunkSettings;
-        }
+            _chunksContainer = chunksContainer;
 
-        protected void Awake()
-        {
-            _chunksContainer = _chunksContainerHeir.GetValue();
             _chunkCoordinatesCalculator = new ChunkCoordinatesCalculator(
-                _basicChunkSettings.Size, 
+                _basicChunkSettings.Size,
                 _basicChunkSettings.Scale);
 
             _chunkSize = _basicChunkSettings.Size;

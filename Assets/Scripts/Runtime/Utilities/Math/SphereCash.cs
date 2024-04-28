@@ -6,18 +6,18 @@ namespace Utilities.Math
 {
     public static class SphereCash
     {
-        private static Dictionary<int, NativeParallelHashMap<int, Vector3Int>> s_indexToPointAssociationsContainer;
-        private static Dictionary<int, NativeParallelHashMap<Vector3Int, int>> s_pointToIndexAssociationsContainer;
+        private static Dictionary<int, NativeHashMap<int, Vector3Int>> s_indexToPointAssociationsContainer;
+        private static Dictionary<int, NativeHashMap<Vector3Int, int>> s_pointToIndexAssociationsContainer;
 
-        public static Dictionary<int, NativeParallelHashMap<int, Vector3Int>> IndexToPointAssociationsContainer 
+        public static Dictionary<int, NativeHashMap<int, Vector3Int>> IndexToPointAssociationsContainer 
             => s_indexToPointAssociationsContainer;
-        public static Dictionary<int, NativeParallelHashMap<Vector3Int, int>> PointToIndexAssociationsContainer 
+        public static Dictionary<int, NativeHashMap<Vector3Int, int>> PointToIndexAssociationsContainer 
             => s_pointToIndexAssociationsContainer;
 
         static SphereCash()
         {
-            s_indexToPointAssociationsContainer = new Dictionary<int, NativeParallelHashMap<int, Vector3Int>>(20);
-            s_pointToIndexAssociationsContainer = new Dictionary<int, NativeParallelHashMap<Vector3Int, int>>(20);
+            s_indexToPointAssociationsContainer = new Dictionary<int, NativeHashMap<int, Vector3Int>>(20);
+            s_pointToIndexAssociationsContainer = new Dictionary<int, NativeHashMap<Vector3Int, int>>(20);
             Application.quitting += OnApplicationQuit;
         }
 
