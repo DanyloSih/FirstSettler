@@ -258,7 +258,7 @@ GameObject:
   m_Component:
   - component: {fileID: 165683953}
   m_Layer: 0
-  m_Name: ChunksGenerators
+  m_Name: ChunksGenerationBehaviours
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -364,6 +364,58 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 456973366}
   m_Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1 &677970266
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 677970268}
+  - component: {fileID: 677970267}
+  m_Layer: 0
+  m_Name: ChunkGenerationToolsInstaller
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &677970267
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 677970266}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d18f0c8be4e4d5a4c99b16fd1700a023, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _basicChunkSettings: {fileID: 11400000, guid: fef79431f067b8346aaa6fbb3ebd2d14,
+    type: 2}
+  _chunksRoot: {fileID: 1639549069}
+  _chunksContainer: {fileID: 1351798334}
+  _gpuChunkDataGenerator: {fileID: 1117199047}
+  _chunkPrefab: {fileID: 6759228416812596541, guid: 161e48ac2f1b7444086f4a516b9df352,
+    type: 3}
+  _chunksGenerationBehaviour: {fileID: 1200648366}
+--- !u!4 &677970268
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 677970266}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1842244018}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &828897977
 GameObject:
   m_ObjectHideFlags: 0
@@ -590,8 +642,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ba3842f0e4d2be24fa45216f979443c3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _chunksRoot: {fileID: 1639549069}
-  _chunksLoadingVolumePerCall: {x: 4, y: 4, z: 4}
   _chunksGridSize: {x: 32, y: 8, z: 32}
 --- !u!1 &1023781220
 GameObject:
@@ -737,7 +787,7 @@ GameObject:
   - component: {fileID: 1200648365}
   - component: {fileID: 1200648366}
   m_Layer: 0
-  m_Name: DynamicChunksGridGenerator
+  m_Name: DynamicChunksGenerationBehaviour
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -770,57 +820,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e04b7c96509d7f344acdc3ac888d1e4c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _chunksRoot: {fileID: 1639549069}
-  _chunksLoadingVolumePerCall: {x: 1, y: 1, z: 1}
-  _viewDistance: 4
-  _disposeBatchLength: 4
-  _disposeBatchDelay: 1
---- !u!1 &1253368962
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1253368964}
-  - component: {fileID: 1253368963}
-  m_Layer: 0
-  m_Name: BasicChunkSettingsInstaller
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1253368963
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1253368962}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: af23b4b77aa59a146a25c6fec6b29afb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _basicChunkSettings: {fileID: 11400000, guid: fef79431f067b8346aaa6fbb3ebd2d14,
-    type: 2}
---- !u!4 &1253368964
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1253368962}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1842244018}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  _viewDistance: 12
+  _chunksBatchLength: 12
+  _chunksDisposingParams:
+    BatchLength: 6
+    BatchDelay: 1
 --- !u!1 &1351798333
 GameObject:
   m_ObjectHideFlags: 0
@@ -1026,11 +1030,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1a7a964fd53091841a37cba8410c53be, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _chunksContainer: {fileID: 1351798334}
-  _gpuChunkDataGenerator: {fileID: 1117199047}
-  _chunkPrefab: {fileID: 6759228416812596541, guid: 161e48ac2f1b7444086f4a516b9df352,
-    type: 3}
-  _chunkGenerator: {fileID: 1200648366}
   _generationChunkPositionProvider: {fileID: 1915413690}
   _playerSpawner: {fileID: 930298403}
 --- !u!4 &1650170032
@@ -1109,8 +1108,8 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 1253368964}
   - {fileID: 1650170032}
+  - {fileID: 677970268}
   m_Father: {fileID: 1891040204}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1866038435
@@ -1238,8 +1237,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _scriptableObjectInstallers: []
   _monoInstallers:
-  - {fileID: 1253368963}
   - {fileID: 1650170031}
+  - {fileID: 677970267}
   _installerPrefabs: []
   _autoRun: 1
   OnPreInstall:

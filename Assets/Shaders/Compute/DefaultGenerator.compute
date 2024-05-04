@@ -17,10 +17,8 @@ struct HeightAndMaterialHashAssociation
 RWStructuredBuffer<VoxelData> ChunkData;
 StructuredBuffer<HeightAndMaterialHashAssociation> HeightAndHashAssociations;
 StructuredBuffer<HeightAndMaterialHashAssociation> MinMaxAssociations;
-StructuredBuffer<RectPrism> ChunkSizeAndChunkOffsetAndGlobalAndLoadingAreaRectPrisms;
-int ChunkGlobalPositionX;
-int ChunkGlobalPositionY;
-int ChunkGlobalPositionZ;
+StructuredBuffer<RectPrism> ChunkSizeAndChunkOffset;
+StructuredBuffer<int3> LocalChunksPositions;
 int AssociationsCount;
 int Octaves;
 float Persistence;
@@ -31,23 +29,14 @@ float MinHeight;
 
 RectPrism GetChunkRectPrism()
 {
-    return ChunkSizeAndChunkOffsetAndGlobalAndLoadingAreaRectPrisms[0];
+    return ChunkSizeAndChunkOffset[0];
 }
 
 RectPrism GetChunkOffsetRectPrism()
 {
-    return ChunkSizeAndChunkOffsetAndGlobalAndLoadingAreaRectPrisms[1];
+    return ChunkSizeAndChunkOffset[1];
 }
 
-RectPrism GetGlobalGenerationAreaRectPrism()
-{
-    return ChunkSizeAndChunkOffsetAndGlobalAndLoadingAreaRectPrisms[2];
-}
-
-RectPrism GetChunksLoadingAreaRectPrism()
-{
-    return ChunkSizeAndChunkOffsetAndGlobalAndLoadingAreaRectPrisms[3];
-}
 
 int GetMaterialKeyHashByHeight(float height)
 {
@@ -85,25 +74,23 @@ int GetMaterialKeyHashByHeight(float height)
     }
 }
 
-[numthreads(1, 1, 1)]
+[numthreads(1, 256, 1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
-{
+{    
     RectPrism chunkRectPrism = GetChunkRectPrism();
+    if (id.y >= chunkRectPrism.Volume)
+    { 
+        return;
+    }
+    
     RectPrism chunkOffsetRectPrism = GetChunkOffsetRectPrism();
-    RectPrism globalGenerationAreaRectPrism = GetGlobalGenerationAreaRectPrism();
-    RectPrism loadAreaRectPrism = GetChunksLoadingAreaRectPrism();
     
-    int3 originChunkGlobalPosition = int3(ChunkGlobalPositionX, ChunkGlobalPositionY, ChunkGlobalPositionZ);
-    
-    int3 localChunkPos = id / chunkRectPrism.Size;
-    int3 localVoxelPos = id % chunkRectPrism.Size;
-    int3 globalChunkPos = originChunkGlobalPosition + localChunkPos;
-    
-    int i = PointToIndex(loadAreaRectPrism, localChunkPos) * chunkRectPrism.Volume 
-        + PointToIndex(chunkRectPrism, localVoxelPos);
-    
-    int3 globalVoxelPos = originChunkGlobalPosition + id - localChunkPos;
-    
+    int3 localChunkPos = LocalChunksPositions[id.x];
+    int3 localVoxelPos = IndexToPoint(chunkRectPrism, id.y);
+    int3 globalChunkPos = localChunkPos * chunkOffsetRectPrism.Size;
+    int3 globalVoxelPos = globalChunkPos + localVoxelPos;
+    int i = id.x * chunkRectPrism.Volume + id.y;
+     
     float heightThreshold = MinHeight + ClassicNoise(float2(globalVoxelPos.x, globalVoxelPos.z) / Frequency) * MaxHeight;
     
         //, Amplitude, Frequency, Persistence, Octaves) * MaxHeight;

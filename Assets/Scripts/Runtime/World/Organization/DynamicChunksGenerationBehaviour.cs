@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using NaughtyAttributes;
 using UnityEngine;
 using Utilities.Math;
 using Utilities.Math.Extensions;
@@ -9,16 +8,16 @@ using Zenject;
 
 namespace World.Organization
 {
-    public class DynamicChunksGridGenerator : ChunksGeneratorBase
+    public class DynamicChunksGenerationBehaviour : ChunksGenerationBehaviour
     {
         [Inject] private ChunkPositionProvider _generationChunkPositionProvider;
+        [Inject] private ChunksGenerator _chunksGenerator;
+        [Inject] private ChunksDisposer _chunksDisposer;
+        [Inject] private ChunkCoordinatesCalculator _chunkCoordinatesCalculator;
 
         [SerializeField] private int _viewDistance = 16;
-        [BoxGroup("Chunks disposing params")]
-        [SerializeField] private int _disposeBatchLength = 4;
-        [BoxGroup("Chunks disposing params")]
-        [Tooltip("Delay in milliseconds")]
-        [SerializeField] private int _disposeBatchDelay = 1;
+        [SerializeField] private int _chunksBatchLength = 12;
+        [SerializeField] private ChunksDisposingParams _chunksDisposingParams;
 
         private ShapeIntArea<SphereInt>? _previousViewShape;
         private Task _currentTask;
@@ -48,8 +47,7 @@ namespace World.Organization
 
         private void ChunkPositionChanged(Vector3Int chunkLocalPosition)
         {
-            Debug.Log("Target chunk chnaged!");
-            Vector3 globalChunkPosition = ChunkCoordinatesCalculator
+            Vector3 globalChunkPosition = _chunkCoordinatesCalculator
                 .GetGlobalChunkPositionByLocal(chunkLocalPosition);
 
             UpdateChunksVisibleArea(Vector3Int.FloorToInt(globalChunkPosition));
@@ -59,21 +57,14 @@ namespace World.Organization
         {
             if (disposeArea != null)
             {
-                _regenerateTasks.Add(DisposeArea(disposeArea, _disposeBatchLength, _disposeBatchDelay));
+                _regenerateTasks.Add(_chunksDisposer.DisposeArea(
+                    disposeArea, _chunksDisposingParams, GenerationCancellationToken));
             }
 
-            _regenerateTasks.Add(GenerateArea(generateArea));
+            _regenerateTasks.Add(_chunksGenerator.GenerateChunks(generateArea, _chunksBatchLength));
 
             await Task.WhenAll(_regenerateTasks);
             _regenerateTasks.Clear();
-        }
-
-        private async Task GenerateArea(IEnumerable<Vector3Int> generateArea)
-        {
-            foreach (Vector3Int position in generateArea) 
-            {
-                await GenerateChunksBatch(position, position + Vector3Int.one);
-            }
         }
 
         private void AddTaskFunctionToQueue(Func<Task> generationTaskFunction, Action currentTaskDoneCallback = null)
