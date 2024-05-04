@@ -24,12 +24,11 @@ namespace MarchingCubesProject
         private Vector3Int _localPosition;
         private Dictionary<int, int> _materialKeyAndSubmeshAssociation = new Dictionary<int, int>();
         private ChunkData _chunkData;
-        private (MeshFilter MeshFilter, MeshCollider MeshCollider) _currentMeshComponents;
+        private (MeshFilter MeshFilter, MeshRenderer MeshRenderer, MeshCollider MeshCollider) _meshComponents;
         private bool _isBasicDataInitialized;
         private Coroutine _updatePhysicsCoroutine;
         private List<Material> _currentMaterials;
         private int _filledSubmeshesCount;
-        private Renderer _meshRenderer;
         private string _meshName;
         private MarchingCubesAlgorithm _meshGenerationAlgorithm;
         private Mesh _cashedMesh;
@@ -77,12 +76,12 @@ namespace MarchingCubesProject
 
             InitializeMeshData();
 
-            if (_currentMeshComponents.MeshFilter != null)
+            if (_meshComponents.MeshFilter != null)
             {
-                Destroy(_currentMeshComponents.MeshFilter.gameObject);
+                Destroy(_meshComponents.MeshFilter.gameObject);
             }
 
-            _currentMeshComponents = CreateMesh32();
+            _meshComponents = CreateMesh32();
             _isBasicDataInitialized = true;
         }
 
@@ -107,28 +106,86 @@ namespace MarchingCubesProject
                     $"Before using method {nameof(ApplyMeshData)} you " +
                     $"should invoke {nameof(GenerateNewMeshData)} method!");
             }
-            _isMeshDataApplying = true;
-            _cashedMesh = _currentMeshComponents.MeshFilter.mesh;
-            _cashedMesh.Clear();
-            int verticesCount = _cashedMeshData.VerticesCash.Length;
-            ApplyVertices(_cashedMeshData.VerticesCash, _cashedMeshData.VerticesCount);
-            ApplyTriangles(_cashedMeshData.TrianglesCash, _cashedMeshData.VerticesCount);
-            ApplyUVs(_cashedMeshData.UVsCash, _cashedMeshData.VerticesCount);
-            TryDisposeCahsedMeshData();
 
-            _cashedMesh.Optimize();
-            _cashedMesh.RecalculateNormals(MeshUpdateFlags.DontResetBoneBounds);
+            var isVerticesCorrect = IsVerticesCorrect();
 
-            _currentMeshComponents.MeshFilter.transform.localPosition = Vector3.zero;
-            if (_updatePhysicsCoroutine == null)
+            _meshComponents.MeshRenderer.enabled = isVerticesCorrect;     
+
+            if (isVerticesCorrect)
             {
-                _updatePhysicsCoroutine = StartCoroutine(UpdatePhysicsProcess(verticesCount));
-            }            
+                _isMeshDataApplying = true;
+                _cashedMesh = _meshComponents.MeshFilter.mesh;
+                _cashedMesh.Clear();
+                int verticesCount = _cashedMeshData.VerticesCash.Length;
+                ApplyVertices(_cashedMeshData.VerticesCash, _cashedMeshData.VerticesCount);
+                ApplyTriangles(_cashedMeshData.TrianglesCash, _cashedMeshData.VerticesCount);
+                ApplyUVs(_cashedMeshData.UVsCash, _cashedMeshData.VerticesCount);
+
+                _cashedMesh.Optimize();
+                _cashedMesh.RecalculateNormals(MeshUpdateFlags.DontResetBoneBounds);
+
+                _meshComponents.MeshFilter.transform.localPosition = Vector3.zero;
+            }
+
+            bool isPhysicsCorrect = isVerticesCorrect && IsBoundsNotFlat(_cashedMesh.bounds.size);
+            _meshComponents.MeshCollider.enabled = isPhysicsCorrect;
+
+            if (_updatePhysicsCoroutine == null)
+            {           
+                _updatePhysicsCoroutine = StartCoroutine(UpdatePhysicsProcess(isPhysicsCorrect));
+            }
+
+            TryDisposeCahsedMeshData();
         }
 
         public bool IsMeshDataApplying()
         {
             return _isMeshDataApplying;
+        }
+
+        private bool IsBoundsNotFlat(Vector3 boundsSize)
+        {
+            int notFlatCounter = 0;
+            for (int i = 0; i < 3; i++)
+            {
+                if (boundsSize[i] != 0)
+                {
+                    notFlatCounter++;
+                }
+            }
+            return notFlatCounter > 1;
+        }
+
+        private bool IsVerticesCorrect()
+        {
+            if (_cashedMeshData.VerticesCount > 2 && _cashedMeshData.VerticesCount % 3 == 0)
+            {
+                int batchesCount = _cashedMeshData.VerticesCount / 3;
+                
+
+                for (int batch = 0; batch < batchesCount; batch++)
+                {
+                    int startId = batch * 3;
+                    var vertex = _cashedMeshData.VerticesCash[startId];
+                    int unequalPointCounter = 0;
+
+                    for (int i = startId + 1; i < _cashedMeshData.VerticesCount; i++)
+                    {
+                        if (vertex != _cashedMeshData.VerticesCash[i])
+                        {
+                            unequalPointCounter++;
+                            if (unequalPointCounter >= 2)
+                            {
+                                return true;
+                            }
+                        }
+                    }
+                }
+
+                return false;
+            }
+
+            return false;
         }
 
         private void TryDisposeCahsedMeshData()
@@ -185,7 +242,7 @@ namespace MarchingCubesProject
                 }
             }
 
-            _meshRenderer.materials = _currentMaterials.ToArray();
+            _meshComponents.MeshRenderer.materials = _currentMaterials.ToArray();
         }
 
         private void ApplyUVs(NativeArray<Vector2> uvs, int verticesCount)
@@ -198,19 +255,19 @@ namespace MarchingCubesProject
             _cashedMesh.SetUVs(0, uvs, 0, verticesCount);
         }
 
-        private IEnumerator UpdatePhysicsProcess(int verticesCount)
+        private IEnumerator UpdatePhysicsProcess(bool isPhysicsCorrect)
         {
-            yield return new WaitForEndOfFrame();
+            yield return new WaitForFixedUpdate();
 
-            if (_currentMeshComponents.MeshCollider.sharedMesh != null)
+            if (isPhysicsCorrect)
             {
-                _currentMeshComponents.MeshCollider.sharedMesh = null;
+                if (_meshComponents.MeshCollider.sharedMesh != null)
+                {
+                    _meshComponents.MeshCollider.sharedMesh = null;
+                }
+
+                _meshComponents.MeshCollider.sharedMesh = _cashedMesh;
             }
-
-            if (verticesCount > 2 && _filledSubmeshesCount > 0)
-            {
-                _currentMeshComponents.MeshCollider.sharedMesh = _cashedMesh;
-            }     
 
             _updatePhysicsCoroutine = null;
             _isMeshDataApplying = false;
@@ -261,7 +318,7 @@ namespace MarchingCubesProject
             return materialKeyAndTriangleListAssociations;
         }
 
-        private (MeshFilter, MeshCollider) CreateMesh32()
+        private (MeshFilter, MeshRenderer, MeshCollider) CreateMesh32()
         {
             _materialKeyAndSubmeshAssociation.Clear();
             int submeshCounter = 0;
@@ -280,10 +337,10 @@ namespace MarchingCubesProject
             go.transform.parent = transform;
             var filter = go.AddComponent<MeshFilter>();
             var meshCollider = go.AddComponent<MeshCollider>();
-            _meshRenderer = go.AddComponent<MeshRenderer>();
+            var meshRenderer = go.AddComponent<MeshRenderer>();
             filter.mesh = mesh;
 
-            return (filter, meshCollider);
+            return (filter, meshRenderer, meshCollider);
         }
     }
 }
