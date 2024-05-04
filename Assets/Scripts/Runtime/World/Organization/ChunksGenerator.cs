@@ -61,6 +61,7 @@ namespace World.Organization
             NativeArray<Vector3Int> batchArray = new NativeArray<Vector3Int>(
                 batchLength, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
 
+            int batchStamp = 0;
             int counter = 0;
             foreach (var pos in generatingChunksLocalPositions)
             {
@@ -70,10 +71,19 @@ namespace World.Organization
                 counter++;
                 if (counter % batchLength == 0)
                 {
+                    batchStamp = counter;
                     await GenerateBatch(batchArray).OnException((ex) => { 
                         Debug.LogException(ex); batchArray.Dispose(); 
                     });
                 }
+            }
+
+            if(batchStamp != counter)
+            {
+                var subArray = batchArray.GetSubArray(0, counter - batchStamp);
+                await GenerateBatch(subArray).OnException((ex) => {
+                    Debug.LogException(ex); batchArray.Dispose();
+                });
             }
 
             batchArray.Dispose();

@@ -457,7 +457,7 @@ Transform:
   - {fileID: 1077516183379174355}
   - {fileID: 2825446303726168786}
   - {fileID: 1749961329935357660}
-  - {fileID: 8144810575871117876}
+  - {fileID: 2432591659517095712}
   m_Father: {fileID: 1814561577432465404}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &749087938144704889
@@ -633,6 +633,89 @@ MonoBehaviour:
   settingsInputTuner: {fileID: 844711068161258499}
   player: {fileID: 3036980091476623356}
   settings: {fileID: 8942221656517705358}
+--- !u!1 &1032453121434077143
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2432591659517095712}
+  - component: {fileID: 8932702966054898259}
+  - component: {fileID: 1468138392937737363}
+  m_Layer: 0
+  m_Name: ChunkDataPointMarker
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2432591659517095712
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1032453121434077143}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 0.3, y: 0.3, z: 0.3}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 7528054857211226454}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!33 &8932702966054898259
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1032453121434077143}
+  m_Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!23 &1468138392937737363
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1032453121434077143}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: ac0cdb29d93ba124c8c00b0c0cee2d36, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_AdditionalVertexStreams: {fileID: 0}
 --- !u!1 &1103235800077314620
 GameObject:
   m_ObjectHideFlags: 0
@@ -2179,7 +2262,7 @@ GameObject:
   - component: {fileID: 1814561577432465404}
   - component: {fileID: 7387754475386427302}
   m_Layer: 0
-  m_Name: SimpleControl
+  m_Name: Player
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3729,7 +3812,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dd26fb9602d0cc948b67e23578e2edda, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _markerTransform: {fileID: 8144810575871117876}
+  _markerTransform: {fileID: 2432591659517095712}
   _raycastPointerToChunk: {fileID: 582725782364116517}
 --- !u!1 &7834256429688038339
 GameObject:
@@ -4335,37 +4418,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _playerTransform: {fileID: 1297403455402306828}
   _minWorldY: -20
---- !u!1 &8930335104346885976
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 8144810575871117876}
-  m_Layer: 0
-  m_Name: CurrentPointedChunkDataMarker
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &8144810575871117876
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8930335104346885976}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 7528054857211226454}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &8942783128813240118
 GameObject:
   m_ObjectHideFlags: 0

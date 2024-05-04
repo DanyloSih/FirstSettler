@@ -113,7 +113,6 @@ namespace MarchingCubesProject
                 var subArray = _voxelsArray.GetSubArray(i * chunkDataVolume, chunkDataVolume);
                 NativeArray<VoxelData> subarray = new(subArray, Allocator.Persistent);
                 result.Add(new ThreedimensionalNativeArray<VoxelData>(subarray, chunkDataSize));
-                subArray.Dispose();
             }
 
             return result;
