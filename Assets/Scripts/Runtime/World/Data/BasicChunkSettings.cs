@@ -2,6 +2,7 @@
 
 namespace World.Data
 {
+
     [CreateAssetMenu(
         fileName = nameof(BasicChunkSettings),
         menuName = "FirstSettler/MarchingCubes/" + nameof(BasicChunkSettings))]

@@ -1,0 +1,16 @@
+{
+    "name": "Utilities.Shaders",
+    "rootNamespace": "",
+    "references": [
+        "GUID:522b8546374be264499a0978eb4f5334"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

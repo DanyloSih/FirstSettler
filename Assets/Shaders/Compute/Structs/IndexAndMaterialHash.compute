@@ -1,0 +1,5 @@
+struct IndexAndMaterialHash
+{
+    int Index;
+    int MaterialHash;
+};

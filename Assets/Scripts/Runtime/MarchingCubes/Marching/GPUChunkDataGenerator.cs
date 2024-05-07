@@ -2,11 +2,11 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using FirstSettler.Extensions;
 using Unity.Collections;
 using UnityEngine;
 using UnityEngine.Rendering;
 using Utilities.Math;
+using Utilities.Shaders;
 using Utilities.Threading;
 using Utilities.Threading.Extensions;
 using World.Data;
@@ -54,7 +54,7 @@ namespace MarchingCubesProject
             _rectPrisms.Dispose();
         }
 
-        public async Task<NativeList<ThreedimensionalNativeArray<VoxelData>>> GenerateChunksRawData(
+        public async Task<List<ThreedimensionalNativeArray<VoxelData>>> GenerateChunksRawData(
             NativeArray<Vector3Int> generatingChunksLocalPositions,
             Vector3Int chunkOffset,
             Vector3Int chunkDataSize,
@@ -74,7 +74,7 @@ namespace MarchingCubesProject
             int chunksCount = generatingChunksLocalPositions.Length;
             CreateVoxelsDataBuffer(chunkDataVolume * chunksCount);
 
-            var kernelId = _generationComputeShader.FindKernel("CSMain");
+            var kernelId = _generationComputeShader.FindKernel("GenerateData");
             _rectPrisms.SetData(new RectPrismInt[] {
                 new RectPrismInt(chunkDataSize),
                 new RectPrismInt(chunkOffset)
@@ -83,7 +83,7 @@ namespace MarchingCubesProject
             _generationComputeShader.SetBuffer(kernelId, "ChunkData", _voxelsBuffer);
             _generationComputeShader.SetBuffer(kernelId, "HeightAndHashAssociations", _heightHashAssociationsBuffer);
             _generationComputeShader.SetBuffer(kernelId, "MinMaxAssociations", _minMaxAssociations);
-            _generationComputeShader.SetBuffer(kernelId, "ChunkSizeAndChunkOffset", _rectPrisms);
+            _generationComputeShader.SetBuffer(kernelId, "ChunkPrisms", _rectPrisms);
             _generationComputeShader.SetBuffer(kernelId, "LocalChunksPositions", _chunkPositionsBuffer);
             _generationComputeShader.SetInt("AssociationsCount", _heightAssociations.Count);
             _generationComputeShader.SetInt("Octaves", _octaves);
@@ -100,8 +100,7 @@ namespace MarchingCubesProject
 
             await AsyncUtilities.WaitWhile(() => !request.done, 1, cancellationToken);
 
-            NativeList<ThreedimensionalNativeArray<VoxelData>> result
-                = new NativeList<ThreedimensionalNativeArray<VoxelData>>(Allocator.Persistent);
+            List<ThreedimensionalNativeArray<VoxelData>> result = new();
 
             if (cancellationToken.IsCanceled())
             {
@@ -158,7 +157,7 @@ namespace MarchingCubesProject
 
         private void CreateEmptyChunksPositionsBuffer(int length)
         {
-            _chunkPositionsBuffer = ComputeBufferExtensions.Create(length, typeof(Vector3Int));
+            _chunkPositionsBuffer = BuffersFactory.CreateCompute(length, typeof(Vector3Int));
         }
 
         private void CreateVoxelsDataBuffer(int length)
@@ -166,7 +165,7 @@ namespace MarchingCubesProject
             if (_voxelsBuffer == null)
             {
                 _voxelsArray = new NativeArray<VoxelData>(length, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
-                _voxelsBuffer = ComputeBufferExtensions.Create(length, typeof(VoxelData));
+                _voxelsBuffer = BuffersFactory.CreateCompute(length, typeof(VoxelData));
             }
             else if (_voxelsBufferLength != length)
             {
@@ -174,7 +173,7 @@ namespace MarchingCubesProject
                 _voxelsBuffer.Dispose();
                 _voxelsBuffer = null;
                 _voxelsArray = new NativeArray<VoxelData>(length, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
-                _voxelsBuffer = ComputeBufferExtensions.Create(length, typeof(VoxelData));
+                _voxelsBuffer = BuffersFactory.CreateCompute(length, typeof(VoxelData));
             }
 
             _voxelsBufferLength = length;
@@ -196,7 +195,7 @@ namespace MarchingCubesProject
 
         private void InitializeAssociationsBuffer()
         {
-            _heightHashAssociationsBuffer = ComputeBufferExtensions.Create(
+            _heightHashAssociationsBuffer = BuffersFactory.CreateCompute(
                             _heightAssociations.Count, typeof(HeightAndMaterialHashAssociation));
 
             var heightAndMaterialHashAssociations = _heightAssociations.GetEnumerable()
@@ -208,7 +207,7 @@ namespace MarchingCubesProject
 
         private void InitializeMinMaxBuffer()
         {
-            _minMaxAssociations = ComputeBufferExtensions.Create(
+            _minMaxAssociations = BuffersFactory.CreateCompute(
                             2, typeof(HeightAndMaterialHashAssociation));
 
             _minMaxAssociations.SetData(new KeyValuePair<float, int>?[] {
@@ -219,7 +218,7 @@ namespace MarchingCubesProject
 
         private void InitializeParallelepipedsBuffer()
         {
-            _rectPrisms = ComputeBufferExtensions.Create(2, typeof(RectPrismInt));
+            _rectPrisms = BuffersFactory.CreateCompute(2, typeof(RectPrismInt));
         }
     }
 }

@@ -102,6 +102,13 @@ namespace Utilities.Math
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public T GetValue(Vector3Int position)
+        {
+            int id = PositionToIndex(position);
+            return RawData[id];
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public T GetValue(int index)
         {
             return RawData[index];

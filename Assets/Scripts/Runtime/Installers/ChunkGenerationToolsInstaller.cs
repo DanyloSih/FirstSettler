@@ -1,6 +1,8 @@
-﻿using MarchingCubesProject;
+﻿using MarchingCubes.MeshGeneration;
+using MarchingCubesProject;
 using MarchingCubesProject.Tools;
 using UnityEngine;
+using Utilities.Math;
 using World.Data;
 using World.Organization;
 using Zenject;
@@ -13,12 +15,16 @@ namespace FirstSettler.Installers
         [SerializeField] private Transform _chunksRoot;
         [SerializeField] private ChunksContainer _chunksContainer;
         [SerializeField] private GPUChunkDataGenerator _gpuChunkDataGenerator;
-        [SerializeField] private MarchingCubesChunk _chunkPrefab;
+        [SerializeField] private MeshGenerator _meshGenerator;
+        [SerializeField] private Chunk _chunkPrefab;
         [SerializeField] private ChunksGenerationBehaviour _chunksGenerationBehaviour;
+        [SerializeField] private MaterialKeyAndUnityMaterialAssociations _materialAssociations;
 
         public override void InstallBindings()
         {
             Container.BindInstance(_basicChunkSettings);
+
+            Container.BindInterfacesAndSelfTo<ChunkPrismsProvider>().AsSingle();
 
             Container.Bind<ChunkCoordinatesCalculator>()
                 .FromMethod(() => new ChunkCoordinatesCalculator(
@@ -33,7 +39,7 @@ namespace FirstSettler.Installers
             Container.BindInterfacesAndSelfTo<MarchingCubesChunksEditor>()
                 .AsSingle();
 
-            Container.BindInterfacesAndSelfTo<MarchingCubesChunk>()
+            Container.BindInterfacesAndSelfTo<Chunk>()
                 .FromInstance(_chunkPrefab).AsSingle();
 
             Container.Bind<ChunksDisposer>().ToSelf().AsSingle();
@@ -41,6 +47,9 @@ namespace FirstSettler.Installers
 
             Container.Bind<ChunksGenerationBehaviour>()
                 .FromInstance(_chunksGenerationBehaviour).AsSingle();
+
+            Container.Bind(typeof(MeshGenerator), typeof(IInitializable)).FromInstance(_meshGenerator).AsSingle();
+            Container.BindInstance(_materialAssociations).AsSingle();
         }
     }
 }

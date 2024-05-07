@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
-using World.Organization;
 using World.Data;
 using Zenject;
+using Utilities.Math;
 
 namespace MarchingCubesProject.Tools
 {
@@ -37,7 +37,7 @@ namespace MarchingCubesProject.Tools
             if (Physics.Raycast(ray, out var hit, _maxRaycastDistance))
             {
                 result.Hit = hit;
-                var chunk = hit.collider.transform.parent.GetComponent<MarchingCubesChunk>();
+                var chunk = hit.collider.transform.parent.GetComponent<Chunk>();
                 if (chunk == null)
                 {
                     return result;

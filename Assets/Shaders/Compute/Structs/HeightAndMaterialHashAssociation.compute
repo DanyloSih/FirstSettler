@@ -1,0 +1,45 @@
+struct HeightAndMaterialHashAssociation
+{
+    float Height;
+    int MaterialHash;
+};
+
+StructuredBuffer<HeightAndMaterialHashAssociation> HeightAndHashAssociations;
+StructuredBuffer<HeightAndMaterialHashAssociation> MinMaxAssociations;
+int AssociationsCount;
+
+int GetMaterialKeyHashByHeight(float height)
+{
+    HeightAndMaterialHashAssociation min = MinMaxAssociations[0];
+    HeightAndMaterialHashAssociation max = MinMaxAssociations[1];
+    
+    if (height >= max.Height)
+    {
+        return max.MaterialHash;
+    }
+    else if (height <= min.Height)
+    {
+        return min.MaterialHash;
+    }
+    else
+    {
+        int result = 0;
+        if (AssociationsCount == 0)
+        {
+            return result;
+        }
+        
+        for (int i = AssociationsCount - 1; i >= 0; i--)
+        {
+            HeightAndMaterialHashAssociation association = HeightAndHashAssociations[i];
+            
+            if (association.Height > height)
+            {
+                result = association.MaterialHash;
+                break;
+            }
+        }
+        
+        return result;
+    }
+}

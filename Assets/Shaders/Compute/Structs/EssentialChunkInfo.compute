@@ -1,0 +1,13 @@
+struct EssentialChunkInfo
+{
+    int3 LocalChunkPosition;
+    int3 LocalVoxelPosition;
+    int3 LocalCubePosition;
+    int3 GlobalChunkPosition;
+    int3 GlobalVoxelPosition;
+    int3 GlobalCubePosition;
+    uint GlobalVoxelId;
+    uint LocalVoxelId;
+    uint ChunkFirstVoxelId;
+    bool IsOutOfBounds;
+};

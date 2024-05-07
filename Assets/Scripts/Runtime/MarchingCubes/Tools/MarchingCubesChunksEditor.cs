@@ -10,11 +10,17 @@ using Unity.Collections;
 using System;
 using Zenject;
 using Utilities.Threading;
+using System.Collections.Generic;
+using Unity.Collections.LowLevel.Unsafe;
+using MarchingCubes.MeshGeneration;
 
 namespace MarchingCubesProject.Tools
 {
     public class MarchingCubesChunksEditor
     {
+        [Inject] private ChunkPrismsProvider _prismsProvider;
+        [Inject] private MeshGenerator _meshGenerator;
+
         private ChunkCoordinatesCalculator _chunkCoordinatesCalculator;
         private Vector3Int _chunkSize;
         private IChunksContainer _chunksContainer;
@@ -86,7 +92,7 @@ namespace MarchingCubesProject.Tools
 
             if (chunk != null)
             {
-                VoxelData voxelData = chunk.ChunkData.GetVoxelData(localChunkDataPoint);
+                VoxelData voxelData = chunk.ChunkData.GetValue(localChunkDataPoint);
                 return new ChunkPoint(localChunkPosition, localChunkDataPoint, voxelData);
             }
             else
@@ -100,22 +106,41 @@ namespace MarchingCubesProject.Tools
         private async Task UpdateMeshes(NativeHashMap<int, IntPtr> affectedChunksDataPointers)
         {
             int length = affectedChunksDataPointers.Count;
-            Task[] generationTasks = new Task[length];
 
+            List<ThreedimensionalNativeArray<VoxelData>> chunksData = new();
+            NativeArray<Vector3Int> positions = new(length, Allocator.Persistent);
             int counter = 0;
-            foreach (var updatingChunk in affectedChunksDataPointers)
+
+            unsafe
             {
-                var chunk = _chunksContainer.GetChunk(updatingChunk.Key);
-                generationTasks[counter] = chunk.GenerateNewMeshData();
-                counter++;
+                foreach (var updatingChunk in affectedChunksDataPointers)
+                {
+                    IChunk chunk = _chunksContainer.GetChunk(updatingChunk.Key);
+                    int dataLength = _prismsProvider.ChunkVoxelsPrism.Volume;
+                    positions[counter] = chunk.LocalPosition;
+                    NativeArray<VoxelData> rawData = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<VoxelData>(
+                        updatingChunk.Value.ToPointer(), dataLength, Allocator.Persistent);
+
+                    chunksData.Add(new ThreedimensionalNativeArray<VoxelData>(rawData, _prismsProvider.ChunkVoxelsPrism.Size));
+                    counter++;
+                }
             }
 
-            await Task.WhenAll(generationTasks);
+            var chunksMeshData = await _meshGenerator.GenerateMeshDataForChunks(positions, chunksData);
 
+            positions.Dispose();
+            foreach (var item in chunksData)
+            {
+                item.Dispose();
+            }
+
+            counter = 0;
             foreach (var updatingChunk in affectedChunksDataPointers)
             {
                 var chunk = _chunksContainer.GetChunk(updatingChunk.Key);
-                chunk.ApplyMeshData();
+                chunk.ApplyMeshData(chunksMeshData[counter]);
+                chunksMeshData[counter].Dispose();
+                counter++;
             }
         }
     }

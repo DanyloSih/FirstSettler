@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
+using MarchingCubes.MeshGeneration;
 using Unity.Collections;
 using UnityEngine;
 using Utilities.Math;
@@ -13,6 +15,7 @@ namespace World.Organization
     public class ChunksGenerator
     {
         private Transform _chunksRoot;
+        private MeshGenerator _meshGenerator;
         private BasicChunkSettings _basicChunkSettings;
         private List<(IChunk ChunkComponent, GameObject ChunkGameObject)> _chunksList
             = new List<(IChunk ChunkComponent, GameObject ChunkGameObject)>();
@@ -23,16 +26,14 @@ namespace World.Organization
         private DiContainer _diContainer;
         private Vector3Int _chunkSize;
         private Vector3Int _chunkSizePlusOne;
-
         private List<IChunk> _createdChunks = new List<IChunk>();
-        private List<ChunkData> _chunksData = new List<ChunkData>();
-        private List<Task> _tasks = new List<Task>();
 
         [Inject]
         public void Construct(DiContainer diContainer,
             BasicChunkSettings basicChunkSettings,
             ChunkCoordinatesCalculator chunkCoordinatesCalculator,
             Transform chunksRoot,
+            MeshGenerator meshGenerator,
             IChunksContainer chunksContainer,
             IChunkDataProvider chunkDataProvider,
             IChunk chunkPrefab)
@@ -42,6 +43,7 @@ namespace World.Organization
             _activeChunksContainer = chunksContainer;
             _chunksDataProvider = chunkDataProvider;
             _chunksRoot = chunksRoot;
+            _meshGenerator = meshGenerator;
 
             _chunkPrefabGO = (chunkPrefab as Component)?.gameObject;
             if (_chunkPrefabGO == null)
@@ -56,7 +58,8 @@ namespace World.Organization
 
         public async Task GenerateChunks(
             IEnumerable<Vector3Int> generatingChunksLocalPositions, 
-            int batchLength)
+            int batchLength,
+            CancellationToken? cancellationToken = null)
         {
             NativeArray<Vector3Int> batchArray = new NativeArray<Vector3Int>(
                 batchLength, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
@@ -72,7 +75,7 @@ namespace World.Organization
                 if (counter % batchLength == 0)
                 {
                     batchStamp = counter;
-                    await GenerateBatch(batchArray).OnException((ex) => { 
+                    await GenerateBatch(batchArray, cancellationToken).OnException((ex) => { 
                         Debug.LogException(ex); batchArray.Dispose(); 
                     });
                 }
@@ -87,19 +90,27 @@ namespace World.Organization
             }
 
             batchArray.Dispose();
+
+            Debug.Log("Chunks generated.");
         }
 
-        private async Task GenerateBatch(NativeArray<Vector3Int> chunkPositionsArray)
+        private async Task GenerateBatch(
+            NativeArray<Vector3Int> chunkPositionsArray, 
+            CancellationToken? cancellationToken = null)
         {
             IReadOnlyList<IChunk> chunksGameObjects
                 = CreateChunksGameObject(chunkPositionsArray);
 
-            IReadOnlyList<ChunkData> chunksData
-                = await GenerateChunksData(chunkPositionsArray);
+            List<ThreedimensionalNativeArray<VoxelData>> chunksData
+                = await _chunksDataProvider.GenerateChunksRawData(
+                    chunkPositionsArray, _chunkSize, _chunkSizePlusOne, cancellationToken);
 
-            await GenerateChunksMeshes(chunkPositionsArray, chunksGameObjects, chunksData);
+            InitializeChunks(chunksGameObjects, chunkPositionsArray, chunksData);
 
-            ApplyChunksMeshData(chunkPositionsArray, chunksGameObjects);
+            MeshData[] chunksMeshData = await _meshGenerator.GenerateMeshDataForChunks(
+                chunkPositionsArray, chunksData, cancellationToken);
+
+            ApplyChunksMeshData(chunksMeshData, chunksGameObjects);
         }
 
         private IReadOnlyList<IChunk> CreateChunksGameObject(
@@ -127,73 +138,37 @@ namespace World.Organization
             return _createdChunks;
         }
 
-        private async Task<IReadOnlyList<ChunkData>> GenerateChunksData(
-            NativeArray<Vector3Int> generatingChunksLocalPositions)
+        private void InitializeChunks(
+            IReadOnlyList<IChunk> chunks, 
+            NativeArray<Vector3Int> chunksPositions, 
+            List<ThreedimensionalNativeArray<VoxelData>> chunksData)
         {
-            _chunksData.Clear();
-
-            NativeList<ThreedimensionalNativeArray<VoxelData>> chunksRawData
-                = await _chunksDataProvider.GenerateChunksRawData(
-                    generatingChunksLocalPositions, _chunkSize, _chunkSizePlusOne);
-
-            try
+            for (int i = 0; i < chunks.Count; i++)
             {
-                for (int i = 0; i < generatingChunksLocalPositions.Length; i++)
-                {
-                    _chunksData.Add(new ChunkData(chunksRawData[i]));
-                }
+                chunks[i].InitializeBasicData(chunksPositions[i], chunksData[i]);
             }
-            finally
-            {
-                chunksRawData.Dispose();
-            }
-
-            return _chunksData;
-        }
-
-        private async Task GenerateChunksMeshes(
-            NativeArray<Vector3Int> generatingChunksLocalPositions,
-            IReadOnlyList<IChunk> chunks,
-            IReadOnlyList<ChunkData> chunksData)
-        {
-            int counter = 0;
-            _tasks.Clear();
-
-            foreach (var loadingPos in generatingChunksLocalPositions)
-            {
-                var pos = loadingPos;
-                IChunk chunk = chunks[counter];
-                ChunkData chunkData = chunksData[counter];
-
-                chunk.InitializeBasicData(
-                        _chunksDataProvider.MaterialAssociations,
-                        pos,
-                        chunkData);
-
-                _tasks.Add(chunk.GenerateNewMeshData());
-                counter++;
-            }
-
-            await Task.WhenAll(_tasks);
         }
 
         private void ApplyChunksMeshData(
-            NativeArray<Vector3Int> generatingChunksLocalPositions, 
+            MeshData[] chunksMeshData,
             IReadOnlyList<IChunk> chunks)
         {
-            int counter = 0;
-            foreach (var loadingPos in generatingChunksLocalPositions)
+            if (chunksMeshData.Length != chunks.Count)
             {
-                var chunk = chunks[counter];
+                throw new ArgumentException();
+            }
 
-                chunk.ApplyMeshData();
+            for (int i = 0; i < chunks.Count; i++)
+            {
+                IChunk chunk = chunks[i];
+
+                chunk.ApplyMeshData(chunksMeshData[i]);
+
                 chunk.RootGameObject.transform.localScale
-                       = Vector3.one * _basicChunkSettings.Scale;
+                      = Vector3.one * _basicChunkSettings.Scale;
 
                 chunk.RootGameObject.transform.position
-                    = _chunkCoordinatesCalculator.GetGlobalChunkPositionByLocal(loadingPos);
-
-                counter++;
+                    = _chunkCoordinatesCalculator.GetGlobalChunkPositionByLocal(chunk.LocalPosition);
             }
         }
     }

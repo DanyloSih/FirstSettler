@@ -6,7 +6,6 @@ using Unity.Jobs;
 using UnityEngine;
 using Utilities.Math;
 using World.Data;
-using World.Organization;
 
 namespace MarchingCubesProject
 {
@@ -27,12 +26,11 @@ namespace MarchingCubesProject
             _nativeHeightAndMaterialHashAssociations.Dispose();
         }
 
-        public async Task GenerateChunksRawData(ChunkData chunkData, Vector3Int chunkGlobalPosition)
+        public async Task GenerateChunksRawData(ThreedimensionalNativeArray<VoxelData> voxels, Vector3Int chunkGlobalPosition)
         {
             _nativeHeightAndMaterialHashAssociations = _heightAssociations
                 .GetOrCreateNative(Allocator.Persistent);
 
-            ThreedimensionalNativeArray<VoxelData> voxels = chunkData.VoxelsData;
             var generationJob = new CPUChunkDataGenerationJob(
                 voxels.RawData,
                 voxels.RectPrism,

@@ -45,7 +45,7 @@ namespace MarchingCubesProject.Tools
 
                         unsafe
                         {
-                            pointers.Add(positionHash, new IntPtr(chunk.ChunkData.VoxelsData.RawData.GetUnsafePtr()));
+                            pointers.Add(positionHash, new IntPtr(chunk.ChunkData.RawData.GetUnsafePtr()));
                         };
                     }
                 }

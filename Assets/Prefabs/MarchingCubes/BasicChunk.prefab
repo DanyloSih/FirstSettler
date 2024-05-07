@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6759228416812596538}
-  - component: {fileID: 6759228416812596541}
+  - component: {fileID: 1150886190622776583}
   m_Layer: 0
   m_Name: BasicChunk
   m_TagString: Untagged
@@ -24,15 +24,15 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6759228416812596539}
+  serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &6759228416812596541
+--- !u!114 &1150886190622776583
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -41,12 +41,8 @@ MonoBehaviour:
   m_GameObject: {fileID: 6759228416812596539}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 885ff46eae570b64faea5ac33a3d9bc7, type: 3}
+  m_Script: {fileID: 11500000, guid: 912fb005ad1ad7a4b90db9cd9b1912a1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   _chunkNameFormat: 'MarchingCubesChunk: x({0}) y({1}) z({2})'
   _meshNameFormat: 'Mesh: x({0}) y({1}) z({2})'
-  _generationAlgorithmInfo: {fileID: 11400000, guid: 27c3d601efea98c4fafd2ff21daa7815,
-    type: 2}
-  _meshGenerationComputeShader: {fileID: 7200000, guid: 9908c7d31e74aed4aad96b6d98c42ff7,
-    type: 3}

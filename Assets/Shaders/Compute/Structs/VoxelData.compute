@@ -1,0 +1,5 @@
+struct VoxelData
+{
+    float Volume;
+    int MaterialHash;
+};
