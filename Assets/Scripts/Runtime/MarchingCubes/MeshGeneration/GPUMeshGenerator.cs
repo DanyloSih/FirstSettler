@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Unity.Collections;
@@ -14,17 +13,16 @@ using Utilities.Threading;
 using Utilities.Threading.Extensions;
 using World.Data;
 using Zenject;
-using Debug = UnityEngine.Debug;
 
 namespace MarchingCubes.MeshGeneration
 {
     public class GPUMeshGenerator : MeshGenerator, IInitializable
     {
         [Inject] private ChunkPrismsProvider _chunkSizePrismsProvider;
+        [Inject] private MaterialKeyAndUnityMaterialAssociations _materialAssociations;
 
         [SerializeField] private ComputeShader _meshGenerationShader;
         [SerializeField] private GenerationAlgorithmInfo _generationAlgorithmInfo;
-        [SerializeField] private MaterialKeyAndUnityMaterialAssociations _materials;
 
         private int _gapValue;
         private ComputeBufferManager _chunkSizePrismsBufferManager;
@@ -97,16 +95,21 @@ namespace MarchingCubes.MeshGeneration
             NativeArray<JobHandle> jobHandles = new(
                 chunksRawData.Count, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
 
+            NativeArray<GPUMeshDataFixJobOutput> jobsOutput = new(
+                chunksRawData.Count, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+
             for (int i = 0; i < chunksRawData.Count; i++)
             {
                 GPUMeshDataFixJob fixJob = new GPUMeshDataFixJob();
 
                 fixJob.MaxVerticesPerChunk = maxVerticesPerChunk;
-                fixJob.MaterialsCount = _materials.Count;
+                fixJob.MaterialsCount = _materialAssociations.Count;
                 fixJob.ChunkID = i;
                 fixJob.GapValue = _gapValue;
                 fixJob.InputIndices = rawMeshData.Indices;
                 fixJob.InputVertices = rawMeshData.Vertices;
+                fixJob.Output = jobsOutput;
+                fixJob.ExistingMaterialHashes = _materialAssociations.GetKeysHashSet();
 
                 fixJob.OutputVertices = new NativeArray<Vector3>(
                     maxVerticesPerChunk, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
@@ -138,14 +141,15 @@ namespace MarchingCubes.MeshGeneration
                 result[i] = new MeshData(
                     job.OutputVertices, 
                     job.OutputIndices.AsArray(), 
-                    job.OutputSubmeshInfos, 
-                    job.IsPhysicallyCorrect, 
-                    job.VerticesCount, 
-                    job.VerticesCount);
+                    job.OutputSubmeshInfos,
+                    jobsOutput[i].IsPhysicallyCorrect,
+                    jobsOutput[i].VerticesCount,
+                    jobsOutput[i].VerticesCount);
             }
 
             jobs.Dispose();
             jobHandles.Dispose();
+            jobsOutput.Dispose();
 
             return result;
         }

@@ -1,0 +1,20 @@
+#if !defined(RECT_PRISM_DEFINED)
+
+#include "../Structs/RectPrism.compute"
+
+#endif
+
+// Buffer length should be 2.
+// First element is chunk voxels prism.
+// Second elemnt is chunk cubes prism. (voxel prism + 1)
+StructuredBuffer<RectPrism> ChunkPrisms;
+
+RectPrism GetChunkVoxelsPrism()
+{
+    return ChunkPrisms[0];
+}
+
+RectPrism GetChunkCubesPrism()
+{
+    return ChunkPrisms[1];
+}

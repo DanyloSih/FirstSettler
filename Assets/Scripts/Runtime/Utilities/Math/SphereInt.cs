@@ -49,10 +49,9 @@ namespace Utilities.Math
                 new NativeHashMap<Vector3Int, int>(volume, Allocator.Persistent));
 
             int counter = 0;
-
             foreach (Vector3Int pos in matrixWalker.WalkMatrix(boxSize))
             {
-                if (Vector3Int.Distance(boxHalfSize, pos) <= radius)
+                if (Vector3Int.Distance(boxHalfSize, pos) <= radius && !result.Item2.ContainsKey(pos))
                 {
                     result.Item1.Add(counter, pos);
                     result.Item2.Add(pos, counter);

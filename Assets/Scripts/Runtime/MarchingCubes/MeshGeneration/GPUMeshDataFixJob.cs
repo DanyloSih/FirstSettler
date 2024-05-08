@@ -1,15 +1,16 @@
-﻿using System.Diagnostics;
+﻿using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using UnityEngine;
 using World.Data;
-using Debug = UnityEngine.Debug;
 
 namespace MarchingCubes.MeshGeneration
 {
     public struct GPUMeshDataFixJob : IJob
     {
+        [ReadOnly]
+        public NativeHashSet<int> ExistingMaterialHashes;
         [ReadOnly]
         public NativeArray<Vector3> InputVertices;
         [ReadOnly]
@@ -26,74 +27,68 @@ namespace MarchingCubes.MeshGeneration
         [WriteOnly]
         public NativeList<int> OutputIndices;
         [WriteOnly]
-        public int VerticesCount;
-        [WriteOnly]
-        public bool IsPhysicallyCorrect;
+        public NativeArray<GPUMeshDataFixJobOutput> Output;
 
         public NativeArray<Vector3> OutputVertices;
         public NativeList<SubmeshInfo> OutputSubmeshInfos;
 
         public void Execute()
         {
-            //Debug.Log($"Job for chunk with id: \"{ChunkID}\" START!");
-            //Stopwatch stopwatch = Stopwatch.StartNew();
             unsafe 
             {
                 var firstVertexId = MaxVerticesPerChunk * ChunkID;
 
                 int verticesCount = 0;
 
-                UnsafeHashMap<int, UnsafeList<int>> submeshes = new (MaterialsCount, Allocator.Persistent);
+                Dictionary<int, NativeList<int>> submeshes = new (MaterialsCount);
 
-                for (int i = 0; i < MaxVerticesPerChunk; i += 3)
+                for (int i = 0; i < MaxVerticesPerChunk; i++)
                 {
                     int inputVertexId = firstVertexId + i;
 
                     IndexAndMaterialHash indexAndHash = InputIndices[inputVertexId];
-                    if (indexAndHash.Index == GapValue)
+                    if (indexAndHash.Index == GapValue 
+                    || !ExistingMaterialHashes.Contains(indexAndHash.MaterialHash))
                     {
                         continue;
                     }
 
                     OutputVertices[verticesCount] = InputVertices[inputVertexId];
-                    OutputVertices[verticesCount + 1] = InputVertices[inputVertexId + 1];
-                    OutputVertices[verticesCount + 2] = InputVertices[inputVertexId + 2];
 
                     if (!submeshes.ContainsKey(indexAndHash.MaterialHash))
                     {
-                        submeshes.Add(indexAndHash.MaterialHash, new (15, Allocator.Persistent, NativeArrayOptions.UninitializedMemory));
-                        OutputSubmeshInfos.Add(new SubmeshInfo(indexAndHash.MaterialHash, i, 0));
+                        submeshes.Add(indexAndHash.MaterialHash, new (15, Allocator.Persistent));
+                        OutputSubmeshInfos.Add(new SubmeshInfo(indexAndHash.MaterialHash, 0, 0));
                     }
 
-                    UnsafeList<int> submesh = submeshes[indexAndHash.MaterialHash];
-                    
-                    submesh.Add(indexAndHash.Index);
-                    submesh.Add(InputIndices[inputVertexId + 1].Index);
-                    submesh.Add(InputIndices[inputVertexId + 2].Index);
-                    verticesCount += 3;
+                    submeshes[indexAndHash.MaterialHash].Add(verticesCount);
+                    verticesCount++;
                 }
 
-                VerticesCount = verticesCount;
-                IsPhysicallyCorrect = CheckIsVerticesCorrect(9);
+                var output = new GPUMeshDataFixJobOutput(
+                    CheckIsVerticesCorrect(Mathf.Min(9, verticesCount)),
+                    verticesCount
+                    );
 
+                Output[ChunkID] = output;
+
+                int previousLength = 0;
                 for (int i = 0; i < OutputSubmeshInfos.Length; i++)
                 {
-                    UnsafeList<int> submesh = submeshes[OutputSubmeshInfos[i].MaterialHash];
+                    NativeList<int> submesh = submeshes[OutputSubmeshInfos[i].MaterialHash];
                     SubmeshInfo submeshInfo = OutputSubmeshInfos[i];
                     submeshInfo.IndicesCount = submesh.Length;
+                    submeshInfo.IndicesStartIndex = previousLength;
+                    previousLength += submesh.Length;
                     OutputSubmeshInfos[i] = submeshInfo;
-                    OutputIndices.AddRange(submesh.Ptr, submesh.Length);
+                    OutputIndices.AddRange(submesh.GetUnsafePtr(), submesh.Length);
                     submesh.Dispose();
                 }
-                submeshes.Dispose();
             }
-
-            //Debug.Log($"Job for chunk with id: \"{ChunkID}\" DONE in \"{stopwatch.ElapsedMilliseconds}\" milliseconds!");
         }
 
-        private bool CheckIsVerticesCorrect(int maxVerticesCount)
+        private bool CheckIsVerticesCorrect(int verticesCount)
         {
-            var verticesCount = Mathf.Min(maxVerticesCount, OutputVertices.Length);
             if (verticesCount > 2 && verticesCount % 3 == 0)
             {
                 int batchesCount = verticesCount / 3;
@@ -104,7 +99,7 @@ namespace MarchingCubes.MeshGeneration
                     var vertex = OutputVertices[startId];
                     byte unequalMask = 0;
 
-                    for (int i = startId + 1; i < verticesCount; i++)
+                    for (int i = startId + 1; i < startId + 3; i++)
                     {
                         var compareVertex = OutputVertices[i];
                         if (vertex.x != compareVertex.x)
@@ -123,7 +118,7 @@ namespace MarchingCubes.MeshGeneration
                         }
                     }
 
-                    if (unequalMask >= 0 && unequalMask <= 2 || unequalMask == 4)
+                    if (!(unequalMask >= 0 && unequalMask <= 2 || unequalMask == 4))
                     {
                         return true;
                     }

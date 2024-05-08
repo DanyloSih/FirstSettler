@@ -1,11 +1,13 @@
 #pragma kernel GenerateData
 #include "Noise/ClassicNoise2D.hlsl"
+
 #include "Structs/VoxelData.compute"
 #include "Structs/HeightAndMaterialHashAssociation.compute"
 #include "Structs/RectPrism.compute"
 
+#include "BufferHandlers/ChunkSizePrisms.compute"
+
 StructuredBuffer<int3> LocalChunksPositions;
-StructuredBuffer<RectPrism> ChunkPrisms;
 RWStructuredBuffer<VoxelData> ChunkData;
 int Octaves;
 float Persistence;
@@ -13,16 +15,6 @@ float Frequency;
 float Amplitude;
 float MaxHeight;
 float MinHeight;
-
-static RectPrism GetChunkVoxelsPrism()
-{
-    return ChunkPrisms[0];
-}
-
-static RectPrism GetChunkCubesPrism()
-{
-    return ChunkPrisms[1];
-}
 
 [numthreads(1, 256, 1)]
 void GenerateData (uint3 id : SV_DispatchThreadID)

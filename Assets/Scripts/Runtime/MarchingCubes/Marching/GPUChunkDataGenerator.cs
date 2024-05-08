@@ -11,11 +11,14 @@ using Utilities.Threading;
 using Utilities.Threading.Extensions;
 using World.Data;
 using World.Organization;
+using Zenject;
 
 namespace MarchingCubesProject
 {
     public class GPUChunkDataGenerator : MonoBehaviour, IChunkDataProvider
     {
+        [Inject] private MaterialKeyAndUnityMaterialAssociations _materialAssociations;
+
         [SerializeField] private ComputeShader _generationComputeShader;
         [SerializeField] private float _maxHeight = 256;
         [SerializeField] private float _minHeight;
@@ -24,7 +27,6 @@ namespace MarchingCubesProject
         [SerializeField] private float _frequency = 1.0f;
         [SerializeField] private float _amplitude = 1.0f;
         [SerializeField] private Vector3Int _voxelsOffset;
-        [SerializeField] private MaterialKeyAndUnityMaterialAssociations _materialAssociations;
         [SerializeField] private MaterialKeyAndHeightAssociations _heightAssociations;
 
         private ComputeBuffer _heightHashAssociationsBuffer;

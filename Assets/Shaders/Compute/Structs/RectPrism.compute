@@ -1,6 +1,4 @@
-#ifdef RECT_PRISM_DEFINED
-
-#else
+#if !defined(RECT_PRISM_DEFINED)
 
 #define RECT_PRISM_DEFINED
 struct RectPrism

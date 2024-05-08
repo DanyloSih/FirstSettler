@@ -14,7 +14,7 @@ namespace MarchingCubesProject
             = new VertexAttributeDescriptor(VertexAttribute.Position);
 
         private static MeshUpdateFlags s_meshUpdateFlags 
-            = MeshUpdateFlags.DontValidateIndices | MeshUpdateFlags.DontResetBoneBounds | MeshUpdateFlags.DontRecalculateBounds;
+            = MeshUpdateFlags.DontValidateIndices | MeshUpdateFlags.DontResetBoneBounds;
 
         [Inject] private MaterialKeyAndUnityMaterialAssociations _materialAssociations;
         [Inject] private BasicChunkSettings _basicChunkSettings;
@@ -161,7 +161,7 @@ namespace MarchingCubesProject
             mesh.indexFormat = IndexFormat.UInt32;
             mesh.name = _meshName;
 
-            mesh.bounds = _bounds;
+            //mesh.bounds = _bounds;
 
             GameObject go = new GameObject(_meshName);
             go.transform.parent = transform;

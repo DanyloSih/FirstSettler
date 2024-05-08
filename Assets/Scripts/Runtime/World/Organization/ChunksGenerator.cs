@@ -163,6 +163,7 @@ namespace World.Organization
                 IChunk chunk = chunks[i];
 
                 chunk.ApplyMeshData(chunksMeshData[i]);
+                chunksMeshData[i].Dispose();
 
                 chunk.RootGameObject.transform.localScale
                       = Vector3.one * _basicChunkSettings.Scale;

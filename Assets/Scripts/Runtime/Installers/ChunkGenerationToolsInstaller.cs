@@ -18,7 +18,6 @@ namespace FirstSettler.Installers
         [SerializeField] private MeshGenerator _meshGenerator;
         [SerializeField] private Chunk _chunkPrefab;
         [SerializeField] private ChunksGenerationBehaviour _chunksGenerationBehaviour;
-        [SerializeField] private MaterialKeyAndUnityMaterialAssociations _materialAssociations;
 
         public override void InstallBindings()
         {
@@ -49,7 +48,6 @@ namespace FirstSettler.Installers
                 .FromInstance(_chunksGenerationBehaviour).AsSingle();
 
             Container.Bind(typeof(MeshGenerator), typeof(IInitializable)).FromInstance(_meshGenerator).AsSingle();
-            Container.BindInstance(_materialAssociations).AsSingle();
         }
     }
 }

@@ -6,13 +6,15 @@ using Unity.Jobs;
 using UnityEngine;
 using Utilities.Math;
 using World.Data;
+using Zenject;
 
 namespace MarchingCubesProject
 {
     public class CPUChunkDataGenerator : MonoBehaviour
     {
+        [Inject] private MaterialKeyAndUnityMaterialAssociations _materialAssociations;
+
         [SerializeField] private ChunkGenerationSettings _chunkGenerationSettings;
-        [SerializeField] private MaterialKeyAndUnityMaterialAssociations _materialAssociations;
         [SerializeField] private MaterialKeyAndHeightAssociations _heightAssociations;
 
         private FractalNoise _fractal;
