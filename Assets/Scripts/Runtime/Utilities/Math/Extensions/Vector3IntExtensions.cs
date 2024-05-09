@@ -2,6 +2,7 @@
 
 namespace Utilities.Math.Extensions
 {
+
     public static class Vector3IntExtensions
     {
         public static Vector3Int GetElementwiseRoundDividedVector(this Vector3Int numerator, Vector3Int denominator)

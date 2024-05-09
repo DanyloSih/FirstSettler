@@ -1,12 +1,12 @@
 ﻿using UnityEngine;
 using UnityEngine.Rendering;
-using World.Organization;
 using World.Data;
 using System.Collections;
 using Zenject;
 using Utilities.Math;
+using MeshGeneration;
 
-namespace MarchingCubesProject
+namespace World.Organization
 {
     public class Chunk : MonoBehaviour, IChunk
     {

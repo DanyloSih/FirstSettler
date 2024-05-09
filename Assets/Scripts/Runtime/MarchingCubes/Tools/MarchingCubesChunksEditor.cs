@@ -12,7 +12,7 @@ using Zenject;
 using Utilities.Threading;
 using System.Collections.Generic;
 using Unity.Collections.LowLevel.Unsafe;
-using MarchingCubes.MeshGeneration;
+using MeshGeneration;
 
 namespace MarchingCubesProject.Tools
 {

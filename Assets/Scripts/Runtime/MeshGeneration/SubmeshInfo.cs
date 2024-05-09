@@ -1,4 +1,4 @@
-﻿namespace World.Data
+﻿namespace MeshGeneration
 {
     public struct SubmeshInfo
     {

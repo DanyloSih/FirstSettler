@@ -1,0 +1,5 @@
+struct VertexInfo
+{
+    bool IsCorrect;
+    int MaterialHash;
+};

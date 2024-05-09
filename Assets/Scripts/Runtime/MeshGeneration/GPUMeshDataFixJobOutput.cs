@@ -1,4 +1,4 @@
-﻿namespace MarchingCubes.MeshGeneration
+﻿namespace MeshGeneration
 {
     public struct GPUMeshDataFixJobOutput
     {

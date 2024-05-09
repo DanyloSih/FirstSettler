@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
-using FirstSettler.Extensions;
-using SimpleHeirs;
 using Unity.Collections;
 using Unity.Jobs;
 using UnityEngine;
@@ -95,9 +93,9 @@ namespace MarchingCubesProject.Tools
 
             Vector3Int offset = -Vector3Int.one * halfBrushSize;
             Vector3Int unscaledGlobalChunkPosition = Vector3Int.Scale(
-                initialDataPoint.LocalChunkPosition.FloorToVector3Int(), chunkSize);
+                Vector3Int.FloorToInt(initialDataPoint.LocalChunkPosition), chunkSize);
 
-            Vector3Int localChunkDataPoint = initialDataPoint.LocalChunkDataPoint.FloorToVector3Int();
+            Vector3Int localChunkDataPoint = Vector3Int.FloorToInt(initialDataPoint.LocalChunkDataPoint);
             Vector3Int unscaledGlobalDataPoint = unscaledGlobalChunkPosition + localChunkDataPoint;            
 
             RectPrismInt editingPrism = new RectPrismInt(Vector3Int.one * _brushSize);

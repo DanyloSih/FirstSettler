@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
-using FirstSettler.Extensions;
 using Unity.Collections;
-using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using UnityEngine;
 using Utilities.Math;
+using Utilities.Math.Extensions;
 using World.Data;
 
 namespace MarchingCubesProject.Tools
@@ -34,7 +33,7 @@ namespace MarchingCubesProject.Tools
             if (unscaledDistance < HalfBrushSize)
             {
                 Vector3Int globalUnscaledDataPointPointer = UnscaledGlobalDataPoint + pointerInArea;
-                Vector3Int pointedChunk = globalUnscaledDataPointPointer.GetElementwiseDividedVector(ChunkSize);
+                Vector3Int pointedChunk = globalUnscaledDataPointPointer.GetElementwiseFloorDividedVector(ChunkSize);
                 Vector3Int pointedChunkData = globalUnscaledDataPointPointer.GetElementwiseDividingRemainder(ChunkSize);
                 pointedChunkData = FixNegativePoint(pointedChunkData, ChunkSize, out var chunkOffset);
                 pointedChunk += chunkOffset;

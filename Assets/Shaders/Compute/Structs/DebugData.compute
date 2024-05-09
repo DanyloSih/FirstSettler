@@ -1,0 +1,29 @@
+struct DebugData
+{
+    bool Bool;
+    int Int;
+    int2 Int2;
+    int3 Int3;
+    int4 Int4;
+    float Float;
+    float2 Float2;
+    float3 Float3;
+    float4 Float4;
+};
+
+DebugData CreateDebugData()
+{
+    DebugData dd;
+    
+    dd.Bool = false;
+    dd.Int = 0;
+    dd.Int2 = 0;
+    dd.Int3 = 0;
+    dd.Int4 = 0;
+    dd.Float = 0;
+    dd.Float2 = 0;
+    dd.Float3 = 0;
+    dd.Float4 = 0;
+    
+    return dd;
+}

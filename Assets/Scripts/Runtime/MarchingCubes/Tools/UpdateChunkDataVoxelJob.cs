@@ -1,6 +1,5 @@
 ﻿using UnityEngine;
 using World.Data;
-using FirstSettler.Extensions;
 using System.Runtime.CompilerServices;
 using Unity.Jobs;
 using Utilities.Math;
@@ -24,8 +23,8 @@ namespace MarchingCubesProject.Tools
                 return;
             }
 
-            Vector3Int localChunkPosition = chunkVoxel.LocalChunkPosition.FloorToVector3Int();
-            Vector3Int localChunkDataPoint = chunkVoxel.LocalChunkDataPoint.FloorToVector3Int();
+            Vector3Int localChunkPosition = Vector3Int.FloorToInt(chunkVoxel.LocalChunkPosition);
+            Vector3Int localChunkDataPoint = Vector3Int.FloorToInt(chunkVoxel.LocalChunkDataPoint);
 
             if (ChunkDataModel.IsSurfacePoint(localChunkDataPoint))
             {

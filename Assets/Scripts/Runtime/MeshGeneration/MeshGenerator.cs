@@ -6,8 +6,9 @@ using UnityEngine;
 using Utilities.Math;
 using World.Data;
 
-namespace MarchingCubes.MeshGeneration
+namespace MeshGeneration
 {
+
     public abstract class MeshGenerator : MonoBehaviour
     {
         public abstract Task<MeshData[]> GenerateMeshDataForChunks(

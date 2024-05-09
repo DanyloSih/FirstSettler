@@ -14,7 +14,7 @@ using Utilities.Threading.Extensions;
 using World.Data;
 using Zenject;
 
-namespace MarchingCubes.MeshGeneration
+namespace MeshGeneration
 {
     public class GPUMeshGenerator : MeshGenerator, IInitializable
     {
@@ -24,25 +24,27 @@ namespace MarchingCubes.MeshGeneration
         [SerializeField] private ComputeShader _meshGenerationShader;
         [SerializeField] private GenerationAlgorithmInfo _generationAlgorithmInfo;
 
-        private int _gapValue;
         private ComputeBufferManager _chunkSizePrismsBufferManager;
+        private ComputeBufferManager _debugDataBufferManager;
         private ComputeBufferManager _chunksDataBufferManager;
         private ComputeBufferManager _chunksPositionsBufferManager;
         private ComputeBufferManager _verticesBufferManager;
-        private ComputeBufferManager _indicesBufferManager;
-        private NativeArrayManager<IndexAndMaterialHash> _indicesArrayManager;
+        private ComputeBufferManager _verticesInfoBufferManager;
+        private NativeArrayManager<DebugData> _debugDataArrayManager;
+        private NativeArrayManager<VertexInfo> _verticesInfoArrayManager;
         private NativeArrayManager<Vector3> _verticesArrayManager;
 
         public void Initialize()
         {
-            _gapValue = int.MinValue;
-
             _chunkSizePrismsBufferManager = new ComputeBufferManager(
                 (count) => BuffersFactory.CreateCompute(count, typeof(RectPrismInt)));
 
             var chunkSizePrismsBuffer = _chunkSizePrismsBufferManager.GetObjectInstance(
                 _chunkSizePrismsProvider.ChunkSizePrisms.Length);
             chunkSizePrismsBuffer.SetData(_chunkSizePrismsProvider.ChunkSizePrisms);
+
+            _debugDataBufferManager = new ComputeBufferManager(
+               (count) => BuffersFactory.CreateCompute(count, typeof(DebugData)));
 
             _chunksDataBufferManager = new ComputeBufferManager(
                 (count) => BuffersFactory.CreateCompute(count, typeof(VoxelData)));
@@ -53,10 +55,13 @@ namespace MarchingCubes.MeshGeneration
             _verticesBufferManager = new ComputeBufferManager(
                 (count) => BuffersFactory.CreateCompute(count, typeof(Vector3)));
 
-            _indicesBufferManager = new ComputeBufferManager(
-                (count) => BuffersFactory.CreateCompute(count, typeof(IndexAndMaterialHash)));
+            _verticesInfoBufferManager = new ComputeBufferManager(
+                (count) => BuffersFactory.CreateCompute(count, typeof(VertexInfo)));
 
-            _indicesArrayManager = new NativeArrayManager<IndexAndMaterialHash>(
+            _debugDataArrayManager = new NativeArrayManager<DebugData>(
+                (count) => new(count, Allocator.Persistent, NativeArrayOptions.UninitializedMemory));
+
+            _verticesInfoArrayManager = new NativeArrayManager<VertexInfo>(
                 (count) => new(count, Allocator.Persistent, NativeArrayOptions.UninitializedMemory));
 
             _verticesArrayManager = new NativeArrayManager<Vector3>(
@@ -65,13 +70,16 @@ namespace MarchingCubes.MeshGeneration
 
         protected void OnDestroy()
         {
+            _debugDataBufferManager.Dispose();
             _chunkSizePrismsBufferManager.Dispose();
             _chunksDataBufferManager.Dispose();
             _chunksPositionsBufferManager.Dispose();
             _verticesBufferManager.Dispose();
-            _indicesBufferManager.Dispose();
+            _verticesInfoBufferManager.Dispose();
+
+            _debugDataArrayManager.Dispose();
             _verticesArrayManager.Dispose();
-            _indicesArrayManager.Dispose();
+            _verticesInfoArrayManager.Dispose();
         }
 
         public override async Task<MeshData[]> GenerateMeshDataForChunks(
@@ -105,8 +113,7 @@ namespace MarchingCubes.MeshGeneration
                 fixJob.MaxVerticesPerChunk = maxVerticesPerChunk;
                 fixJob.MaterialsCount = _materialAssociations.Count;
                 fixJob.ChunkID = i;
-                fixJob.GapValue = _gapValue;
-                fixJob.InputIndices = rawMeshData.Indices;
+                fixJob.InputVerticesInfo = rawMeshData.Indices;
                 fixJob.InputVertices = rawMeshData.Vertices;
                 fixJob.Output = jobsOutput;
                 fixJob.ExistingMaterialHashes = _materialAssociations.GetKeysHashSet();
@@ -168,36 +175,29 @@ namespace MarchingCubes.MeshGeneration
                 _chunkSizePrismsProvider.ChunkSizePrisms.Length);
 
             ComputeBuffer chunksDataBuffer = InitializeChunksDataBuffer(chunksData, voxelsCount);
-            ComputeBuffer positionsBuffer = _chunksPositionsBufferManager.GetObjectInstance(chunksCount);
-            positionsBuffer.SetData(chunkPositions);
 
-            ComputeBuffer indicesBuffer = _indicesBufferManager.GetObjectInstance(maxVerticesCount);
 
-            _indicesArrayManager.Dispose();
-            NativeArray<IndexAndMaterialHash> indices = _indicesArrayManager.GetObjectInstance(maxVerticesCount);
-            indicesBuffer.SetData(indices);
+            ComputeBuffer verticesInfoBuffer = _verticesInfoBufferManager.GetObjectInstance(maxVerticesCount);
+            _verticesInfoArrayManager.Dispose();
+            NativeArray<VertexInfo> verticesInfo = _verticesInfoArrayManager.GetObjectInstance(maxVerticesCount);
+            verticesInfoBuffer.SetData(verticesInfo);
 
             ComputeBuffer verticesBuffer = _verticesBufferManager.GetObjectInstance(maxVerticesCount);
-
             _verticesArrayManager.Dispose();
             NativeArray<Vector3> vertices = _verticesArrayManager.GetObjectInstance(maxVerticesCount);
             verticesBuffer.SetData(vertices);
 
             int kernelId = _meshGenerationShader.FindKernel("GenerateMesh");
             _meshGenerationShader.SetBuffer(kernelId, "ChunkPrisms", chunkSizePrismsBuffer);
-            _meshGenerationShader.SetBuffer(kernelId, "ChunkPositions", positionsBuffer);
             _meshGenerationShader.SetBuffer(kernelId, "ChunkData", chunksDataBuffer);
             _meshGenerationShader.SetBuffer(kernelId, "Vertices", verticesBuffer);
-            _meshGenerationShader.SetBuffer(kernelId, "Indices", indicesBuffer);
-            _meshGenerationShader.SetInt("MaxVerticesPerMarch", _generationAlgorithmInfo.MaxVerticesPerMarch);
-            _meshGenerationShader.SetInt("GapValue", _gapValue);
-            _meshGenerationShader.SetInt("ChunksCount", chunksData.Count);
+            _meshGenerationShader.SetBuffer(kernelId, "VerticesInfo", verticesInfoBuffer);
             _meshGenerationShader.SetFloat("Surface", _generationAlgorithmInfo.SurfaceFactor);
             _meshGenerationShader.Dispatch(
-                kernelId, chunksCount, Mathf.CeilToInt(cubesCount / 256f), 1);
+                kernelId, chunksCount, Mathf.CeilToInt(_chunkSizePrismsProvider.ChunkCubesPrism.Volume / 256f), 1);
 
             var verticesRequest = AsyncGPUReadback.RequestIntoNativeArray(ref vertices, verticesBuffer);
-            var indicesRequest = AsyncGPUReadback.RequestIntoNativeArray(ref indices, indicesBuffer);
+            var indicesRequest = AsyncGPUReadback.RequestIntoNativeArray(ref verticesInfo, verticesInfoBuffer);
 
             await AsyncUtilities.WaitWhile(() => !(verticesRequest.done && indicesRequest.done), 1, cancellationToken);
             
@@ -211,7 +211,29 @@ namespace MarchingCubes.MeshGeneration
                 return new RawMeshData();
             }
 
-            return new RawMeshData(vertices, indices);
+            List<Vector3> debugVertices = new ();
+            List<VertexInfo> debugIndecies = new();
+            for (int i = 0; i < verticesInfo.Length; i++)
+            {
+                if (vertices[i] == new Vector3(-666, -666, -666))
+                {
+
+                }
+
+                if (verticesInfo[i].IsCorrect)
+                {
+                    debugVertices.Add(vertices[i]);
+
+                    debugIndecies.Add(verticesInfo[i]);
+                }
+            }
+
+            if(debugVertices.Count > 0)
+            {
+
+            }
+
+            return new RawMeshData(vertices, verticesInfo);
         }
 
         private ComputeBuffer InitializeChunksDataBuffer(

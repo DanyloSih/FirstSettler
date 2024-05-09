@@ -717,7 +717,7 @@ MonoBehaviour:
   _minHeight: 19
   _octaves: 5
   _persistence: 0.2
-  _frequency: 150
+  _frequency: 1
   _amplitude: 2
   _voxelsOffset: {x: 0, y: 0, z: 0}
   _heightAssociations: {fileID: 11400000, guid: 1247a779be5a5f3448531b07ef66707c,
@@ -781,7 +781,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e04b7c96509d7f344acdc3ac888d1e4c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _viewDistance: 4
+  _viewDistance: 2
   _chunksBatchLength: 1
   _chunksDisposingParams:
     BatchLength: 6
@@ -1057,7 +1057,6 @@ MonoBehaviour:
     type: 3}
   _generationAlgorithmInfo: {fileID: 11400000, guid: 27c3d601efea98c4fafd2ff21daa7815,
     type: 2}
-  _materials: {fileID: 11400000, guid: 666ef968199c91a4182bc98a711d7d8e, type: 2}
 --- !u!1 &1794904093
 GameObject:
   m_ObjectHideFlags: 0

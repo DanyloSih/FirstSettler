@@ -5,7 +5,7 @@ using Unity.Jobs;
 using UnityEngine;
 using World.Data;
 
-namespace MarchingCubes.MeshGeneration
+namespace MeshGeneration
 {
     public struct GPUMeshDataFixJob : IJob
     {
@@ -14,13 +14,11 @@ namespace MarchingCubes.MeshGeneration
         [ReadOnly]
         public NativeArray<Vector3> InputVertices;
         [ReadOnly]
-        public NativeArray<IndexAndMaterialHash> InputIndices;
+        public NativeArray<VertexInfo> InputVerticesInfo;
         [ReadOnly]
         public int ChunkID;
         [ReadOnly]
         public int MaxVerticesPerChunk;
-        [ReadOnly]
-        public int GapValue;
         [ReadOnly]
         public int MaterialsCount;
 
@@ -46,22 +44,22 @@ namespace MarchingCubes.MeshGeneration
                 {
                     int inputVertexId = firstVertexId + i;
 
-                    IndexAndMaterialHash indexAndHash = InputIndices[inputVertexId];
-                    if (indexAndHash.Index == GapValue 
-                    || !ExistingMaterialHashes.Contains(indexAndHash.MaterialHash))
+                    VertexInfo vertexInfo = InputVerticesInfo[inputVertexId];
+
+                    if (!vertexInfo.IsCorrect)
                     {
                         continue;
                     }
 
                     OutputVertices[verticesCount] = InputVertices[inputVertexId];
 
-                    if (!submeshes.ContainsKey(indexAndHash.MaterialHash))
+                    if (!submeshes.ContainsKey(vertexInfo.MaterialHash))
                     {
-                        submeshes.Add(indexAndHash.MaterialHash, new (15, Allocator.Persistent));
-                        OutputSubmeshInfos.Add(new SubmeshInfo(indexAndHash.MaterialHash, 0, 0));
+                        submeshes.Add(vertexInfo.MaterialHash, new (15, Allocator.Persistent));
+                        OutputSubmeshInfos.Add(new SubmeshInfo(vertexInfo.MaterialHash, 0, 0));
                     }
 
-                    submeshes[indexAndHash.MaterialHash].Add(verticesCount);
+                    submeshes[vertexInfo.MaterialHash].Add(verticesCount);
                     verticesCount++;
                 }
 
@@ -69,6 +67,11 @@ namespace MarchingCubes.MeshGeneration
                     CheckIsVerticesCorrect(Mathf.Min(9, verticesCount)),
                     verticesCount
                     );
+
+                //var output = new GPUMeshDataFixJobOutput(
+                //    false,
+                //    verticesCount
+                //    );
 
                 Output[ChunkID] = output;
 

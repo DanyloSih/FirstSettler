@@ -2,7 +2,7 @@
 using Unity.Collections;
 using System;
 
-namespace World.Data
+namespace MeshGeneration
 {
     public struct MeshData : IDisposable
     {

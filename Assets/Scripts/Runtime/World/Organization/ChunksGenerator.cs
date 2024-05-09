@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using MarchingCubes.MeshGeneration;
+using MeshGeneration;
 using Unity.Collections;
 using UnityEngine;
 using Utilities.Math;

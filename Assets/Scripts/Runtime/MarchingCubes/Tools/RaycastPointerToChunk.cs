@@ -2,6 +2,7 @@
 using World.Data;
 using Zenject;
 using Utilities.Math;
+using World.Organization;
 
 namespace MarchingCubesProject.Tools
 {
