@@ -14,7 +14,7 @@ namespace World.Organization
             = new VertexAttributeDescriptor(VertexAttribute.Position);
 
         private static MeshUpdateFlags s_meshUpdateFlags 
-            = MeshUpdateFlags.DontValidateIndices | MeshUpdateFlags.DontResetBoneBounds;
+            = MeshUpdateFlags.DontValidateIndices | MeshUpdateFlags.DontResetBoneBounds | MeshUpdateFlags.DontRecalculateBounds;
 
         [Inject] private MaterialKeyAndUnityMaterialAssociations _materialAssociations;
         [Inject] private BasicChunkSettings _basicChunkSettings;
@@ -65,7 +65,6 @@ namespace World.Organization
                 ApplyVertices(meshData);
                 ApplyTriangles(meshData);
 
-                _cashedMesh.Optimize();
                 _cashedMesh.RecalculateNormals(s_meshUpdateFlags);
 
                 _meshComponents.MeshFilter.transform.localPosition = Vector3.zero;
@@ -149,8 +148,8 @@ namespace World.Organization
         private Bounds CalculateBounds()
         {
             var chunkPos = _chunkCoordinatesCalculator.GetGlobalChunkPositionByLocal(LocalPosition);
-            var halfSize = _basicChunkSettings.Size / 2;
-            return new Bounds(chunkPos + halfSize, _basicChunkSettings.Size);
+            var halfSize = _basicChunkSettings.SizePlusOne / 2;
+            return new Bounds(halfSize, _basicChunkSettings.SizePlusOne);
         }
 
         private (MeshFilter, MeshRenderer, MeshCollider) CreateMesh32()
@@ -161,7 +160,7 @@ namespace World.Organization
             mesh.indexFormat = IndexFormat.UInt32;
             mesh.name = _meshName;
 
-            //mesh.bounds = _bounds;
+            mesh.bounds = _bounds;
 
             GameObject go = new GameObject(_meshName);
             go.transform.parent = transform;

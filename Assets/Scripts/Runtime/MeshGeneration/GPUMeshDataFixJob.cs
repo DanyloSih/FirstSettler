@@ -1,19 +1,21 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using UnityEngine;
 using World.Data;
+using Debug = UnityEngine.Debug;
 
 namespace MeshGeneration
 {
     public struct GPUMeshDataFixJob : IJob
     {
-        [ReadOnly]
+        [ReadOnly, NativeDisableContainerSafetyRestriction]
         public NativeHashSet<int> ExistingMaterialHashes;
-        [ReadOnly]
+        [ReadOnly, NativeDisableContainerSafetyRestriction]
         public NativeArray<Vector3> InputVertices;
-        [ReadOnly]
+        [ReadOnly, NativeDisableContainerSafetyRestriction]
         public NativeArray<VertexInfo> InputVerticesInfo;
         [ReadOnly]
         public int ChunkID;
@@ -22,12 +24,14 @@ namespace MeshGeneration
         [ReadOnly]
         public int MaterialsCount;
 
-        [WriteOnly]
+        [WriteOnly, NativeDisableContainerSafetyRestriction]
         public NativeList<int> OutputIndices;
-        [WriteOnly]
+        [WriteOnly, NativeDisableContainerSafetyRestriction]
         public NativeArray<GPUMeshDataFixJobOutput> Output;
 
+        [NativeDisableContainerSafetyRestriction]
         public NativeArray<Vector3> OutputVertices;
+        [NativeDisableContainerSafetyRestriction]
         public NativeList<SubmeshInfo> OutputSubmeshInfos;
 
         public void Execute()
@@ -37,10 +41,12 @@ namespace MeshGeneration
                 var firstVertexId = MaxVerticesPerChunk * ChunkID;
 
                 int verticesCount = 0;
+                //Stopwatch stopwatch = Stopwatch.StartNew();
+                //Output[0] = new GPUMeshDataFixJobOutput(false, verticesCount);
 
                 Dictionary<int, NativeList<int>> submeshes = new (MaterialsCount);
 
-                for (int i = 0; i < MaxVerticesPerChunk; i++)
+                for (int i = 0; i < MaxVerticesPerChunk; i += 3)
                 {
                     int inputVertexId = firstVertexId + i;
 
@@ -52,6 +58,8 @@ namespace MeshGeneration
                     }
 
                     OutputVertices[verticesCount] = InputVertices[inputVertexId];
+                    OutputVertices[verticesCount + 1] = InputVertices[inputVertexId + 1];
+                    OutputVertices[verticesCount + 2] = InputVertices[inputVertexId + 2];
 
                     if (!submeshes.ContainsKey(vertexInfo.MaterialHash))
                     {
@@ -61,19 +69,22 @@ namespace MeshGeneration
 
                     submeshes[vertexInfo.MaterialHash].Add(verticesCount);
                     verticesCount++;
+                    submeshes[vertexInfo.MaterialHash].Add(verticesCount);
+                    verticesCount++;
+                    submeshes[vertexInfo.MaterialHash].Add(verticesCount);
+                    verticesCount++;
                 }
+
+                //Debug.Log($"First part done in {stopwatch.ElapsedMilliseconds}");
+                //stopwatch.Restart();
+                //Output[0] = new GPUMeshDataFixJobOutput(false, verticesCount);
 
                 var output = new GPUMeshDataFixJobOutput(
                     CheckIsVerticesCorrect(Mathf.Min(9, verticesCount)),
                     verticesCount
                     );
 
-                //var output = new GPUMeshDataFixJobOutput(
-                //    false,
-                //    verticesCount
-                //    );
-
-                Output[ChunkID] = output;
+                Output[0] = output;
 
                 int previousLength = 0;
                 for (int i = 0; i < OutputSubmeshInfos.Length; i++)
@@ -87,6 +98,8 @@ namespace MeshGeneration
                     OutputIndices.AddRange(submesh.GetUnsafePtr(), submesh.Length);
                     submesh.Dispose();
                 }
+
+                //Debug.Log($"Second part done in {stopwatch.ElapsedMilliseconds}");
             }
         }
 

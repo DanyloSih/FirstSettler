@@ -1,4 +1,4 @@
-﻿using MarchingCubesProject;
+﻿using DataGeneration;
 using MarchingCubesProject.Tools;
 using MeshGeneration;
 using UnityEngine;
@@ -11,28 +11,19 @@ namespace FirstSettler.Installers
 {
     public class ChunkGenerationToolsInstaller : MonoInstaller
     {
-        [SerializeField] private BasicChunkSettings _basicChunkSettings;
         [SerializeField] private Transform _chunksRoot;
         [SerializeField] private ChunksContainer _chunksContainer;
-        [SerializeField] private GPUChunkDataGenerator _gpuChunkDataGenerator;
+        [SerializeField] private GPUPerlinNoiseChunkDataGenerator _gpuChunkDataGenerator;
         [SerializeField] private MeshGenerator _meshGenerator;
         [SerializeField] private Chunk _chunkPrefab;
         [SerializeField] private ChunksGenerationBehaviour _chunksGenerationBehaviour;
 
         public override void InstallBindings()
-        {
-            Container.BindInstance(_basicChunkSettings);
-
-            Container.BindInterfacesAndSelfTo<ChunkPrismsProvider>().AsSingle();
-
-            Container.Bind<ChunkCoordinatesCalculator>()
-                .FromMethod(() => new ChunkCoordinatesCalculator(
-                    _basicChunkSettings.Size, _basicChunkSettings.Scale));
-
+        {     
             Container.BindInterfacesAndSelfTo<ChunksContainer>()
                 .FromInstance(_chunksContainer).AsSingle();
 
-            Container.BindInterfacesAndSelfTo<GPUChunkDataGenerator>()
+            Container.BindInterfacesAndSelfTo<GPUPerlinNoiseChunkDataGenerator>()
                 .FromInstance(_gpuChunkDataGenerator).AsSingle();
 
             Container.BindInterfacesAndSelfTo<MarchingCubesChunksEditor>()

@@ -29,6 +29,18 @@ namespace Utilities.Math.Extensions
             Gizmos.color = previousColor;
         }
 
+        public static NativeArray<Vector3Int> FillArrayWithPositions(this IAreaInt area, NativeArray<Vector3Int> positions)
+        {
+            int iterations = Mathf.Min(positions.Length, area.AbstractShape.Volume);
+
+            for (int i = 0; i < iterations; i++)
+            {
+                positions[i] = area.IndexToPoint(i);
+            }
+
+            return positions;
+        }
+
         public static ShapeIntArea<DisposableArbitraryShapeInt> BooleanCutViaOtherArea(
             this IAreaInt area, IAreaInt otherArea)
         {

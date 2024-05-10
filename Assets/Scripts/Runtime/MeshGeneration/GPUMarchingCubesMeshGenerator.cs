@@ -9,6 +9,7 @@ using UnityEngine.Rendering;
 using Utilities.Jobs;
 using Utilities.Math;
 using Utilities.Shaders;
+using Utilities.Shaders.Extensions;
 using Utilities.Threading;
 using Utilities.Threading.Extensions;
 using World.Data;
@@ -16,7 +17,7 @@ using Zenject;
 
 namespace MeshGeneration
 {
-    public class GPUMeshGenerator : MeshGenerator, IInitializable
+    public class GPUMarchingCubesMeshGenerator : MeshGenerator, IInitializable
     {
         [Inject] private ChunkPrismsProvider _chunkSizePrismsProvider;
         [Inject] private MaterialKeyAndUnityMaterialAssociations _materialAssociations;
@@ -40,8 +41,8 @@ namespace MeshGeneration
                 (count) => BuffersFactory.CreateCompute(count, typeof(RectPrismInt)));
 
             var chunkSizePrismsBuffer = _chunkSizePrismsBufferManager.GetObjectInstance(
-                _chunkSizePrismsProvider.ChunkSizePrisms.Length);
-            chunkSizePrismsBuffer.SetData(_chunkSizePrismsProvider.ChunkSizePrisms);
+                _chunkSizePrismsProvider.PrismsArray.Length);
+            chunkSizePrismsBuffer.SetData(_chunkSizePrismsProvider.PrismsArray);
 
             _debugDataBufferManager = new ComputeBufferManager(
                (count) => BuffersFactory.CreateCompute(count, typeof(DebugData)));
@@ -94,7 +95,7 @@ namespace MeshGeneration
 
             RawMeshData rawMeshData = await GenerateMeshData(positions, chunksRawData, cancellationToken);
 
-            int maxVerticesPerChunk = _chunkSizePrismsProvider.ChunkCubesPrism.Volume
+            int maxVerticesPerChunk = _chunkSizePrismsProvider.CubesPrism.Volume
                 * _generationAlgorithmInfo.MaxVerticesPerMarch;
 
             NativeArray<GPUMeshDataFixJob> jobs = new(
@@ -103,11 +104,12 @@ namespace MeshGeneration
             NativeArray<JobHandle> jobHandles = new(
                 chunksRawData.Count, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
 
-            NativeArray<GPUMeshDataFixJobOutput> jobsOutput = new(
-                chunksRawData.Count, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+            List<NativeArray<GPUMeshDataFixJobOutput>> jobsOutput = new();
 
             for (int i = 0; i < chunksRawData.Count; i++)
             {
+                jobsOutput.Add(new(1, Allocator.Persistent, NativeArrayOptions.UninitializedMemory));
+
                 GPUMeshDataFixJob fixJob = new GPUMeshDataFixJob();
 
                 fixJob.MaxVerticesPerChunk = maxVerticesPerChunk;
@@ -115,7 +117,7 @@ namespace MeshGeneration
                 fixJob.ChunkID = i;
                 fixJob.InputVerticesInfo = rawMeshData.Indices;
                 fixJob.InputVertices = rawMeshData.Vertices;
-                fixJob.Output = jobsOutput;
+                fixJob.Output = jobsOutput[i];
                 fixJob.ExistingMaterialHashes = _materialAssociations.GetKeysHashSet();
 
                 fixJob.OutputVertices = new NativeArray<Vector3>(
@@ -130,15 +132,17 @@ namespace MeshGeneration
                 jobHandles[i] = fixJob.Schedule();
             }
 
-            JobHandle jobsHandle = JobHandle.CombineDependencies(jobHandles);
-            await AsyncUtilities.WaitWhile(() => !jobsHandle.IsCompleted, 1, cancellationToken);
+            await AsyncUtilities.WaitWhile(() => !IsAllJobsComplete(jobHandles), 1, cancellationToken);
+
+            foreach (var handle in jobHandles)
+            {
+                handle.Complete();
+            }
 
             if (cancellationToken.IsCanceled())
             {
                 return new MeshData[0];
             }
-
-            jobsHandle.Complete();
 
             MeshData[] result = new MeshData[chunksRawData.Count];
 
@@ -149,16 +153,33 @@ namespace MeshGeneration
                     job.OutputVertices, 
                     job.OutputIndices.AsArray(), 
                     job.OutputSubmeshInfos,
-                    jobsOutput[i].IsPhysicallyCorrect,
-                    jobsOutput[i].VerticesCount,
-                    jobsOutput[i].VerticesCount);
+                    jobsOutput[i][0].IsPhysicallyCorrect,
+                    jobsOutput[i][0].VerticesCount,
+                    jobsOutput[i][0].VerticesCount);
             }
 
             jobs.Dispose();
             jobHandles.Dispose();
-            jobsOutput.Dispose();
+            
+            foreach (var jobOutput in jobsOutput)
+            {
+                jobOutput.Dispose();
+            }
 
             return result;
+        }
+
+        private bool IsAllJobsComplete(NativeArray<JobHandle> jobHandles)
+        {
+            foreach (var jobHandle in jobHandles)
+            {
+                if (!jobHandle.IsCompleted)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private async Task<RawMeshData> GenerateMeshData(
@@ -167,12 +188,12 @@ namespace MeshGeneration
             CancellationToken? cancellationToken = null)
         {
             int chunksCount = chunksData.Count;
-            int voxelsCount = _chunkSizePrismsProvider.ChunkVoxelsPrism.Volume * chunksCount;
-            int cubesCount = _chunkSizePrismsProvider.ChunkCubesPrism.Volume * chunksCount;
+            int voxelsCount = _chunkSizePrismsProvider.VoxelsPrism.Volume * chunksCount;
+            int cubesCount = _chunkSizePrismsProvider.CubesPrism.Volume * chunksCount;
             int maxVerticesCount = cubesCount * _generationAlgorithmInfo.MaxVerticesPerMarch;
 
             ComputeBuffer chunkSizePrismsBuffer = _chunkSizePrismsBufferManager.GetObjectInstance(
-                _chunkSizePrismsProvider.ChunkSizePrisms.Length);
+                _chunkSizePrismsProvider.PrismsArray.Length);
 
             ComputeBuffer chunksDataBuffer = InitializeChunksDataBuffer(chunksData, voxelsCount);
 
@@ -193,8 +214,8 @@ namespace MeshGeneration
             _meshGenerationShader.SetBuffer(kernelId, "Vertices", verticesBuffer);
             _meshGenerationShader.SetBuffer(kernelId, "VerticesInfo", verticesInfoBuffer);
             _meshGenerationShader.SetFloat("Surface", _generationAlgorithmInfo.SurfaceFactor);
-            _meshGenerationShader.Dispatch(
-                kernelId, chunksCount, Mathf.CeilToInt(_chunkSizePrismsProvider.ChunkCubesPrism.Volume / 256f), 1);
+            _meshGenerationShader.DispatchConsideringGroupSizes(
+                kernelId, chunksCount, _chunkSizePrismsProvider.CubesPrism.Volume, 1);
 
             var verticesRequest = AsyncGPUReadback.RequestIntoNativeArray(ref vertices, verticesBuffer);
             var indicesRequest = AsyncGPUReadback.RequestIntoNativeArray(ref verticesInfo, verticesInfoBuffer);
@@ -209,28 +230,6 @@ namespace MeshGeneration
             if (cancellationToken.IsCanceled())
             {
                 return new RawMeshData();
-            }
-
-            List<Vector3> debugVertices = new ();
-            List<VertexInfo> debugIndecies = new();
-            for (int i = 0; i < verticesInfo.Length; i++)
-            {
-                if (vertices[i] == new Vector3(-666, -666, -666))
-                {
-
-                }
-
-                if (verticesInfo[i].IsCorrect)
-                {
-                    debugVertices.Add(vertices[i]);
-
-                    debugIndecies.Add(verticesInfo[i]);
-                }
-            }
-
-            if(debugVertices.Count > 0)
-            {
-
             }
 
             return new RawMeshData(vertices, verticesInfo);

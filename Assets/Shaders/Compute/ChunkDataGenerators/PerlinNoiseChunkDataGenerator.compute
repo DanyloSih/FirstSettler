@@ -1,11 +1,9 @@
 #pragma kernel GenerateData
-#include "Noise/ClassicNoise2D.hlsl"
-
-#include "Structs/VoxelData.compute"
-#include "Structs/HeightAndMaterialHashAssociation.compute"
-#include "Structs/RectPrism.compute"
-
-#include "BufferHandlers/ChunkSizePrisms.compute"
+#include "../Noise/ClassicNoise2D.hlsl"
+#include "../Structs/VoxelData.compute"
+#include "../Structs/HeightAndMaterialHashAssociation.compute"
+#include "../Structs/RectPrism.compute"
+#include "../BufferHandlers/ChunkSizePrisms.compute"
 
 StructuredBuffer<int3> LocalChunksPositions;
 RWStructuredBuffer<VoxelData> ChunkData;

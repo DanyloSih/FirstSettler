@@ -13,12 +13,10 @@ using World.Data;
 using World.Organization;
 using Zenject;
 
-namespace MarchingCubesProject
+namespace DataGeneration
 {
-    public class GPUChunkDataGenerator : MonoBehaviour, IChunkDataProvider
+    public class GPUPerlinNoiseChunkDataGenerator : ChunkDataGenerator, IChunkDataProvider
     {
-        [Inject] private MaterialKeyAndUnityMaterialAssociations _materialAssociations;
-
         [SerializeField] private ComputeShader _generationComputeShader;
         [SerializeField] private float _maxHeight = 256;
         [SerializeField] private float _minHeight;
@@ -36,10 +34,15 @@ namespace MarchingCubesProject
         private ComputeBuffer _chunkPositionsBuffer;
         private ComputeBuffer _voxelsBuffer;
         private int _voxelsBufferLength;
-        private ComputeBuffer _rectPrisms;
+        private ComputeBufferManager _rectPrismsBufferManager = new ComputeBufferManager(
+            (count) => BuffersFactory.CreateCompute(count, typeof(RectPrismInt)));
+        private ChunkPrismsProvider _chunkPrismsProvider;
 
-        public MaterialKeyAndUnityMaterialAssociations MaterialAssociations
-            => _materialAssociations;
+        [Inject]
+        public void Construct(ChunkPrismsProvider chunkPrismsProvider)
+        {
+            _chunkPrismsProvider = chunkPrismsProvider;
+        }
 
         protected void OnEnable()
         {
@@ -53,13 +56,11 @@ namespace MarchingCubesProject
 
             _heightHashAssociationsBuffer.Dispose();
             _minMaxAssociations.Dispose();
-            _rectPrisms.Dispose();
+            _rectPrismsBufferManager.Dispose();
         }
 
-        public async Task<List<ThreedimensionalNativeArray<VoxelData>>> GenerateChunksRawData(
+        public override async Task<List<ThreedimensionalNativeArray<VoxelData>>> GenerateChunksRawData(
             NativeArray<Vector3Int> generatingChunksLocalPositions,
-            Vector3Int chunkOffset,
-            Vector3Int chunkDataSize,
             CancellationToken? cancellationToken = null)
         {
             if (!enabled)
@@ -69,23 +70,19 @@ namespace MarchingCubesProject
 
             InitializeChunksPositionsBuffer(generatingChunksLocalPositions);
 
-            int chunkDataVolume = chunkDataSize.x * chunkDataSize.y * chunkDataSize.z;
+            int chunkDataVolume = _chunkPrismsProvider.VoxelsPrism.Volume;
 
             InitializeBuffers();
             
             int chunksCount = generatingChunksLocalPositions.Length;
             CreateVoxelsDataBuffer(chunkDataVolume * chunksCount);
 
-            var kernelId = _generationComputeShader.FindKernel("GenerateData");
-            _rectPrisms.SetData(new RectPrismInt[] {
-                new RectPrismInt(chunkDataSize),
-                new RectPrismInt(chunkOffset)
-            });   
+            int kernelId = _generationComputeShader.FindKernel("GenerateData");
 
             _generationComputeShader.SetBuffer(kernelId, "ChunkData", _voxelsBuffer);
             _generationComputeShader.SetBuffer(kernelId, "HeightAndHashAssociations", _heightHashAssociationsBuffer);
             _generationComputeShader.SetBuffer(kernelId, "MinMaxAssociations", _minMaxAssociations);
-            _generationComputeShader.SetBuffer(kernelId, "ChunkPrisms", _rectPrisms);
+            _generationComputeShader.SetBuffer(kernelId, "ChunkPrisms", _rectPrismsBufferManager.GetObjectInstance(2));
             _generationComputeShader.SetBuffer(kernelId, "LocalChunksPositions", _chunkPositionsBuffer);
             _generationComputeShader.SetInt("AssociationsCount", _heightAssociations.Count);
             _generationComputeShader.SetInt("Octaves", _octaves);
@@ -113,7 +110,7 @@ namespace MarchingCubesProject
             {
                 var subArray = _voxelsArray.GetSubArray(i * chunkDataVolume, chunkDataVolume);
                 NativeArray<VoxelData> subarray = new(subArray, Allocator.Persistent);
-                result.Add(new ThreedimensionalNativeArray<VoxelData>(subarray, chunkDataSize));
+                result.Add(new ThreedimensionalNativeArray<VoxelData>(subarray, _chunkPrismsProvider.VoxelsPrism.Size));
             }
 
             return result;
@@ -127,8 +124,14 @@ namespace MarchingCubesProject
                 _heightAssociations.Initialize();
                 InitializeAssociationsBuffer();
                 InitializeMinMaxBuffer();
-                InitializeParallelepipedsBuffer();
+                InitializeRectPrisms();
             }
+        }
+
+        private void InitializeRectPrisms()
+        {
+            var prisms = _rectPrismsBufferManager.GetObjectInstance(2);
+            prisms.SetData(_chunkPrismsProvider.PrismsArray);
         }
 
         private void InitializeChunksPositionsBuffer(NativeArray<Vector3Int> positions)
@@ -216,11 +219,6 @@ namespace MarchingCubesProject
                 _heightAssociations.MinAssociation,
                 _heightAssociations.MaxAssociation
             }.Select(x => new HeightAndMaterialHashAssociation(x.Value.Key, x.Value.Value)).ToArray());
-        }
-
-        private void InitializeParallelepipedsBuffer()
-        {
-            _rectPrisms = BuffersFactory.CreateCompute(2, typeof(RectPrismInt));
         }
     }
 }

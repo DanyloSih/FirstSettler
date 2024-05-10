@@ -2,7 +2,8 @@
     "name": "Utilities.Shaders",
     "rootNamespace": "",
     "references": [
-        "GUID:522b8546374be264499a0978eb4f5334"
+        "GUID:522b8546374be264499a0978eb4f5334",
+        "GUID:3db8fe1fef6a95f4ea681db02dbfd15e"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

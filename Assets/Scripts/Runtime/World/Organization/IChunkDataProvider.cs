@@ -12,10 +12,6 @@ namespace World.Organization
     {
         public Task<List<ThreedimensionalNativeArray<VoxelData>>> GenerateChunksRawData(
             NativeArray<Vector3Int> generatingChunksLocalPositions, 
-            Vector3Int chunkOffset, 
-            Vector3Int chunkDataSize,
             CancellationToken? cancellationToken = null);
-
-        public MaterialKeyAndUnityMaterialAssociations MaterialAssociations { get; }
     }
 }

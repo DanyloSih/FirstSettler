@@ -1,3 +1,6 @@
+#ifndef DEBUG_DATA
+#define DEBUG_DATA
+
 struct DebugData
 {
     bool Bool;
@@ -27,3 +30,5 @@ DebugData CreateDebugData()
     
     return dd;
 }
+
+#endif

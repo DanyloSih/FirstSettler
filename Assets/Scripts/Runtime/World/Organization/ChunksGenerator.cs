@@ -103,7 +103,7 @@ namespace World.Organization
 
             List<ThreedimensionalNativeArray<VoxelData>> chunksData
                 = await _chunksDataProvider.GenerateChunksRawData(
-                    chunkPositionsArray, _chunkSize, _chunkSizePlusOne, cancellationToken);
+                    chunkPositionsArray, cancellationToken);
 
             InitializeChunks(chunksGameObjects, chunkPositionsArray, chunksData);
 

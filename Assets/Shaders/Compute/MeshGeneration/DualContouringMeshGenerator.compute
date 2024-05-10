@@ -1,0 +1,38 @@
+#pragma kernel GenerateMesh
+
+#include "../Structs/VertexInfo.compute"
+#include "../Structs/RectPrism.compute"
+#include "../BufferHandlers/ChunkDataUser.compute"
+#include "../BufferHandlers/ChunkSizePrisms.compute"
+
+RWStructuredBuffer<float3> Vertices;
+RWStructuredBuffer<VertexInfo> VerticesInfo;
+
+[numthreads(1, 128, 1)]
+void GenerateMesh (uint3 id : SV_DispatchThreadID)
+{
+    RectPrism cubesPrism = GetChunkCubesPrism();
+    RectPrism voxelsPrism = GetChunkVoxelsPrism();
+    
+    if (id.y >= cubesPrism.Volume)
+    {
+        return;
+    }
+    
+    uint chunkId = id.x;
+    uint cubeId = id.y;
+    uint3 cubePos = IndexToPoint(cubesPrism, cubeId);
+    uint voxelId = PointToIndex(voxelsPrism, cubePos);
+    uint3 voxelPos = IndexToPoint(voxelsPrism, voxelId);
+    uint chunkCubesDataOffset = cubesPrism.Volume * chunkId;
+    uint chunkVoxelsDataOffset = voxelsPrism.Volume * chunkId;
+    
+    VoxelsCube vc = GetCubeVoxelsVolume(voxelsPrism, cubePos, chunkCubesDataOffset);
+    
+    Vertices[chunkCubesDataOffset + cubeId] = float3(0.5, 0.5, 0.5) + voxelPos;
+
+    VertexInfo vi;
+    vi.IsCorrect = true;
+    vi.MaterialHash = ChunkData[chunkVoxelsDataOffset + voxelId].MaterialHash;
+    VerticesInfo[chunkCubesDataOffset + cubeId] = vi;
+}

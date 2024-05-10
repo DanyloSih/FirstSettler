@@ -116,12 +116,12 @@ namespace MarchingCubesProject.Tools
                 foreach (var updatingChunk in affectedChunksDataPointers)
                 {
                     IChunk chunk = _chunksContainer.GetChunk(updatingChunk.Key);
-                    int dataLength = _prismsProvider.ChunkVoxelsPrism.Volume;
+                    int dataLength = _prismsProvider.VoxelsPrism.Volume;
                     positions[counter] = chunk.LocalPosition;
                     NativeArray<VoxelData> rawData = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<VoxelData>(
                         updatingChunk.Value.ToPointer(), dataLength, Allocator.Persistent);
 
-                    chunksData.Add(new ThreedimensionalNativeArray<VoxelData>(rawData, _prismsProvider.ChunkVoxelsPrism.Size));
+                    chunksData.Add(new ThreedimensionalNativeArray<VoxelData>(rawData, _prismsProvider.VoxelsPrism.Size));
                     counter++;
                 }
             }

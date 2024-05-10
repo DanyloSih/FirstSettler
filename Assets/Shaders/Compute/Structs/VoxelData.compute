@@ -1,5 +1,10 @@
+#ifndef VOXEL_DATA
+#define VOXEL_DATA
+
 struct VoxelData
 {
     float Volume;
     int MaterialHash;
 };
+
+#endif

@@ -1,3 +1,6 @@
+#ifndef ESSENTIAL_CHUNK_INFO
+#define ESSENTIAL_CHUNK_INFO
+
 struct EssentialChunkInfo
 {
     int3 LocalChunkPosition;
@@ -11,3 +14,5 @@ struct EssentialChunkInfo
     uint ChunkFirstVoxelId;
     bool IsOutOfBounds;
 };
+
+#endif

@@ -1,5 +1,10 @@
+#ifndef VERTEX_INFO
+#define VERTEX_INFO
+
 struct VertexInfo
 {
     bool IsCorrect;
     int MaterialHash;
 };
+
+#endif

@@ -1,4 +1,4 @@
-﻿namespace MarchingCubesProject
+﻿namespace DataGeneration
 {
     public struct HeightAndMaterialHashAssociation
     {

@@ -1,6 +1,6 @@
-#if !defined(RECT_PRISM_DEFINED)
-
+#ifndef RECT_PRISM_DEFINED
 #define RECT_PRISM_DEFINED
+
 struct RectPrism
 {
     uint3 Size;

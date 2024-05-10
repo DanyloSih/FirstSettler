@@ -1,19 +1,20 @@
 {
-    "name": "MeshGeneration",
+    "name": "MeshGeneration.Tests",
     "rootNamespace": "",
     "references": [
-        "GUID:6d06b27d9dc092943b673bd4a4761296",
+        "GUID:6806783f80eb68b45bbba44de54061ca",
+        "GUID:776d03a35f1b52c4a9aed9f56d7b4229",
         "GUID:e0cd26848372d4e5c891c569017e11f1",
-        "GUID:e89a81b99e33ef84cbdcd4160e019157",
-        "GUID:3db8fe1fef6a95f4ea681db02dbfd15e",
+        "GUID:6d06b27d9dc092943b673bd4a4761296",
         "GUID:beeadd5e90dfc7849b4adfad1174bc20",
         "GUID:16cf6e1c949d31c40bd9b085ccee3cda",
         "GUID:522b8546374be264499a0978eb4f5334",
-        "GUID:2665a8d13d1b3f18800f46e256720795"
+        "GUID:493bdb20dc4b8ee4eba708fc129c3d35",
+        "GUID:e89a81b99e33ef84cbdcd4160e019157"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
-    "allowUnsafeCode": true,
+    "allowUnsafeCode": false,
     "overrideReferences": false,
     "precompiledReferences": [],
     "autoReferenced": true,

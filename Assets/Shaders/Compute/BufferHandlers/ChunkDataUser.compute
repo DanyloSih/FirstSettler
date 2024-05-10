@@ -1,0 +1,23 @@
+#include "../Structs/VoxelData.compute"
+#include "../Structs/RectPrism.compute"
+
+struct VoxelsCube
+{
+    float VoxelsVolume[8];
+};
+
+StructuredBuffer<VoxelData> ChunkData;
+
+VoxelsCube GetCubeVoxelsVolume(RectPrism voxelsPrism, uint3 cubePos, uint dataOffset)
+{
+    VoxelsCube vc;
+    vc.VoxelsVolume[0] = ChunkData[dataOffset + PointToIndex(voxelsPrism, uint3(cubePos.x, cubePos.y, cubePos.z))].Volume;
+    vc.VoxelsVolume[1] = ChunkData[dataOffset + PointToIndex(voxelsPrism, uint3(cubePos.x + 1, cubePos.y, cubePos.z))].Volume;
+    vc.VoxelsVolume[2] = ChunkData[dataOffset + PointToIndex(voxelsPrism, uint3(cubePos.x + 1, cubePos.y + 1, cubePos.z))].Volume;
+    vc.VoxelsVolume[3] = ChunkData[dataOffset + PointToIndex(voxelsPrism, uint3(cubePos.x, cubePos.y + 1, cubePos.z))].Volume;
+    vc.VoxelsVolume[4] = ChunkData[dataOffset + PointToIndex(voxelsPrism, uint3(cubePos.x, cubePos.y, cubePos.z + 1))].Volume;
+    vc.VoxelsVolume[5] = ChunkData[dataOffset + PointToIndex(voxelsPrism, uint3(cubePos.x + 1, cubePos.y, cubePos.z + 1))].Volume;
+    vc.VoxelsVolume[6] = ChunkData[dataOffset + PointToIndex(voxelsPrism, uint3(cubePos.x + 1, cubePos.y + 1, cubePos.z + 1))].Volume;
+    vc.VoxelsVolume[7] = ChunkData[dataOffset + PointToIndex(voxelsPrism, uint3(cubePos.x, cubePos.y + 1, cubePos.z + 1))].Volume;
+    return vc;
+}

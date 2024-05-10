@@ -5,27 +5,46 @@ using Zenject;
 
 namespace World.Data
 {
-    public class ChunkPrismsProvider : IInitializable, IDisposable
+    public struct ChunkPrismsProvider : IInitializable, IDisposable
     {
-        [Inject] private BasicChunkSettings _basicChunkSettings;
-
         private NativeArray<RectPrismInt> _chunkSizePrisms;
+        private RectPrismInt _chunkVoxelsPrism;
+        private RectPrismInt _chunkCubesPrism;
+
+        public ChunkPrismsProvider(
+            BasicChunkSettings basicChunkSettings)
+        {
+            _chunkSizePrisms = new NativeArray<RectPrismInt>();
+            _chunkCubesPrism = new RectPrismInt(basicChunkSettings.Size);
+            _chunkVoxelsPrism = new RectPrismInt(basicChunkSettings.SizePlusOne);
+        }
 
         /// <summary>
         /// First element - chunk cubes prism, <br/>
         /// Second element - chunk voxels prism
         /// </summary>
-        public NativeArray<RectPrismInt> ChunkSizePrisms { get => _chunkSizePrisms; }
-        public RectPrismInt ChunkCubesPrism => _chunkSizePrisms[0];
-        public RectPrismInt ChunkVoxelsPrism => _chunkSizePrisms[1];
+        public NativeArray<RectPrismInt> PrismsArray 
+        { 
+            get
+            {
+                if (!_chunkSizePrisms.IsCreated)
+                {
+                    Initialize(); 
+                }
+                
+                return _chunkSizePrisms;
+            }
+        }
+        public RectPrismInt CubesPrism => _chunkCubesPrism;
+        public RectPrismInt VoxelsPrism => _chunkVoxelsPrism;
 
         public void Initialize()
         {
             _chunkSizePrisms = new NativeArray<RectPrismInt>(
                 2, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
 
-            _chunkSizePrisms[0] = new RectPrismInt(_basicChunkSettings.Size);
-            _chunkSizePrisms[1] = new RectPrismInt(_basicChunkSettings.SizePlusOne);
+            _chunkSizePrisms[0] = _chunkCubesPrism;
+            _chunkSizePrisms[1] = _chunkVoxelsPrism;
         }
 
         public void Dispose()

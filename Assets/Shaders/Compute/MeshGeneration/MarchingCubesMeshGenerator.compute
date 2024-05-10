@@ -1,15 +1,15 @@
 #pragma kernel GenerateMesh
 
 #include "MarchingCubesBase.compute"
-#include "Structs/VoxelData.compute"
-#include "Structs/VertexInfo.compute"
-#include "Structs/RectPrism.compute"
-#include "Structs/DebugData.compute"
-#include "BufferHandlers/ChunkSizePrisms.compute"
+#include "../Structs/VoxelData.compute"
+#include "../Structs/VertexInfo.compute"
+#include "../Structs/RectPrism.compute"
+#include "../Structs/DebugData.compute"
+#include "../BufferHandlers/ChunkSizePrisms.compute"
+#include "../BufferHandlers/ChunkDataUser.compute"
 
 #define MAX_VERTICES_PER_MARCH 15
 
-StructuredBuffer<VoxelData> ChunkData;
 RWStructuredBuffer<float3> Vertices;
 RWStructuredBuffer<VertexInfo> VerticesInfo;
 float Surface;
@@ -20,11 +20,13 @@ float GetOffset(float v1, float v2)
     return (delta == 0.0f) ? Surface : (Surface - v1) / delta;
 }
 
-[numthreads(1, 256, 1)]
+[numthreads(1, 64, 1)]
 void GenerateMesh(uint3 id : SV_DispatchThreadID)
 {
-    RectPrism chunkVoxelsPrism = GetChunkVoxelsPrism();
     RectPrism chunkCubesPrism = GetChunkCubesPrism();
+    RectPrism chunkVoxelsPrism = GetChunkVoxelsPrism();
+    
+    uint chunkID = id.x;
     uint cubeIndex = id.y;
     
     if (cubeIndex >= chunkCubesPrism.Volume)
@@ -34,10 +36,11 @@ void GenerateMesh(uint3 id : SV_DispatchThreadID)
     
     uint3 cubePos = IndexToPoint(chunkCubesPrism, cubeIndex);
     uint voxelIndex = PointToIndex(chunkVoxelsPrism, cubePos);
-    int materialHash = ChunkData[voxelIndex].MaterialHash;
+    uint chunkVoxelsOffset = chunkVoxelsPrism.Volume * chunkID;
+    int materialHash = ChunkData[chunkVoxelsOffset + voxelIndex].MaterialHash;
     
-    int chunkStartId = chunkCubesPrism.Volume * 15 * id.x;
-    int meshPartIndexStart = chunkStartId + cubeIndex * 15;
+    int chunkVerticesOffset = chunkCubesPrism.Volume * 15 * chunkID;
+    int meshPartIndexStart = chunkVerticesOffset + cubeIndex * 15;
     float offset = 0.0f;
     int i = 0;
     
@@ -50,21 +53,14 @@ void GenerateMesh(uint3 id : SV_DispatchThreadID)
         Vertices[meshPartIndexStart + i] = 0;
     }
     
-    float Cubes[8];
     float3 localEdgeVertexBuffer[12];
         
-    Cubes[0] = ChunkData[PointToIndex(chunkVoxelsPrism, uint3(cubePos.x, cubePos.y, cubePos.z))].Volume;
-    Cubes[1] = ChunkData[PointToIndex(chunkVoxelsPrism, uint3(cubePos.x + 1, cubePos.y, cubePos.z))].Volume;
-    Cubes[2] = ChunkData[PointToIndex(chunkVoxelsPrism, uint3(cubePos.x + 1, cubePos.y + 1, cubePos.z))].Volume;
-    Cubes[3] = ChunkData[PointToIndex(chunkVoxelsPrism, uint3(cubePos.x, cubePos.y + 1, cubePos.z))].Volume;
-    Cubes[4] = ChunkData[PointToIndex(chunkVoxelsPrism, uint3(cubePos.x, cubePos.y, cubePos.z + 1))].Volume;
-    Cubes[5] = ChunkData[PointToIndex(chunkVoxelsPrism, uint3(cubePos.x + 1, cubePos.y, cubePos.z + 1))].Volume;
-    Cubes[6] = ChunkData[PointToIndex(chunkVoxelsPrism, uint3(cubePos.x + 1, cubePos.y + 1, cubePos.z + 1))].Volume;
-    Cubes[7] = ChunkData[PointToIndex(chunkVoxelsPrism, uint3(cubePos.x, cubePos.y + 1, cubePos.z + 1))].Volume;
+    VoxelsCube vc;
+    vc = GetCubeVoxelsVolume(chunkVoxelsPrism, cubePos, chunkVoxelsOffset);
     
     int flagIndex = 0;
     for (i = 0; i < 8; i++) 
-        if (Cubes[i] <= Surface) 
+        if (vc.VoxelsVolume[i] <= Surface) 
             flagIndex |= 1 << i;
     
     int edgeFlags = CubeEdgeFlags[flagIndex];
@@ -76,7 +72,7 @@ void GenerateMesh(uint3 id : SV_DispatchThreadID)
     {
         if ((edgeFlags & (1 << i)) != 0)
         {
-            offset = GetOffset(Cubes[EdgeConnection[i][0]], Cubes[EdgeConnection[i][1]]);
+            offset = GetOffset(vc.VoxelsVolume[EdgeConnection[i][0]], vc.VoxelsVolume[EdgeConnection[i][1]]);
             
             edgeVert.x = cubePos.x + VertexOffset[EdgeConnection[i][0]][0] + offset * EdgeDirection[i][0];
             edgeVert.y = cubePos.y + VertexOffset[EdgeConnection[i][0]][1] + offset * EdgeDirection[i][1];
@@ -88,18 +84,15 @@ void GenerateMesh(uint3 id : SV_DispatchThreadID)
     for (int b = 0; b < 15; b++)
     {
         int globalB = meshPartIndexStart + b;
-        int triangleEdge = TriangleConnectionTable[flagIndex][b / 3];
         
-        if (triangleEdge < 0)
+        if (TriangleConnectionTable[flagIndex][b] < 0)
             break;
             
         VertexInfo vi;
         vi.IsCorrect = true;
-        vi.MaterialHash = triangleEdge;
+        vi.MaterialHash = materialHash;
         VerticesInfo[globalB] = vi;
-        
-        //Vertices[globalB] = localEdgeVertexBuffer[TriangleConnectionTable[flagIndex][b]];
-        Vertices[globalB] = -666;
+        Vertices[globalB] = localEdgeVertexBuffer[TriangleConnectionTable[flagIndex][b]];
     }
 }
 

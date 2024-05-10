@@ -1,3 +1,6 @@
+#ifndef HEIGHT_AND_MATERIAL_HASH_ASSOCIATION
+#define HEIGHT_AND_MATERIAL_HASH_ASSOCIATION
+
 struct HeightAndMaterialHashAssociation
 {
     float Height;
@@ -43,3 +46,5 @@ int GetMaterialKeyHashByHeight(float height)
         return result;
     }
 }
+
+#endif

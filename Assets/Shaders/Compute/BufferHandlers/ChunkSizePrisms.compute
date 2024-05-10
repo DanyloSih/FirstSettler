@@ -1,20 +1,21 @@
-#if !defined(RECT_PRISM_DEFINED)
+#ifndef CHUNK_SIZE_PRISMS
+#define CHUNK_SIZE_PRISMS
 
 #include "../Structs/RectPrism.compute"
 
-#endif
-
 // Buffer length should be 2.
-// First element is chunk voxels prism.
-// Second elemnt is chunk cubes prism. (voxel prism + 1)
+// First elemnt is chunk cubes prism. 
+// Second element is chunk voxels prism. (cubes prism + 1)
 StructuredBuffer<RectPrism> ChunkPrisms;
 
-RectPrism GetChunkVoxelsPrism()
+RectPrism GetChunkCubesPrism()
 {
     return ChunkPrisms[0];
 }
 
-RectPrism GetChunkCubesPrism()
+RectPrism GetChunkVoxelsPrism()
 {
     return ChunkPrisms[1];
 }
+
+#endif

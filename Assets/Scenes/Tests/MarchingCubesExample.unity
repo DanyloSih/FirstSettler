@@ -292,6 +292,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7cb96eccf4fb88a41a0122cf7a7f549f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _basicChunkSettings: {fileID: 11400000, guid: fef79431f067b8346aaa6fbb3ebd2d14,
+    type: 2}
   _materialKeyAndUnityMaterialAssociations: {fileID: 11400000, guid: 666ef968199c91a4182bc98a711d7d8e,
     type: 2}
 --- !u!1 &165683952
@@ -356,8 +358,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d18f0c8be4e4d5a4c99b16fd1700a023, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _basicChunkSettings: {fileID: 11400000, guid: fef79431f067b8346aaa6fbb3ebd2d14,
-    type: 2}
   _chunksRoot: {fileID: 1639549069}
   _chunksContainer: {fileID: 1351798334}
   _gpuChunkDataGenerator: {fileID: 1117199047}
@@ -781,8 +781,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e04b7c96509d7f344acdc3ac888d1e4c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _viewDistance: 2
-  _chunksBatchLength: 1
+  _viewDistance: 6
+  _chunksBatchLength: 32
   _chunksDisposingParams:
     BatchLength: 6
     BatchDelay: 1
