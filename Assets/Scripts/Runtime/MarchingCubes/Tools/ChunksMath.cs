@@ -1,9 +1,9 @@
-﻿using System;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using Unity.Collections;
-using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
+using Utilities.Jobs;
 using Utilities.Math;
+using World.Data;
 using World.Organization;
 
 namespace MarchingCubesProject.Tools
@@ -11,7 +11,7 @@ namespace MarchingCubesProject.Tools
     public static class ChunksMath
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static NativeHashMap<int, IntPtr> GetChunksDataPointersInsideArea(
+        public static NativeParallelHashMap<int, UnsafeNativeArray<VoxelData>> GetChunksDataPointersInsideArea(
             ShapeIntArea<RectPrismInt> area, Vector3Int chunksSize, IChunksContainer chunksContainer)
         {
             Vector3Int affectedAreaSize = area.Shape.Size;
@@ -23,8 +23,8 @@ namespace MarchingCubesProject.Tools
             Vector3Int min = area.Anchor;
             Vector3Int max = area.Anchor + area.Shape.Size;
 
-            NativeHashMap<int, IntPtr> pointers
-                = new NativeHashMap<int, IntPtr>(maxAffectedChunksCount, Allocator.Persistent);
+            NativeParallelHashMap<int, UnsafeNativeArray<VoxelData>> pointers
+                = new (maxAffectedChunksCount, Allocator.Persistent);
 
             for (int y = Mathf.FloorToInt((float)min.y / chunksSize.y) * chunksSize.y; y < max.y; y += chunksSize.y)
             {
@@ -45,7 +45,7 @@ namespace MarchingCubesProject.Tools
 
                         unsafe
                         {
-                            pointers.Add(positionHash, new IntPtr(chunk.ChunkData.RawData.GetUnsafePtr()));
+                            pointers.Add(positionHash, new UnsafeNativeArray<VoxelData>(chunk.ChunkData.RawData));
                         };
                     }
                 }

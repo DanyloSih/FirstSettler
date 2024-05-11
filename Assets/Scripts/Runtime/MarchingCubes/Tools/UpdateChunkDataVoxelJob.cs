@@ -5,6 +5,8 @@ using Unity.Jobs;
 using Utilities.Math;
 using Unity.Collections;
 using System;
+using Utilities.Jobs;
+using Unity.Burst;
 
 namespace MarchingCubesProject.Tools
 {
@@ -13,7 +15,7 @@ namespace MarchingCubesProject.Tools
         [ReadOnly] public Vector3Int ChunkSize;
         [ReadOnly] public RectPrismInt ChunkDataModel;
         [ReadOnly] public NativeArray<ChunkPoint> NewVoxels;
-        [ReadOnly] public NativeHashMap<int, IntPtr> AffectedChunksDataPointers;
+        [ReadOnly] public NativeParallelHashMap<int, UnsafeNativeArray<VoxelData>>.ReadOnly AffectedChunksDataPointers;
 
         public void Execute(int index)
         {
@@ -22,7 +24,7 @@ namespace MarchingCubesProject.Tools
             {
                 return;
             }
-
+            
             Vector3Int localChunkPosition = Vector3Int.FloorToInt(chunkVoxel.LocalChunkPosition);
             Vector3Int localChunkDataPoint = Vector3Int.FloorToInt(chunkVoxel.LocalChunkDataPoint);
 
@@ -52,15 +54,9 @@ namespace MarchingCubesProject.Tools
 
             if (AffectedChunksDataPointers.ContainsKey(positionHash))
             {
-                IntPtr rawDataStartPointer = AffectedChunksDataPointers[positionHash];
-
                 int voxelDataOffset = ChunkDataModel.PointToIndex(localChunkDataPoint);
-
-                unsafe
-                {
-                    VoxelData* dataPointer = (VoxelData*)rawDataStartPointer.ToPointer();
-                    dataPointer[voxelDataOffset] = voxelData;
-                }
+                var chunkData = AffectedChunksDataPointers[positionHash];
+                chunkData[voxelDataOffset] = voxelData;
             }  
         }
 

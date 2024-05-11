@@ -25,8 +25,7 @@ namespace MeshGeneration
         private NativeArrayManager<VertexInfo> _verticesInfoArrayManager;
         private NativeArrayManager<Vector3> _verticesArrayManager;
 
-        public override Task<MeshData[]> GenerateMeshDataForChunks(
-            NativeArray<Vector3Int> positions,
+        protected override Task<MeshData[]> OnGenerateMeshDataForChunks(
             List<ThreedimensionalNativeArray<VoxelData>> chunksData,
             CancellationToken? cancellationToken = null)
         {

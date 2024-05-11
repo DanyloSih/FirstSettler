@@ -107,8 +107,9 @@ namespace World.Organization
 
             InitializeChunks(chunksGameObjects, chunkPositionsArray, chunksData);
 
-            MeshData[] chunksMeshData = await _meshGenerator.GenerateMeshDataForChunks(
-                chunkPositionsArray, chunksData, cancellationToken);
+            MeshData[] chunksMeshData = await _meshGenerator
+                .GenerateMeshDataForChunks(chunksData, cancellationToken)
+                .OnException(ex => Debug.LogException(ex));
 
             ApplyChunksMeshData(chunksMeshData, chunksGameObjects);
         }

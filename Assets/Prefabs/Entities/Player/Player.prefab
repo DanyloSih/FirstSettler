@@ -1972,7 +1972,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _raycastPointerToChunk: {fileID: 582725782364116517}
-  _deformForce: 0.4
+  _deformForce: 0.8
   _brushSize: 16
   _drawMaterial: {fileID: 11400000, guid: 0341ba40e1383834692bb53bf930b235, type: 2}
 --- !u!1 &3930388804124373937

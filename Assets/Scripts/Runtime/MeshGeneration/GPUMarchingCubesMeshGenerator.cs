@@ -26,12 +26,9 @@ namespace MeshGeneration
         [SerializeField] private GenerationAlgorithmInfo _generationAlgorithmInfo;
 
         private ComputeBufferManager _chunkSizePrismsBufferManager;
-        private ComputeBufferManager _debugDataBufferManager;
         private ComputeBufferManager _chunksDataBufferManager;
-        private ComputeBufferManager _chunksPositionsBufferManager;
         private ComputeBufferManager _verticesBufferManager;
         private ComputeBufferManager _verticesInfoBufferManager;
-        private NativeArrayManager<DebugData> _debugDataArrayManager;
         private NativeArrayManager<VertexInfo> _verticesInfoArrayManager;
         private NativeArrayManager<Vector3> _verticesArrayManager;
 
@@ -44,23 +41,14 @@ namespace MeshGeneration
                 _chunkSizePrismsProvider.PrismsArray.Length);
             chunkSizePrismsBuffer.SetData(_chunkSizePrismsProvider.PrismsArray);
 
-            _debugDataBufferManager = new ComputeBufferManager(
-               (count) => BuffersFactory.CreateCompute(count, typeof(DebugData)));
-
             _chunksDataBufferManager = new ComputeBufferManager(
                 (count) => BuffersFactory.CreateCompute(count, typeof(VoxelData)));
-
-            _chunksPositionsBufferManager = new ComputeBufferManager(
-                (count) => BuffersFactory.CreateCompute(count, typeof(Vector3Int)));
 
             _verticesBufferManager = new ComputeBufferManager(
                 (count) => BuffersFactory.CreateCompute(count, typeof(Vector3)));
 
             _verticesInfoBufferManager = new ComputeBufferManager(
                 (count) => BuffersFactory.CreateCompute(count, typeof(VertexInfo)));
-
-            _debugDataArrayManager = new NativeArrayManager<DebugData>(
-                (count) => new(count, Allocator.Persistent, NativeArrayOptions.UninitializedMemory));
 
             _verticesInfoArrayManager = new NativeArrayManager<VertexInfo>(
                 (count) => new(count, Allocator.Persistent, NativeArrayOptions.UninitializedMemory));
@@ -71,29 +59,22 @@ namespace MeshGeneration
 
         protected void OnDestroy()
         {
-            _debugDataBufferManager.Dispose();
             _chunkSizePrismsBufferManager.Dispose();
             _chunksDataBufferManager.Dispose();
-            _chunksPositionsBufferManager.Dispose();
             _verticesBufferManager.Dispose();
             _verticesInfoBufferManager.Dispose();
 
-            _debugDataArrayManager.Dispose();
             _verticesArrayManager.Dispose();
             _verticesInfoArrayManager.Dispose();
         }
 
-        public override async Task<MeshData[]> GenerateMeshDataForChunks(
-            NativeArray<Vector3Int> positions,
+        protected override async Task<MeshData[]> OnGenerateMeshDataForChunks(
             List<ThreedimensionalNativeArray<VoxelData>> chunksRawData, 
             CancellationToken? cancellationToken = null)
         {
-            if (positions.Length != chunksRawData.Count)
-            {
-                throw new ArgumentException();
-            }
+            CheckIsGenerating();
 
-            RawMeshData rawMeshData = await GenerateMeshData(positions, chunksRawData, cancellationToken);
+            RawMeshData rawMeshData = await GenerateMeshData(chunksRawData, cancellationToken);
 
             int maxVerticesPerChunk = _chunkSizePrismsProvider.CubesPrism.Volume
                 * _generationAlgorithmInfo.MaxVerticesPerMarch;
@@ -183,7 +164,6 @@ namespace MeshGeneration
         }
 
         private async Task<RawMeshData> GenerateMeshData(
-            NativeArray<Vector3Int> chunkPositions,
             List<ThreedimensionalNativeArray<VoxelData>> chunksData, 
             CancellationToken? cancellationToken = null)
         {
@@ -197,15 +177,16 @@ namespace MeshGeneration
 
             ComputeBuffer chunksDataBuffer = InitializeChunksDataBuffer(chunksData, voxelsCount);
 
-
-            ComputeBuffer verticesInfoBuffer = _verticesInfoBufferManager.GetObjectInstance(maxVerticesCount);
             _verticesInfoArrayManager.Dispose();
             NativeArray<VertexInfo> verticesInfo = _verticesInfoArrayManager.GetObjectInstance(maxVerticesCount);
+
+            ComputeBuffer verticesInfoBuffer = _verticesInfoBufferManager.GetObjectInstance(maxVerticesCount);
             verticesInfoBuffer.SetData(verticesInfo);
 
-            ComputeBuffer verticesBuffer = _verticesBufferManager.GetObjectInstance(maxVerticesCount);
             _verticesArrayManager.Dispose();
             NativeArray<Vector3> vertices = _verticesArrayManager.GetObjectInstance(maxVerticesCount);
+
+            ComputeBuffer verticesBuffer = _verticesBufferManager.GetObjectInstance(maxVerticesCount);
             verticesBuffer.SetData(vertices);
 
             int kernelId = _meshGenerationShader.FindKernel("GenerateMesh");

@@ -1,14 +1,17 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
+using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
 using UnityEngine;
+using Utilities.Jobs;
 using Utilities.Math;
 using Utilities.Math.Extensions;
 using World.Data;
 
 namespace MarchingCubesProject.Tools
 {
+    [BurstCompile]
     public struct DeformMaskJob : IJobParallelFor
     {
         [ReadOnly] public Vector3Int Offset;
@@ -19,7 +22,7 @@ namespace MarchingCubesProject.Tools
         [ReadOnly] public int HalfBrushSize;
         [ReadOnly] public float DeformFactor;
         [ReadOnly] public int MaterialHash;
-        [ReadOnly] public NativeHashMap<int, IntPtr> ChunksDataPointersInsideEditArea;
+        [ReadOnly] public NativeParallelHashMap<int, UnsafeNativeArray<VoxelData>>.ReadOnly ChunksDataPointersInsideEditArea;
 
         [WriteOnly] public NativeList<ChunkPoint>.ParallelWriter ChunkPoints;
         [WriteOnly] public int ItemsCount;
@@ -27,7 +30,7 @@ namespace MarchingCubesProject.Tools
         public void Execute(int index)
         {
             Vector3Int pointerInArea = EditingPrism.IndexToPoint(index) + Offset;
-            float unscaledDistance = pointerInArea.magnitude;
+            float unscaledDistance = Vector3Int.Distance(new Vector3Int(HalfBrushSize, HalfBrushSize, HalfBrushSize) + Offset, pointerInArea);
             float deformForce = unscaledDistance / HalfBrushSize;
 
             if (unscaledDistance < HalfBrushSize)
@@ -39,20 +42,13 @@ namespace MarchingCubesProject.Tools
                 pointedChunk += chunkOffset;
 
                 int chunkPositionHash = PositionHasher.GetPositionHash(pointedChunk);
-                IntPtr rawDataStartPointer;
-                if (!ChunksDataPointersInsideEditArea.TryGetValue(chunkPositionHash, out rawDataStartPointer))
+
+                if (!ChunksDataPointersInsideEditArea.TryGetValue(chunkPositionHash, out var rawData))
                 {
                     return;
                 }
 
-                int chunkVoxelOffset = ChunkDataModel.PointToIndex(pointedChunkData);
-
-                VoxelData data;
-                unsafe
-                {
-                    VoxelData* rawData = (VoxelData*)rawDataStartPointer.ToPointer();
-                    data = rawData[chunkVoxelOffset];
-                }
+                VoxelData data = rawData[ChunkDataModel.PointToIndex(pointedChunkData)];
 
                 if (data.MaterialHash == 0)
                 {

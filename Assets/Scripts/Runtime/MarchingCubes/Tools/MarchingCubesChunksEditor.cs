@@ -1,5 +1,4 @@
-﻿using SimpleHeirs;
-using UnityEngine;
+﻿using UnityEngine;
 using World.Data;
 using World.Organization;
 using System.Runtime.CompilerServices;
@@ -7,12 +6,13 @@ using System.Threading.Tasks;
 using Unity.Jobs;
 using Utilities.Math;
 using Unity.Collections;
-using System;
 using Zenject;
 using Utilities.Threading;
 using System.Collections.Generic;
-using Unity.Collections.LowLevel.Unsafe;
 using MeshGeneration;
+using Utilities.Jobs;
+using System.Threading;
+using Utilities.Threading.Extensions;
 
 namespace MarchingCubesProject.Tools
 {
@@ -50,8 +50,9 @@ namespace MarchingCubesProject.Tools
         public async Task SetVoxels(
             NativeArray<ChunkPoint> newVoxels,
             int voxelsCount,
-            NativeHashMap<int, IntPtr> chunksDataPointersInsideEditArea,
-            bool updateMeshes = true)
+            NativeParallelHashMap<int, UnsafeNativeArray<VoxelData>>.ReadOnly chunksDataPointersInsideEditArea,
+            bool updateMeshes = true,
+            CancellationToken? cancellationToken = null)
         {
             _isAlreadyEditingChunks = true;
 
@@ -62,14 +63,14 @@ namespace MarchingCubesProject.Tools
             setVoxelsJob.ChunkDataModel = new RectPrismInt(_chunkSize + Vector3Int.one);
 
             JobHandle jobHandle = setVoxelsJob.Schedule(voxelsCount, 8);
-            await AsyncUtilities.WaitWhile(() => !jobHandle.IsCompleted);
+            await AsyncUtilities.WaitWhile(() => !jobHandle.IsCompleted, 1, cancellationToken);
             jobHandle.Complete();
 
             try
             {
                 if (updateMeshes)
                 {
-                    await UpdateMeshes(chunksDataPointersInsideEditArea);
+                    await UpdateMeshes(chunksDataPointersInsideEditArea, cancellationToken);
                 }
             }
             finally
@@ -103,9 +104,11 @@ namespace MarchingCubesProject.Tools
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private async Task UpdateMeshes(NativeHashMap<int, IntPtr> affectedChunksDataPointers)
+        private async Task UpdateMeshes(
+            NativeParallelHashMap<int, UnsafeNativeArray<VoxelData>>.ReadOnly affectedChunksDataPointers,
+            CancellationToken? cancellationToken = null)
         {
-            int length = affectedChunksDataPointers.Count;
+            int length = affectedChunksDataPointers.Count();
 
             List<ThreedimensionalNativeArray<VoxelData>> chunksData = new();
             NativeArray<Vector3Int> positions = new(length, Allocator.Persistent);
@@ -118,15 +121,16 @@ namespace MarchingCubesProject.Tools
                     IChunk chunk = _chunksContainer.GetChunk(updatingChunk.Key);
                     int dataLength = _prismsProvider.VoxelsPrism.Volume;
                     positions[counter] = chunk.LocalPosition;
-                    NativeArray<VoxelData> rawData = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<VoxelData>(
-                        updatingChunk.Value.ToPointer(), dataLength, Allocator.Persistent);
+   
+                    chunksData.Add(new ThreedimensionalNativeArray<VoxelData>(
+                        updatingChunk.Value.RestoreAsArray(), _prismsProvider.VoxelsPrism.Size));
 
-                    chunksData.Add(new ThreedimensionalNativeArray<VoxelData>(rawData, _prismsProvider.VoxelsPrism.Size));
                     counter++;
                 }
             }
 
-            var chunksMeshData = await _meshGenerator.GenerateMeshDataForChunks(positions, chunksData);
+            var chunksMeshData = await _meshGenerator.GenerateMeshDataForChunks(chunksData, cancellationToken)
+                .OnException(ex => Debug.LogException(ex));
 
             positions.Dispose();
             foreach (var item in chunksData)

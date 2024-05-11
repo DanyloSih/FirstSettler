@@ -39,6 +39,7 @@ namespace World.Organization
             Vector3Int chunkLocalPosition,
             ThreedimensionalNativeArray<VoxelData> chunkData)
         {
+            _chunkData = chunkData;
             _localPosition = chunkLocalPosition;
             InitializeNames(chunkLocalPosition);
             _bounds = CalculateBounds();

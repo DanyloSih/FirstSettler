@@ -1,9 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading;
 using System.Threading.Tasks;
 using Unity.Collections;
 using Unity.Jobs;
 using UnityEngine;
+using Utilities.Jobs;
 using Utilities.Math;
 using Utilities.Threading;
 using World.Data;
@@ -79,7 +82,11 @@ namespace MarchingCubesProject.Tools
             await Deform(chunkRaycastResult.GlobalChunkDataPoint, newVolume, _drawMaterial.GetHashCode());
         }
 
-        private async Task Deform(Vector3 globalChunkDataPoint, float deformFactor, int materialHash)
+        private async Task Deform(
+            Vector3 globalChunkDataPoint,
+            float deformFactor,
+            int materialHash,
+            CancellationToken? cancellationToken = null)
         {
             Vector3Int chunkSize = _basicChunkSettings.Size;
             int halfBrushSize = _brushSize / 2;
@@ -103,13 +110,13 @@ namespace MarchingCubesProject.Tools
                 editingPrism, unscaledGlobalDataPoint - editingPrism.HalfSize);
 
             NativeList<ChunkPoint> chunkPoints = new NativeList<ChunkPoint>(editingPrism.Volume, Allocator.Persistent);
-            NativeHashMap<int, IntPtr> chunksDataPointersInsideEditArea 
+            NativeParallelHashMap<int, UnsafeNativeArray<VoxelData>> chunksDataPointersInsideEditArea 
                 = ChunksMath.GetChunksDataPointersInsideArea(editingArea, chunkSize, _chunksContainer);
 
             DeformMaskJob deformMaskJob = new DeformMaskJob();
             deformMaskJob.DeformFactor = deformFactor;
             deformMaskJob.ChunkDataModel = new RectPrismInt(chunkSize + Vector3Int.one);
-            deformMaskJob.ChunksDataPointersInsideEditArea = chunksDataPointersInsideEditArea;
+            deformMaskJob.ChunksDataPointersInsideEditArea = chunksDataPointersInsideEditArea.AsReadOnly();
             deformMaskJob.ChunkSize = chunkSize;
             deformMaskJob.EditingPrism = editingPrism;
             deformMaskJob.HalfBrushSize = halfBrushSize;
@@ -118,14 +125,16 @@ namespace MarchingCubesProject.Tools
             deformMaskJob.UnscaledGlobalDataPoint = unscaledGlobalDataPoint;
             deformMaskJob.ChunkPoints = chunkPoints.AsParallelWriter();
 
-            JobHandle deformMaskJobHandler = deformMaskJob.Schedule(editingArea.Shape.Volume, 1);
+            JobHandle deformMaskJobHandler = deformMaskJob.Schedule(editingArea.Shape.Volume, 32);
             await AsyncUtilities.WaitWhile(() => !deformMaskJobHandler.IsCompleted);
             deformMaskJobHandler.Complete();
 
             await _marchingCubesChunksEditor.SetVoxels(
                 chunkPoints.AsArray(),
                 chunkPoints.Length, 
-                chunksDataPointersInsideEditArea);
+                chunksDataPointersInsideEditArea.AsReadOnly(), 
+                true,
+                cancellationToken);
 
             chunkPoints.Dispose();
             chunksDataPointersInsideEditArea.Dispose();

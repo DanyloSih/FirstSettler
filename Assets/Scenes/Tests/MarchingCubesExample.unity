@@ -171,8 +171,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _runOnAwake: 1
   _nextBootstrapper: {fileID: 0}
-  _bootstrapScripts:
-  - {fileID: 1094626567}
 --- !u!1 &106485648
 GameObject:
   m_ObjectHideFlags: 0
@@ -717,7 +715,7 @@ MonoBehaviour:
   _minHeight: 19
   _octaves: 5
   _persistence: 0.2
-  _frequency: 1
+  _frequency: 150
   _amplitude: 2
   _voxelsOffset: {x: 0, y: 0, z: 0}
   _heightAssociations: {fileID: 11400000, guid: 1247a779be5a5f3448531b07ef66707c,
@@ -782,7 +780,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _viewDistance: 6
-  _chunksBatchLength: 32
+  _chunksBatchLength: 2
   _chunksDisposingParams:
     BatchLength: 6
     BatchDelay: 1
