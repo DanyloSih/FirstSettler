@@ -7,6 +7,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using Utilities.Math;
 using Utilities.Shaders;
+using Utilities.Shaders.Extensions;
 using Utilities.Threading;
 using Utilities.Threading.Extensions;
 using World.Data;
@@ -70,12 +71,12 @@ namespace DataGeneration
 
             InitializeChunksPositionsBuffer(generatingChunksLocalPositions);
 
-            int chunkDataVolume = _chunkPrismsProvider.VoxelsPrism.Volume;
+            int voxelsPrismVolume = _chunkPrismsProvider.VoxelsPrism.Volume;
 
             InitializeBuffers();
             
             int chunksCount = generatingChunksLocalPositions.Length;
-            CreateVoxelsDataBuffer(chunkDataVolume * chunksCount);
+            CreateVoxelsDataBuffer(voxelsPrismVolume * chunksCount);
 
             int kernelId = _generationComputeShader.FindKernel("GenerateData");
 
@@ -91,8 +92,8 @@ namespace DataGeneration
             _generationComputeShader.SetFloat("Amplitude", _amplitude);
             _generationComputeShader.SetFloat("MaxHeight", _maxHeight);
             _generationComputeShader.SetFloat("MinHeight", _minHeight);
-            _generationComputeShader.Dispatch(
-                kernelId, chunksCount, Mathf.CeilToInt(chunkDataVolume / 256f), 1);
+            _generationComputeShader.DispatchConsideringGroupSizes(
+                kernelId, chunksCount, voxelsPrismVolume, 1);
 
             AsyncGPUReadbackRequest request = AsyncGPUReadback.RequestIntoNativeArray(
                 ref _voxelsArray, _voxelsBuffer);
@@ -108,7 +109,7 @@ namespace DataGeneration
 
             for (int i = 0; i < chunksCount; i++)
             {
-                var subArray = _voxelsArray.GetSubArray(i * chunkDataVolume, chunkDataVolume);
+                var subArray = _voxelsArray.GetSubArray(i * voxelsPrismVolume, voxelsPrismVolume);
                 NativeArray<VoxelData> subarray = new(subArray, Allocator.Persistent);
                 result.Add(new ThreedimensionalNativeArray<VoxelData>(subarray, _chunkPrismsProvider.VoxelsPrism.Size));
             }

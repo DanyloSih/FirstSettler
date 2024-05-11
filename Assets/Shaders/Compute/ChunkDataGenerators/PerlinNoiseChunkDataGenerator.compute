@@ -2,7 +2,6 @@
 #include "../Noise/ClassicNoise2D.hlsl"
 #include "../Structs/VoxelData.compute"
 #include "../Structs/HeightAndMaterialHashAssociation.compute"
-#include "../Structs/RectPrism.compute"
 #include "../BufferHandlers/ChunkSizePrisms.compute"
 
 StructuredBuffer<int3> LocalChunksPositions;
@@ -14,22 +13,25 @@ float Amplitude;
 float MaxHeight;
 float MinHeight;
 
-[numthreads(1, 256, 1)]
+[numthreads(1, 4, 1)]
 void GenerateData (uint3 id : SV_DispatchThreadID)
 {    
-    RectPrism chunkRectPrism = GetChunkVoxelsPrism();
-    if (id.y >= chunkRectPrism.Volume)
+    int chunkId = id.x;
+    int voxelIndex = id.y;
+    
+    RectPrism chunkVoxelsPrism = GetChunkVoxelsPrism();
+    if (voxelIndex >= chunkVoxelsPrism.Volume)
     { 
         return;
     }
     
-    RectPrism chunkOffsetRectPrism = GetChunkVoxelsPrism();
+    RectPrism chunkCubesPrism = GetChunkCubesPrism();
     
-    int3 localChunkPos = LocalChunksPositions[id.x];
-    int3 localVoxelPos = IndexToPoint(chunkRectPrism, id.y);
-    int3 globalChunkPos = localChunkPos * chunkOffsetRectPrism.Size;
+    int3 localChunkPos = LocalChunksPositions[chunkId];
+    int3 localVoxelPos = IndexToPoint(chunkVoxelsPrism, voxelIndex);
+    int3 globalChunkPos = localChunkPos * chunkCubesPrism.Size;
     int3 globalVoxelPos = globalChunkPos + localVoxelPos;
-    int i = id.x * chunkRectPrism.Volume + id.y;
+    int i = chunkId * chunkVoxelsPrism.Volume + voxelIndex;
      
     float heightThreshold = MinHeight + ClassicNoise(float2(globalVoxelPos.x, globalVoxelPos.z) / Frequency) * MaxHeight;
     

@@ -780,7 +780,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _viewDistance: 6
-  _chunksBatchLength: 2
+  _chunksBatchLength: 8
   _chunksDisposingParams:
     BatchLength: 6
     BatchDelay: 1
