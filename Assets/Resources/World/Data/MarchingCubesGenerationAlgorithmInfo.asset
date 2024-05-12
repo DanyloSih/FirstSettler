@@ -14,3 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _maxTrianglesPerMarch: 15
   _maxVerticesPerMarch: 15
+  _surfaceFactor: 0.5

@@ -294,6 +294,8 @@ MonoBehaviour:
     type: 2}
   _materialKeyAndUnityMaterialAssociations: {fileID: 11400000, guid: 666ef968199c91a4182bc98a711d7d8e,
     type: 2}
+  _generationAlgorithmInfo: {fileID: 11400000, guid: 27c3d601efea98c4fafd2ff21daa7815,
+    type: 2}
 --- !u!1 &165683952
 GameObject:
   m_ObjectHideFlags: 0
@@ -780,7 +782,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _viewDistance: 6
-  _chunksBatchLength: 8
+  _chunksBatchLength: 2
   _chunksDisposingParams:
     BatchLength: 6
     BatchDelay: 1
@@ -1053,8 +1055,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _meshGenerationShader: {fileID: 7200000, guid: 9908c7d31e74aed4aad96b6d98c42ff7,
     type: 3}
-  _generationAlgorithmInfo: {fileID: 11400000, guid: 27c3d601efea98c4fafd2ff21daa7815,
-    type: 2}
 --- !u!1 &1794904093
 GameObject:
   m_ObjectHideFlags: 0
