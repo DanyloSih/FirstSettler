@@ -100,7 +100,7 @@ namespace SimpleChunks
             IReadOnlyList<IChunk> chunksGameObjects
                 = CreateChunksGameObject(chunkPositionsArray);
 
-            NativeParallelHashMap<int, UnsafeNativeArray<VoxelData>> chunksData
+            NativeParallelHashMap<long, UnsafeNativeArray<VoxelData>> chunksData
                 = await _chunksDataProvider.GenerateChunksRawData(
                     chunkPositionsArray, cancellationToken);
 
@@ -137,13 +137,13 @@ namespace SimpleChunks
         private void InitializeChunks(
             IReadOnlyList<IChunk> chunks, 
             NativeArray<Vector3Int> chunksPositions,
-            NativeParallelHashMap<int, UnsafeNativeArray<VoxelData>> chunksData)
+            NativeParallelHashMap<long, UnsafeNativeArray<VoxelData>> chunksData)
         {
             var chunkVoxelsSize = _basicChunkSettings.SizeInVoxels;
             int counter = 0;
             foreach (var chunkPosition in chunksPositions)
             {
-                chunksData.TryGetValue(PositionIntHasher.GetHashFromPosition(chunkPosition), out var chunkData);
+                chunksData.TryGetValue(PositionLongHasher.GetHashFromPosition(chunkPosition), out var chunkData);
 
                 chunks[counter].InitializeBasicData(
                     chunksPositions[counter], 

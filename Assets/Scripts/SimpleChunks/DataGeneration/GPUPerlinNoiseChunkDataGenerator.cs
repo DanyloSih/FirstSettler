@@ -59,7 +59,7 @@ namespace SimpleChunks.DataGeneration
             _rectPrismsBufferManager.Dispose();
         }
 
-        public override async Task<NativeParallelHashMap<int, UnsafeNativeArray<VoxelData>>> GenerateChunksRawData(
+        public override async Task<NativeParallelHashMap<long, UnsafeNativeArray<VoxelData>>> GenerateChunksRawData(
             NativeArray<Vector3Int> generatingChunksLocalPositions,
             CancellationToken? cancellationToken = null)
         {
@@ -99,7 +99,7 @@ namespace SimpleChunks.DataGeneration
 
             await AsyncUtilities.WaitWhile(() => !request.done, 1, cancellationToken);
 
-            NativeParallelHashMap<int, UnsafeNativeArray<VoxelData>> result = new(chunksCount, Allocator.Persistent);
+            NativeParallelHashMap<long, UnsafeNativeArray<VoxelData>> result = new(chunksCount, Allocator.Persistent);
 
             if (cancellationToken.IsCanceled())
             {
@@ -110,7 +110,7 @@ namespace SimpleChunks.DataGeneration
             {
                 var subArray = _voxelsArray.GetSubArray(i * voxelsPrismVolume, voxelsPrismVolume);
                 NativeArray<VoxelData> subarray = new(subArray, Allocator.Persistent);
-                int positionHash = PositionIntHasher.GetHashFromPosition(generatingChunksLocalPositions[i]);
+                long positionHash = PositionLongHasher.GetHashFromPosition(generatingChunksLocalPositions[i]);
                 result.Add(positionHash, new UnsafeNativeArray<VoxelData>(subarray));
             }
 

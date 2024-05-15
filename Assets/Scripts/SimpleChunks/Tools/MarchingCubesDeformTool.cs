@@ -95,7 +95,7 @@ namespace SimpleChunks.Tools
             Vector3 globalChunkDataPoint,
             float deformFactor,
             int materialHash,
-            NativeParallelHashMap<int, UnsafeNativeArray<VoxelData>>.ReadOnly chunks,
+            NativeParallelHashMap<long, UnsafeNativeArray<VoxelData>>.ReadOnly chunks,
             TaskCompletionSource<bool> taskCompletionSource,
             CancellationToken? cancellationToken = null)
         {
@@ -126,7 +126,7 @@ namespace SimpleChunks.Tools
 
                 NativeList<ChunkPointWithData> chunkPoints = new(editingPrism.Volume, Allocator.Persistent);
 
-                NativeParallelHashMap<int, UnsafeNativeArray<VoxelData>> chunksRawDataInsideEditArea
+                NativeParallelHashMap<long, UnsafeNativeArray<VoxelData>> chunksRawDataInsideEditArea
                     = ChunksMath.GetChunksDataPointersInsideArea(
                         editingArea, chunkSize, _chunksContainer, out NativeList<Vector3Int> affectedPositions);
 

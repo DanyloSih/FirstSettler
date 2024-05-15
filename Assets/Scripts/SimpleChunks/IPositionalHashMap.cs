@@ -24,7 +24,7 @@
         /// <summary>
         /// Returns value by its position hash.
         /// </summary>
-        public bool TryGetValue(int positionHash, out TValue value);
+        public bool TryGetValue(long positionHash, out TValue value);
 
         /// <summary>
         /// THIS MEHTOD DON'T CHECK IS OTHER VALUE AT THIS POSITION ALREADY EXIST!<br/>

@@ -10,13 +10,13 @@ namespace SimpleChunks.MeshGeneration
     public struct MeshGenerationArgs
     {
         public NativeArray<Vector3Int> Positions;
-        public NativeParallelHashMap<int, UnsafeNativeArray<VoxelData>>.ReadOnly ChunksData;
+        public NativeParallelHashMap<long, UnsafeNativeArray<VoxelData>>.ReadOnly ChunksData;
         public CancellationToken? CancellationToken;
         public TaskCompletionSource<MeshData[]> TaskCompletionSource;
 
         public MeshGenerationArgs(
             NativeArray<Vector3Int> positions,
-            NativeParallelHashMap<int, UnsafeNativeArray<VoxelData>>.ReadOnly chunksData,
+            NativeParallelHashMap<long, UnsafeNativeArray<VoxelData>>.ReadOnly chunksData,
             CancellationToken? cancellationToken,
             TaskCompletionSource<MeshData[]> taskCompletionSource)
         {

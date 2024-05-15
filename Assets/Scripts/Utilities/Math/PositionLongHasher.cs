@@ -1,4 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
+using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace Utilities.Math
 {
@@ -20,6 +22,16 @@ namespace Utilities.Math
         private const long _Z_CLEAN_MASK = -2097152;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static long GetHashFromPosition(Vector3Int position)
+        {
+            long result = 0;
+            result |= PackTo21Bits(position.x) << _X_SHIFT;
+            result |= PackTo21Bits(position.y) << _Y_SHIFT;
+            result |= PackTo21Bits(position.z);
+            return result;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static long GetHashFromPosition(long x, long y, long z)
         {
             long result = 0;
@@ -30,12 +42,13 @@ namespace Utilities.Math
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static (long x, long y, long z) GetPositionFromHash(long hash)
+        public static Vector3Int GetPositionFromHash(long hash)
         {
-            (long x, long y, long z) result = new();
-            result.x = UnpackFrom21Bits(hash >> _X_SHIFT);
-            result.y = UnpackFrom21Bits(hash >> _Y_SHIFT);
-            result.z = UnpackFrom21Bits(hash);
+            Vector3Int result = new(
+                (int)UnpackFrom21Bits(hash >> _X_SHIFT),
+                (int)UnpackFrom21Bits(hash >> _Y_SHIFT),
+                (int)UnpackFrom21Bits(hash));
+
             return result;
         }
 

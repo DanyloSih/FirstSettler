@@ -70,7 +70,7 @@ namespace MeshGeneration.Tests
                 .GetObjectInstance(generationArea.Shape.Volume);
             generationArea.FillArrayWithPositions(positionsArray);
 
-            NativeParallelHashMap<int, UnsafeNativeArray<VoxelData>> data 
+            NativeParallelHashMap<long, UnsafeNativeArray<VoxelData>> data 
                 = await _chunkDataGenerator.GenerateChunksRawData(positionsArray);
 
             int chunksCount = positionsArray.Length;

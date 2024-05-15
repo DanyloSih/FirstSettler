@@ -33,7 +33,7 @@ namespace SimpleChunks.Tools
 
         public async Task UpdateMeshes(
             NativeArray<Vector3Int> affectedChunksPositions,
-            NativeParallelHashMap<int, UnsafeNativeArray<VoxelData>>.ReadOnly affectedChunks,
+            NativeParallelHashMap<long, UnsafeNativeArray<VoxelData>>.ReadOnly affectedChunks,
             CancellationToken? cancellationToken = null)
         {
             MeshData[] meshes = await _meshGenerator.GenerateMeshDataForChunks(
@@ -42,7 +42,7 @@ namespace SimpleChunks.Tools
             int counter = 0;
             foreach (var chunkPosition in affectedChunksPositions)
             {
-                int chunkHash = PositionIntHasher.GetHashFromPosition(chunkPosition);
+                long chunkHash = PositionLongHasher.GetHashFromPosition(chunkPosition);
                 if (_chunksContainer.TryGetValue(chunkHash, out var chunkObject))
                 {
                     chunkObject.ApplyMeshData(meshes[counter]);
@@ -62,7 +62,7 @@ namespace SimpleChunks.Tools
         public async Task SetVoxels(
             NativeArray<ChunkPointWithData> newVoxels,
             int voxelsCount,
-            NativeParallelHashMap<int, UnsafeNativeArray<VoxelData>>.ReadOnly chunksDataPointersInsideEditArea,
+            NativeParallelHashMap<long, UnsafeNativeArray<VoxelData>>.ReadOnly chunksDataPointersInsideEditArea,
             bool updateMeshes = true,
             CancellationToken? cancellationToken = null)
         {
@@ -118,14 +118,14 @@ namespace SimpleChunks.Tools
         }
 
         private NativeArray<Vector3Int> ChunksDataToPositions(
-            NativeParallelHashMap<int, UnsafeNativeArray<VoxelData>>.ReadOnly chunksData)
+            NativeParallelHashMap<long, UnsafeNativeArray<VoxelData>>.ReadOnly chunksData)
         {
             int chunksCount = chunksData.Count();
             NativeArray<Vector3Int> positions = new (chunksCount, Allocator.Persistent);
             int counter = 0;
             foreach (var chunkData in chunksData)
             {
-                positions[counter] = PositionIntHasher.GetPositionFromHash(chunkData.Key);
+                positions[counter] = PositionLongHasher.GetPositionFromHash(chunkData.Key);
                 counter++;
             }
 

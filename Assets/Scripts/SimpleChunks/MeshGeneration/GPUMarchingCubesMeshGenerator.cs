@@ -70,7 +70,7 @@ namespace SimpleChunks.MeshGeneration
         
         protected override async Task<MeshData[]> OnGenerateMeshDataForChunks(
             NativeArray<Vector3Int> positions,
-            NativeParallelHashMap<int, UnsafeNativeArray<VoxelData>>.ReadOnly chunksData,
+            NativeParallelHashMap<long, UnsafeNativeArray<VoxelData>>.ReadOnly chunksData,
             CancellationToken? cancellationToken = null)
         {
             CheckIsGenerating();
@@ -173,7 +173,7 @@ namespace SimpleChunks.MeshGeneration
 
         private async Task<RawMeshData> GenerateMeshData(
             NativeArray<Vector3Int> positions,
-            NativeParallelHashMap<int, UnsafeNativeArray<VoxelData>>.ReadOnly chunksData,
+            NativeParallelHashMap<long, UnsafeNativeArray<VoxelData>>.ReadOnly chunksData,
             CancellationToken? cancellationToken = null)
         {
             int chunksCount = positions.Length;

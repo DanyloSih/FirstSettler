@@ -12,12 +12,12 @@ namespace SimpleChunks.MeshGeneration
         public static ComputeBuffer FillBufferWithChunksData(
             this ComputeBuffer chunksDataBuffer,
             NativeArray<Vector3Int> positions,
-            NativeParallelHashMap<int, UnsafeNativeArray<VoxelData>>.ReadOnly chunksData)
+            NativeParallelHashMap<long, UnsafeNativeArray<VoxelData>>.ReadOnly chunksData)
         {
             int pointer = 0;
             foreach (var pos in positions)
             {
-                if (!chunksData.TryGetValue(PositionIntHasher.GetHashFromPosition(pos), out var data))
+                if (!chunksData.TryGetValue(PositionLongHasher.GetHashFromPosition(pos), out var data))
                 {
                     throw new InvalidOperationException();
                 }

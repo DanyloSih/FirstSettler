@@ -20,7 +20,7 @@ namespace SimpleChunks.Tools
         [ReadOnly] public float DeformFactor;
         [ReadOnly] public int MaterialHash;
         [ReadOnly] public float Surface;
-        [ReadOnly] public NativeParallelHashMap<int, UnsafeNativeArray<VoxelData>>.ReadOnly ChunksDataPointersInsideEditArea;
+        [ReadOnly] public NativeParallelHashMap<long, UnsafeNativeArray<VoxelData>>.ReadOnly ChunksDataPointersInsideEditArea;
 
         [WriteOnly] public NativeList<ChunkPointWithData>.ParallelWriter ChunkPoints;
         [WriteOnly] public int ItemsCount;
@@ -34,7 +34,7 @@ namespace SimpleChunks.Tools
             if (unscaledDistance < HalfBrushSize)
             {
                 ChunkPoint chunkPoint = ChunksMath.GetChunkPoint(UnscaledGlobalDataPoint + pointerInArea, ChunkSizeInCubes);
-                int chunkPositionHash = PositionIntHasher.GetHashFromPosition(chunkPoint.LocalChunkPosition);
+                long chunkPositionHash = PositionLongHasher.GetHashFromPosition(chunkPoint.LocalChunkPosition);
                 if (!ChunksDataPointersInsideEditArea.TryGetValue(chunkPositionHash, out var rawData))
                 {
                     return;

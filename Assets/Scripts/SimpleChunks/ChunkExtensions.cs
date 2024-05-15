@@ -5,11 +5,11 @@ namespace SimpleChunks
 {
     public static class ChunkExtensions
     {
-        public static int GetUniqueIndex(this IChunk chunk)
+        public static long GetUniqueIndex(this IChunk chunk)
         {
             Vector3Int chunkPosition = chunk.LocalPosition;
 
-            int index = PositionIntHasher.GetHashFromPosition(chunkPosition);
+            long index = PositionLongHasher.GetHashFromPosition(chunkPosition);
 
             return index;
         }

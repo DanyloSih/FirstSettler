@@ -13,7 +13,7 @@ namespace SimpleChunks.Tools
         [ReadOnly] public Vector3Int ChunkSize;
         [ReadOnly] public RectPrismInt ChunkDataModel;
         [ReadOnly] public NativeArray<ChunkPointWithData> NewVoxels;
-        [ReadOnly] public NativeParallelHashMap<int, UnsafeNativeArray<VoxelData>>.ReadOnly AffectedChunksDataPointers;
+        [ReadOnly] public NativeParallelHashMap<long, UnsafeNativeArray<VoxelData>>.ReadOnly AffectedChunksDataPointers;
 
         public void Execute(int index)
         {
@@ -48,7 +48,7 @@ namespace SimpleChunks.Tools
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ApplyVoxelData(Vector3Int localChunkPosition, Vector3Int localChunkDataPoint, VoxelData voxelData)
         {
-            int positionHash = PositionIntHasher.GetHashFromPosition(localChunkPosition);
+            long positionHash = PositionLongHasher.GetHashFromPosition(localChunkPosition);
 
             if (AffectedChunksDataPointers.ContainsKey(positionHash))
             {

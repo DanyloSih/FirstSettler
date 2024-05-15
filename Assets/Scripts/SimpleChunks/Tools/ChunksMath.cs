@@ -22,7 +22,7 @@ namespace SimpleChunks.Tools
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static NativeParallelHashMap<int, UnsafeNativeArray<VoxelData>> GetChunksDataPointersInsideArea(
+        public static NativeParallelHashMap<long, UnsafeNativeArray<VoxelData>> GetChunksDataPointersInsideArea(
             ShapeIntArea<RectPrismInt> area, 
             Vector3Int chunksSize,
             ChunksContainer chunksContainer, 
@@ -38,7 +38,7 @@ namespace SimpleChunks.Tools
             Vector3Int min = area.Anchor;
             Vector3Int max = area.Anchor + area.Shape.Size;
 
-            NativeParallelHashMap<int, UnsafeNativeArray<VoxelData>> pointers
+            NativeParallelHashMap<long, UnsafeNativeArray<VoxelData>> pointers
                 = new (maxAffectedChunksCount, Allocator.Persistent);
 
             for (int y = Mathf.FloorToInt((float)min.y / chunksSize.y) * chunksSize.y; y < max.y; y += chunksSize.y)
@@ -50,7 +50,7 @@ namespace SimpleChunks.Tools
                         int localChunkX = x / chunksSize.x;
                         int localChunkY = y / chunksSize.y;
                         int localChunkZ = z / chunksSize.z;
-                        int positionHash = PositionIntHasher.GetHashFromPosition(localChunkX, localChunkY, localChunkZ);
+                        long positionHash = PositionLongHasher.GetHashFromPosition(localChunkX, localChunkY, localChunkZ);
                         chunksContainer.TryGetValue(positionHash, out var chunk);
 
                         if (chunk == null)

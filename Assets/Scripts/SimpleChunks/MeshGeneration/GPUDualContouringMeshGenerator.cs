@@ -27,7 +27,7 @@ namespace SimpleChunks.MeshGeneration
 
         protected override Task<MeshData[]> OnGenerateMeshDataForChunks(
             NativeArray<Vector3Int> positions,
-            NativeParallelHashMap<int, UnsafeNativeArray<VoxelData>>.ReadOnly chunksData,
+            NativeParallelHashMap<long, UnsafeNativeArray<VoxelData>>.ReadOnly chunksData,
             CancellationToken? cancellationToken = null)
         {
             throw new System.NotImplementedException();

@@ -22,7 +22,7 @@ namespace SimpleChunks.MeshGeneration
 
         public Task<MeshData[]> GenerateMeshDataForChunks(
             NativeArray<Vector3Int> positions,
-            NativeParallelHashMap<int, UnsafeNativeArray<VoxelData>>.ReadOnly chunksData,
+            NativeParallelHashMap<long, UnsafeNativeArray<VoxelData>>.ReadOnly chunksData,
             CancellationToken? cancellationToken = null)
         {
             TaskCompletionSource<MeshData[]> tcs = new();
@@ -43,7 +43,7 @@ namespace SimpleChunks.MeshGeneration
 
         protected abstract Task<MeshData[]> OnGenerateMeshDataForChunks(
             NativeArray<Vector3Int> positions,
-            NativeParallelHashMap<int, UnsafeNativeArray<VoxelData>>.ReadOnly chunksData,
+            NativeParallelHashMap<long, UnsafeNativeArray<VoxelData>>.ReadOnly chunksData,
             CancellationToken? cancellationToken = null);
 
         protected void CheckIsGenerating()
