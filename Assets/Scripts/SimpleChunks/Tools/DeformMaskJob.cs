@@ -34,7 +34,7 @@ namespace SimpleChunks.Tools
             if (unscaledDistance < HalfBrushSize)
             {
                 ChunkPoint chunkPoint = ChunksMath.GetChunkPoint(UnscaledGlobalDataPoint + pointerInArea, ChunkSizeInCubes);
-                int chunkPositionHash = PositionHasher.GetHashFromPosition(chunkPoint.LocalChunkPosition);
+                int chunkPositionHash = PositionIntHasher.GetHashFromPosition(chunkPoint.LocalChunkPosition);
                 if (!ChunksDataPointersInsideEditArea.TryGetValue(chunkPositionHash, out var rawData))
                 {
                     return;

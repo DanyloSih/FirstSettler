@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace Utilities.Math
 {
-    public static class PositionHasher
+    public static class PositionIntHasher
     {
         /// <summary>
         /// X axis limits (-1023, 1023)

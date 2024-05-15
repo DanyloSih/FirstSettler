@@ -15,7 +15,7 @@ namespace Utilities.Math
         [ReadOnly]
         private readonly NativeHashMap<Vector3Int, int> _pointToIndexAssociations;
 
-        public static int MaxRadius => PositionHasher.Y_MAX;
+        public static int MaxRadius => PositionIntHasher.Y_MAX;
         public int Radius => _radius;
         public int Diameter => _diameter;
         public int Volume => _volume;

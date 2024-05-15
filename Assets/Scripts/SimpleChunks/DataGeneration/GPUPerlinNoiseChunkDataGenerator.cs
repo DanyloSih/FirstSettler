@@ -110,7 +110,7 @@ namespace SimpleChunks.DataGeneration
             {
                 var subArray = _voxelsArray.GetSubArray(i * voxelsPrismVolume, voxelsPrismVolume);
                 NativeArray<VoxelData> subarray = new(subArray, Allocator.Persistent);
-                int positionHash = PositionHasher.GetHashFromPosition(generatingChunksLocalPositions[i]);
+                int positionHash = PositionIntHasher.GetHashFromPosition(generatingChunksLocalPositions[i]);
                 result.Add(positionHash, new UnsafeNativeArray<VoxelData>(subarray));
             }
 

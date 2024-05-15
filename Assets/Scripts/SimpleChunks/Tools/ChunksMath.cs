@@ -50,7 +50,7 @@ namespace SimpleChunks.Tools
                         int localChunkX = x / chunksSize.x;
                         int localChunkY = y / chunksSize.y;
                         int localChunkZ = z / chunksSize.z;
-                        int positionHash = PositionHasher.GetHashFromPosition(localChunkX, localChunkY, localChunkZ);
+                        int positionHash = PositionIntHasher.GetHashFromPosition(localChunkX, localChunkY, localChunkZ);
                         chunksContainer.TryGetValue(positionHash, out var chunk);
 
                         if (chunk == null)

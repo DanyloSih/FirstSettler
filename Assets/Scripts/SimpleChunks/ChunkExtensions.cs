@@ -9,7 +9,7 @@ namespace SimpleChunks
         {
             Vector3Int chunkPosition = chunk.LocalPosition;
 
-            int index = PositionHasher.GetHashFromPosition(chunkPosition);
+            int index = PositionIntHasher.GetHashFromPosition(chunkPosition);
 
             return index;
         }

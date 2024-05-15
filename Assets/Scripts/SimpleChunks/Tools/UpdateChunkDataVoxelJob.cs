@@ -48,7 +48,7 @@ namespace SimpleChunks.Tools
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ApplyVoxelData(Vector3Int localChunkPosition, Vector3Int localChunkDataPoint, VoxelData voxelData)
         {
-            int positionHash = PositionHasher.GetHashFromPosition(localChunkPosition);
+            int positionHash = PositionIntHasher.GetHashFromPosition(localChunkPosition);
 
             if (AffectedChunksDataPointers.ContainsKey(positionHash))
             {

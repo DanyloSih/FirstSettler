@@ -17,7 +17,7 @@ namespace SimpleChunks.MeshGeneration
             int pointer = 0;
             foreach (var pos in positions)
             {
-                if (!chunksData.TryGetValue(PositionHasher.GetHashFromPosition(pos), out var data))
+                if (!chunksData.TryGetValue(PositionIntHasher.GetHashFromPosition(pos), out var data))
                 {
                     throw new InvalidOperationException();
                 }

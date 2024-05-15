@@ -143,7 +143,7 @@ namespace SimpleChunks
             int counter = 0;
             foreach (var chunkPosition in chunksPositions)
             {
-                chunksData.TryGetValue(PositionHasher.GetHashFromPosition(chunkPosition), out var chunkData);
+                chunksData.TryGetValue(PositionIntHasher.GetHashFromPosition(chunkPosition), out var chunkData);
 
                 chunks[counter].InitializeBasicData(
                     chunksPositions[counter], 

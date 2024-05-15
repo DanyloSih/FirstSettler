@@ -42,7 +42,7 @@ namespace SimpleChunks.Tools
             int counter = 0;
             foreach (var chunkPosition in affectedChunksPositions)
             {
-                int chunkHash = PositionHasher.GetHashFromPosition(chunkPosition);
+                int chunkHash = PositionIntHasher.GetHashFromPosition(chunkPosition);
                 if (_chunksContainer.TryGetValue(chunkHash, out var chunkObject))
                 {
                     chunkObject.ApplyMeshData(meshes[counter]);
@@ -125,7 +125,7 @@ namespace SimpleChunks.Tools
             int counter = 0;
             foreach (var chunkData in chunksData)
             {
-                positions[counter] = PositionHasher.GetPositionFromHash(chunkData.Key);
+                positions[counter] = PositionIntHasher.GetPositionFromHash(chunkData.Key);
                 counter++;
             }
 
