@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Unity.Collections;
 using UnityEngine;
 using UnityEngine.Rendering;
+using Utilities.Jobs;
 using Utilities.Math;
 using Utilities.Shaders;
 using Utilities.Shaders.Extensions;
@@ -58,7 +59,7 @@ namespace SimpleChunks.DataGeneration
             _rectPrismsBufferManager.Dispose();
         }
 
-        public override async Task<List<ThreedimensionalNativeArray<VoxelData>>> GenerateChunksRawData(
+        public override async Task<NativeParallelHashMap<int, UnsafeNativeArray<VoxelData>>> GenerateChunksRawData(
             NativeArray<Vector3Int> generatingChunksLocalPositions,
             CancellationToken? cancellationToken = null)
         {
@@ -98,7 +99,7 @@ namespace SimpleChunks.DataGeneration
 
             await AsyncUtilities.WaitWhile(() => !request.done, 1, cancellationToken);
 
-            List<ThreedimensionalNativeArray<VoxelData>> result = new();
+            NativeParallelHashMap<int, UnsafeNativeArray<VoxelData>> result = new(chunksCount, Allocator.Persistent);
 
             if (cancellationToken.IsCanceled())
             {
@@ -109,7 +110,8 @@ namespace SimpleChunks.DataGeneration
             {
                 var subArray = _voxelsArray.GetSubArray(i * voxelsPrismVolume, voxelsPrismVolume);
                 NativeArray<VoxelData> subarray = new(subArray, Allocator.Persistent);
-                result.Add(new ThreedimensionalNativeArray<VoxelData>(subarray, _chunkPrismsProvider.VoxelsPrism.Size));
+                int positionHash = PositionHasher.GetHashFromPosition(generatingChunksLocalPositions[i]);
+                result.Add(positionHash, new UnsafeNativeArray<VoxelData>(subarray));
             }
 
             return result;

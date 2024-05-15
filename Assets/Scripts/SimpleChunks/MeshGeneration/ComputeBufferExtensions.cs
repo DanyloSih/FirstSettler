@@ -1,6 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
 using SimpleChunks.DataGeneration;
+using Unity.Collections;
 using UnityEngine;
+using Utilities.Jobs;
 using Utilities.Math;
 
 namespace SimpleChunks.MeshGeneration
@@ -9,13 +11,19 @@ namespace SimpleChunks.MeshGeneration
     {
         public static ComputeBuffer FillBufferWithChunksData(
             this ComputeBuffer chunksDataBuffer,
-            List<ThreedimensionalNativeArray<VoxelData>> chunksRawData)
+            NativeArray<Vector3Int> positions,
+            NativeParallelHashMap<int, UnsafeNativeArray<VoxelData>>.ReadOnly chunksData)
         {
             int pointer = 0;
-            foreach (var data in chunksRawData)
+            foreach (var pos in positions)
             {
-                chunksDataBuffer.SetData(data.RawData, 0, pointer, data.FullLength);
-                pointer += data.FullLength;
+                if (!chunksData.TryGetValue(PositionHasher.GetHashFromPosition(pos), out var data))
+                {
+                    throw new InvalidOperationException();
+                }
+
+                chunksDataBuffer.SetData(data.RestoreAsArray(), 0, pointer, data.Length);
+                pointer += data.Length;
             }
 
             return chunksDataBuffer;

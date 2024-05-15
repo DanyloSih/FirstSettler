@@ -12,9 +12,13 @@ namespace SimpleChunks.DataGeneration
         public const int CAPACITY = 8;
 
         [FieldOffset(0)]
-        public VoxelData ArrayStart;
+        private VoxelData _arrayStart;
         [FieldOffset(CAPACITY * VoxelData.STRUCT_SIZE)]
         private float _surface;
+        [FieldOffset(CAPACITY * VoxelData.STRUCT_SIZE + sizeof(float))]
+        private byte _configIndex;
+
+        public byte ConfigIndex { get => _configIndex; }
 
         public CubeData(float surface) : this()
         {
@@ -33,20 +37,21 @@ namespace SimpleChunks.DataGeneration
             this[6] = rawData[rawDataRect.PointToIndex(new Vector3Int(pos.x + 1, pos.y + 1, pos.z + 1))];
             this[7] = rawData[rawDataRect.PointToIndex(new Vector3Int(pos.x, pos.y + 1, pos.z + 1))];
 
+            _configIndex = CalculateConfigurationIndex();
+
             return this;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsInvisible()
         {
-            int configIndex = GetConfigurationIndex();
-            return configIndex == 0 || configIndex == 255;
+            return _configIndex == 0 || _configIndex == 255;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public int GetConfigurationIndex()
+        private byte CalculateConfigurationIndex()
         {
-            int configIndex = 0;
+            byte configIndex = 0;
 
             if (this[0].Volume <= _surface)
                 configIndex |= 1 << 0;
@@ -76,7 +81,7 @@ namespace SimpleChunks.DataGeneration
                 CheckIsOutOfRange(index);
                 unsafe
                 {
-                    fixed (VoxelData* ptr = &ArrayStart)
+                    fixed (VoxelData* ptr = &_arrayStart)
                     {
                         return *(ptr + index);
                     }
@@ -89,7 +94,7 @@ namespace SimpleChunks.DataGeneration
                 CheckIsOutOfRange(index);
                 unsafe
                 {
-                    fixed (VoxelData* ptr = &ArrayStart)
+                    fixed (VoxelData* ptr = &_arrayStart)
                     {
                         *(ptr + index) = value;
                     }

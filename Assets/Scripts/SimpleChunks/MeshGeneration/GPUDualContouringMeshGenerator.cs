@@ -2,6 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using SimpleChunks.DataGeneration;
+using Unity.Collections;
 using UnityEngine;
 using Utilities.Jobs;
 using Utilities.Math;
@@ -25,7 +26,8 @@ namespace SimpleChunks.MeshGeneration
         private NativeArrayManager<Vector3> _verticesArrayManager;
 
         protected override Task<MeshData[]> OnGenerateMeshDataForChunks(
-            List<ThreedimensionalNativeArray<VoxelData>> chunksData,
+            NativeArray<Vector3Int> positions,
+            NativeParallelHashMap<int, UnsafeNativeArray<VoxelData>>.ReadOnly chunksData,
             CancellationToken? cancellationToken = null)
         {
             throw new System.NotImplementedException();

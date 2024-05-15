@@ -67,27 +67,35 @@ namespace SimpleChunks.MeshGeneration
             _verticesArrayManager.Dispose();
             _verticesInfoArrayManager.Dispose();
         }
-
+        
         protected override async Task<MeshData[]> OnGenerateMeshDataForChunks(
-            List<ThreedimensionalNativeArray<VoxelData>> chunksRawData, 
+            NativeArray<Vector3Int> positions,
+            NativeParallelHashMap<int, UnsafeNativeArray<VoxelData>>.ReadOnly chunksData,
             CancellationToken? cancellationToken = null)
         {
             CheckIsGenerating();
 
-            RawMeshData rawMeshData = await GenerateMeshData(chunksRawData, cancellationToken);
+            int chunksDataCount = positions.Length;
+            if (chunksData.Count() != chunksDataCount)
+            {
+                throw new ArgumentException($"{nameof(positions)} length " +
+                    $"must be equal to {nameof(chunksData)} length.");
+            }
+
+            RawMeshData rawMeshData = await GenerateMeshData(positions, chunksData, cancellationToken);
 
             int maxVerticesPerChunk = _chunkSizePrismsProvider.CubesPrism.Volume
                 * _generationAlgorithmInfo.MaxVerticesPerMarch;
 
             NativeArray<GPUMeshDataFixJob> jobs = new(
-                chunksRawData.Count, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+                chunksDataCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
 
             NativeArray<JobHandle> jobHandles = new(
-                chunksRawData.Count, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+                chunksDataCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
 
             List<NativeArray<GPUMeshDataFixJobOutput>> jobsOutput = new();
 
-            for (int i = 0; i < chunksRawData.Count; i++)
+            for (int i = 0; i < chunksDataCount; i++)
             {
                 jobsOutput.Add(new(1, Allocator.Persistent, NativeArrayOptions.UninitializedMemory));
 
@@ -125,9 +133,9 @@ namespace SimpleChunks.MeshGeneration
                 return new MeshData[0];
             }
 
-            MeshData[] result = new MeshData[chunksRawData.Count];
+            MeshData[] result = new MeshData[chunksDataCount];
 
-            for (int i = 0; i < chunksRawData.Count; i++)
+            for (int i = 0; i < chunksDataCount; i++)
             {
                 GPUMeshDataFixJob job = jobs[i];
                 result[i] = new MeshData(
@@ -164,10 +172,12 @@ namespace SimpleChunks.MeshGeneration
         }
 
         private async Task<RawMeshData> GenerateMeshData(
-            List<ThreedimensionalNativeArray<VoxelData>> chunksData, 
+            NativeArray<Vector3Int> positions,
+            NativeParallelHashMap<int, UnsafeNativeArray<VoxelData>>.ReadOnly chunksData,
             CancellationToken? cancellationToken = null)
         {
-            int chunksCount = chunksData.Count;
+            int chunksCount = positions.Length;
+
             int voxelsCount = _chunkSizePrismsProvider.VoxelsPrism.Volume * chunksCount;
             int cubesCount = _chunkSizePrismsProvider.CubesPrism.Volume * chunksCount;
             int maxVerticesCount = cubesCount * _generationAlgorithmInfo.MaxVerticesPerMarch;
@@ -175,7 +185,8 @@ namespace SimpleChunks.MeshGeneration
             ComputeBuffer chunkSizePrismsBuffer = _chunkSizePrismsBufferManager.GetObjectInstance(
                 _chunkSizePrismsProvider.PrismsArray.Length);
 
-            ComputeBuffer chunksDataBuffer = InitializeChunksDataBuffer(chunksData, voxelsCount);
+            ComputeBuffer chunksDataBuffer = _chunksDataBufferManager.GetObjectInstance(voxelsCount)
+                .FillBufferWithChunksData(positions, chunksData);
 
             _verticesInfoArrayManager.Dispose();
             NativeArray<VertexInfo> verticesInfo = _verticesInfoArrayManager.GetObjectInstance(maxVerticesCount);
@@ -214,20 +225,6 @@ namespace SimpleChunks.MeshGeneration
             }
 
             return new RawMeshData(vertices, verticesInfo);
-        }
-
-        private ComputeBuffer InitializeChunksDataBuffer(
-            List<ThreedimensionalNativeArray<VoxelData>> chunksRawData, int voxelsCount)
-        {
-            var chunksDataBuffer = _chunksDataBufferManager.GetObjectInstance(voxelsCount);
-            int pointer = 0;
-            foreach (var data in chunksRawData)
-            {
-                chunksDataBuffer.SetData(data.RawData, 0, pointer, data.FullLength);
-                pointer += data.FullLength;
-            }
-
-            return chunksDataBuffer;
         }
     }
 }

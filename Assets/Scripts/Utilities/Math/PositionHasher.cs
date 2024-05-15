@@ -30,6 +30,16 @@ namespace Utilities.Math
         /// </summary>
         public const int Z_MAX =  (Z_UNSIGNED_LIMIT / 2);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector3Int GetPositionFromHash(int hash)
+        {
+            int z = (hash & Z_UNSIGNED_LIMIT) - Z_MAX;
+            int y = ((hash >> 11) & Y_UNSIGNED_LIMIT) - Y_MAX;
+            int x = ((hash >> 21) & X_UNSIGNED_LIMIT) - X_MAX;
+
+            return new Vector3Int(x, y, z);
+        }
+
         /// <summary>
         /// This hash function guarantees unique values if the axis 
         /// arguments are within the "collision limits": <br/>
@@ -38,7 +48,7 @@ namespace Utilities.Math
         /// <inheritdoc cref="Z_UNSIGNED_LIMIT"/> <br/>
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int GetPositionHash(int x, int y, int z)
+        public static int GetHashFromPosition(int x, int y, int z)
         {
             int xFormated = (((x + X_MAX) % X_UNSIGNED_LIMIT) & X_UNSIGNED_LIMIT) << 21;
             int yFormated = (((y + Y_MAX) % Y_UNSIGNED_LIMIT) & Y_UNSIGNED_LIMIT) << 11;
@@ -47,12 +57,12 @@ namespace Utilities.Math
         }
 
         /// <summary>
-        /// <inheritdoc cref="GetPositionHash(int, int, int)"/>
+        /// <inheritdoc cref="GetHashFromPosition(int, int, int)"/>
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int GetPositionHash(Vector3Int position)
+        public static int GetHashFromPosition(Vector3Int position)
         {
-            return GetPositionHash(position.x, position.y, position.z);
+            return GetHashFromPosition(position.x, position.y, position.z);
         }
     }
 }

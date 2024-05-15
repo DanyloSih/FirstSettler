@@ -70,13 +70,16 @@ namespace MeshGeneration.Tests
                 .GetObjectInstance(generationArea.Shape.Volume);
             generationArea.FillArrayWithPositions(positionsArray);
 
-            var data = await _chunkDataGenerator.GenerateChunksRawData(positionsArray);
+            NativeParallelHashMap<int, UnsafeNativeArray<VoxelData>> data 
+                = await _chunkDataGenerator.GenerateChunksRawData(positionsArray);
 
-            int voxelsCount = data.Count * _chunkPrismsProvider.VoxelsPrism.Volume;
-            int cubesCount = data.Count * _chunkPrismsProvider.CubesPrism.Volume;
+            int chunksCount = positionsArray.Length;
+
+            int voxelsCount = chunksCount * _chunkPrismsProvider.VoxelsPrism.Volume;
+            int cubesCount = chunksCount * _chunkPrismsProvider.CubesPrism.Volume;
 
             ComputeBuffer chunksDataBuffer = _chunkDataBufferManager.GetObjectInstance(voxelsCount)
-                .FillBufferWithChunksData(data);
+                .FillBufferWithChunksData(positionsArray, data.AsReadOnly());
 
             ComputeBuffer chunkPrismBuffer = _chunkPrismsBufferManager.GetObjectInstance(2);
             chunkPrismBuffer.SetData(_chunkPrismsProvider.PrismsArray);

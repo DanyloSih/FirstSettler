@@ -1,15 +1,14 @@
-﻿using System.Collections.Generic;
-using System.Threading;
+﻿using System.Threading;
 using System.Threading.Tasks;
 using Unity.Collections;
 using UnityEngine;
-using Utilities.Math;
+using Utilities.Jobs;
 
 namespace SimpleChunks.DataGeneration
 {
     public abstract class ChunkDataGenerator : MonoBehaviour, IChunkDataProvider
     {
-        public abstract Task<List<ThreedimensionalNativeArray<VoxelData>>> GenerateChunksRawData(
+        public abstract Task<NativeParallelHashMap<int, UnsafeNativeArray<VoxelData>>> GenerateChunksRawData(
             NativeArray<Vector3Int> generatingChunksLocalPositions,
             CancellationToken? cancellationToken = null);
     }

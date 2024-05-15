@@ -8,6 +8,7 @@ using Unity.Jobs;
 using UnityEngine;
 using Utilities.Jobs;
 using Utilities.Math;
+using Utilities.Math.Extensions;
 using Utilities.Threading;
 using Zenject;
 
@@ -23,7 +24,7 @@ namespace SimpleChunks.Tools
         private Stopwatch _cooldownStopwatch = new Stopwatch();
         private int _drawMaterialHash;
         private Camera _mainCamera;
-        private IChunksContainer _chunksContainer;
+        private ChunksContainer _chunksContainer;
         private BasicChunkSettings _basicChunkSettings;
         private GenerationAlgorithmInfo _generationAlgorithmInfo;
         private MarchingCubesChunksEditor _marchingCubesChunksEditor;
@@ -33,7 +34,7 @@ namespace SimpleChunks.Tools
             BasicChunkSettings basicChunkSettings, 
             GenerationAlgorithmInfo generationAlgorithmInfo,
             MarchingCubesChunksEditor marchingCubesChunksEditor,
-            IChunksContainer chunksContainer)
+            ChunksContainer chunksContainer)
         {
             _basicChunkSettings = basicChunkSettings;
             _generationAlgorithmInfo = generationAlgorithmInfo;
@@ -80,66 +81,89 @@ namespace SimpleChunks.Tools
                 return;
             }
 
-            await Deform(chunkRaycastResult.GlobalChunkDataPoint, newVolume, _drawMaterial.GetHashCode());
+            TaskCompletionSource<bool> taskCompletionSource = new TaskCompletionSource<bool>();
+
+            _chunksContainer.GetNativeParallelHashMap((hashMap) => { 
+                Deform(chunkRaycastResult.GlobalChunkDataPoint, newVolume, 
+                    _drawMaterial.GetHashCode(), hashMap, taskCompletionSource);
+
+                return taskCompletionSource;
+            });
         }
 
-        private async Task Deform(
+        private async void Deform(
             Vector3 globalChunkDataPoint,
             float deformFactor,
             int materialHash,
+            NativeParallelHashMap<int, UnsafeNativeArray<VoxelData>>.ReadOnly chunks,
+            TaskCompletionSource<bool> taskCompletionSource,
             CancellationToken? cancellationToken = null)
         {
-            Vector3Int chunkSize = _basicChunkSettings.SizeInCubes;
-            int halfBrushSize = _brushSize / 2;
-            ChunkPoint initialDataPoint = _marchingCubesChunksEditor
-                .GetChunkDataPoint(globalChunkDataPoint);
-
-            if (!initialDataPoint.IsInitialized)
+            
+            try
             {
-                return;
+                Vector3Int chunkSize = _basicChunkSettings.SizeInCubes;
+                int halfBrushSize = _brushSize / 2;
+                ChunkPointWithData initialDataPoint = _marchingCubesChunksEditor
+                    .GetChunkDataPoint(globalChunkDataPoint);
+
+                if (!initialDataPoint.IsInitialized)
+                {
+                    taskCompletionSource.SetCanceled();
+                    return;
+                }
+
+                Vector3Int offset = -Vector3Int.one * halfBrushSize;
+                Vector3Int unscaledGlobalChunkPosition = Vector3Int.Scale(
+                    Vector3Int.FloorToInt(initialDataPoint.LocalChunkPosition), chunkSize);
+
+                Vector3Int localChunkDataPoint = Vector3Int.FloorToInt(initialDataPoint.LocalVoxelPosition);
+                Vector3Int unscaledGlobalDataPoint = unscaledGlobalChunkPosition + localChunkDataPoint;
+
+                RectPrismInt editingPrism = new RectPrismInt(Vector3Int.one * _brushSize);
+                ShapeIntArea<RectPrismInt> editingArea = new ShapeIntArea<RectPrismInt>(
+                    editingPrism, unscaledGlobalDataPoint - editingPrism.HalfSize);
+
+                NativeList<ChunkPointWithData> chunkPoints = new(editingPrism.Volume, Allocator.Persistent);
+
+                NativeParallelHashMap<int, UnsafeNativeArray<VoxelData>> chunksRawDataInsideEditArea
+                    = ChunksMath.GetChunksDataPointersInsideArea(
+                        editingArea, chunkSize, _chunksContainer, out NativeList<Vector3Int> affectedPositions);
+
+                DeformMaskJob deformMaskJob = new DeformMaskJob();
+                deformMaskJob.DeformFactor = deformFactor;
+                deformMaskJob.ChunkVoxelsRect = new RectPrismInt(chunkSize + Vector3Int.one);
+                deformMaskJob.ChunksDataPointersInsideEditArea = chunks;
+                deformMaskJob.ChunkSizeInCubes = chunkSize;
+                deformMaskJob.EditingPrism = editingPrism;
+                deformMaskJob.HalfBrushSize = halfBrushSize;
+                deformMaskJob.MaterialHash = materialHash;
+                deformMaskJob.Offset = offset;
+                deformMaskJob.Surface = _generationAlgorithmInfo.SurfaceFactor;
+                deformMaskJob.UnscaledGlobalDataPoint = unscaledGlobalDataPoint;
+                deformMaskJob.ChunkPoints = chunkPoints.AsParallelWriter();
+
+                JobHandle deformMaskJobHandler = deformMaskJob.Schedule(editingArea.Shape.Volume, 32);
+                var result = await AsyncUtilities.WaitWhile(() => !deformMaskJobHandler.IsCompleted, 1, cancellationToken);
+                if (!result.IsWaitedSuccessfully)
+                {
+                    taskCompletionSource.SetCanceled();
+                    return;
+                }
+
+                await _marchingCubesChunksEditor.UpdateMeshes(
+                    affectedPositions.AsArray(), chunksRawDataInsideEditArea.AsReadOnly(), cancellationToken);
+
+                affectedPositions.Dispose();
+                chunkPoints.Dispose();
+                chunksRawDataInsideEditArea.Dispose();
+
+                taskCompletionSource.SetResult(true);
             }
-
-            Vector3Int offset = -Vector3Int.one * halfBrushSize;
-            Vector3Int unscaledGlobalChunkPosition = Vector3Int.Scale(
-                Vector3Int.FloorToInt(initialDataPoint.LocalChunkPosition), chunkSize);
-
-            Vector3Int localChunkDataPoint = Vector3Int.FloorToInt(initialDataPoint.LocalChunkDataPoint);
-            Vector3Int unscaledGlobalDataPoint = unscaledGlobalChunkPosition + localChunkDataPoint;            
-
-            RectPrismInt editingPrism = new RectPrismInt(Vector3Int.one * _brushSize);
-            ShapeIntArea<RectPrismInt> editingArea = new ShapeIntArea<RectPrismInt>(
-                editingPrism, unscaledGlobalDataPoint - editingPrism.HalfSize);
-
-            NativeList<ChunkPoint> chunkPoints = new NativeList<ChunkPoint>(editingPrism.Volume, Allocator.Persistent);
-            NativeParallelHashMap<int, UnsafeNativeArray<VoxelData>> chunksDataPointersInsideEditArea 
-                = ChunksMath.GetChunksDataPointersInsideArea(editingArea, chunkSize, _chunksContainer);
-
-            DeformMaskJob deformMaskJob = new DeformMaskJob();
-            deformMaskJob.DeformFactor = deformFactor;
-            deformMaskJob.ChunkVoxelsRect = new RectPrismInt(chunkSize + Vector3Int.one);
-            deformMaskJob.ChunksDataPointersInsideEditArea = chunksDataPointersInsideEditArea.AsReadOnly();
-            deformMaskJob.ChunkSize = chunkSize;
-            deformMaskJob.EditingPrism = editingPrism;
-            deformMaskJob.HalfBrushSize = halfBrushSize;
-            deformMaskJob.MaterialHash = materialHash;
-            deformMaskJob.Offset = offset;
-            deformMaskJob.Surface = _generationAlgorithmInfo.SurfaceFactor;
-            deformMaskJob.UnscaledGlobalDataPoint = unscaledGlobalDataPoint;
-            deformMaskJob.ChunkPoints = chunkPoints.AsParallelWriter();
-
-            JobHandle deformMaskJobHandler = deformMaskJob.Schedule(editingArea.Shape.Volume, 32);
-            await AsyncUtilities.WaitWhile(() => !deformMaskJobHandler.IsCompleted);
-            deformMaskJobHandler.Complete();
-
-            await _marchingCubesChunksEditor.SetVoxels(
-                chunkPoints.AsArray(),
-                chunkPoints.Length, 
-                chunksDataPointersInsideEditArea.AsReadOnly(), 
-                true,
-                cancellationToken);
-
-            chunkPoints.Dispose();
-            chunksDataPointersInsideEditArea.Dispose();
+            catch (Exception ex)
+            {
+                taskCompletionSource.SetException(ex);
+            }
         }
     }
 }

@@ -10,7 +10,6 @@ namespace FirstSettler.Installers
     public class ChunkGenerationToolsInstaller : MonoInstaller
     {
         [SerializeField] private Transform _chunksRoot;
-        [SerializeField] private ChunksContainer _chunksContainer;
         [SerializeField] private GPUPerlinNoiseChunkDataGenerator _gpuChunkDataGenerator;
         [SerializeField] private MeshGenerator _meshGenerator;
         [SerializeField] private Chunk _chunkPrefab;
@@ -18,8 +17,7 @@ namespace FirstSettler.Installers
 
         public override void InstallBindings()
         {     
-            Container.BindInterfacesAndSelfTo<ChunksContainer>()
-                .FromInstance(_chunksContainer).AsSingle();
+            Container.BindInterfacesAndSelfTo<ChunksContainer>().AsSingle();
 
             Container.BindInterfacesAndSelfTo<GPUPerlinNoiseChunkDataGenerator>()
                 .FromInstance(_gpuChunkDataGenerator).AsSingle();

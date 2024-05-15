@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using SimpleChunks.DataGeneration;
+using Unity.Collections;
 using UnityEngine;
+using Utilities.Jobs;
 using Utilities.Math;
 using Utilities.Threading.Extensions;
 
@@ -19,12 +21,13 @@ namespace SimpleChunks.MeshGeneration
         public bool IsGenerating { get => _currentTask != null && !_currentTask.IsCompleted; }
 
         public Task<MeshData[]> GenerateMeshDataForChunks(
-            List<ThreedimensionalNativeArray<VoxelData>> chunksData,
+            NativeArray<Vector3Int> positions,
+            NativeParallelHashMap<int, UnsafeNativeArray<VoxelData>>.ReadOnly chunksData,
             CancellationToken? cancellationToken = null)
         {
             TaskCompletionSource<MeshData[]> tcs = new();
             _generationTasks.Enqueue(new MeshGenerationArgs(
-                chunksData, cancellationToken, tcs));
+                positions, chunksData, cancellationToken, tcs));
 
             InvokeNextTask();
 
@@ -39,7 +42,8 @@ namespace SimpleChunks.MeshGeneration
         }
 
         protected abstract Task<MeshData[]> OnGenerateMeshDataForChunks(
-            List<ThreedimensionalNativeArray<VoxelData>> chunksData,
+            NativeArray<Vector3Int> positions,
+            NativeParallelHashMap<int, UnsafeNativeArray<VoxelData>>.ReadOnly chunksData,
             CancellationToken? cancellationToken = null);
 
         protected void CheckIsGenerating()
@@ -64,7 +68,7 @@ namespace SimpleChunks.MeshGeneration
                 InvokeNextTask();
                 return;
             }
-            _currentTask = OnGenerateMeshDataForChunks(nextTaskArgs.ChunksData, nextTaskArgs.CancellationToken);
+            _currentTask = OnGenerateMeshDataForChunks(nextTaskArgs.Positions, nextTaskArgs.ChunksData, nextTaskArgs.CancellationToken);
 
             Task task = _currentTask.ContinueWith((result) => {
                 if (result.IsCanceled)

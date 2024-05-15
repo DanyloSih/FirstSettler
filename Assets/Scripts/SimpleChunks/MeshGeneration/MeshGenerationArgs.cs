@@ -1,25 +1,29 @@
-﻿using System.Collections.Generic;
-using System.Threading;
+﻿using System.Threading;
 using System.Threading.Tasks;
 using SimpleChunks.DataGeneration;
-using Utilities.Math;
+using Unity.Collections;
+using UnityEngine;
+using Utilities.Jobs;
 
 namespace SimpleChunks.MeshGeneration
 {
     public struct MeshGenerationArgs
     {
-        public List<ThreedimensionalNativeArray<VoxelData>> ChunksData;
+        public NativeArray<Vector3Int> Positions;
+        public NativeParallelHashMap<int, UnsafeNativeArray<VoxelData>>.ReadOnly ChunksData;
         public CancellationToken? CancellationToken;
         public TaskCompletionSource<MeshData[]> TaskCompletionSource;
 
         public MeshGenerationArgs(
-            List<ThreedimensionalNativeArray<VoxelData>> chunksData,
+            NativeArray<Vector3Int> positions,
+            NativeParallelHashMap<int, UnsafeNativeArray<VoxelData>>.ReadOnly chunksData,
             CancellationToken? cancellationToken,
             TaskCompletionSource<MeshData[]> taskCompletionSource)
         {
             ChunksData = chunksData;
             CancellationToken = cancellationToken;
             TaskCompletionSource = taskCompletionSource;
+            Positions = positions;
         }
     }
 }

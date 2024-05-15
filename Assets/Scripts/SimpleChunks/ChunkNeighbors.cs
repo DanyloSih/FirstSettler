@@ -14,7 +14,7 @@ namespace SimpleChunks
             int globalChunkXPos,
             int globalChunkYPos,
             int globalChunkZPos,
-            IChunksContainer chunksContainer)
+            ChunksContainer chunksContainer)
         {
             int x = globalChunkXPos, y = globalChunkYPos, z = globalChunkZPos;
 
@@ -26,7 +26,8 @@ namespace SimpleChunks
                 {
                     for (int c = 0; c < _WIDTH; c++)
                     {
-                        Neighbors[GetIndex(a, b, c)] = chunksContainer.GetChunk(x + a - 1, y + b - 1, z + c - 1);
+                        chunksContainer.TryGetValue(x + a - 1, y + b - 1, z + c - 1, out var chunk);
+                        Neighbors[GetIndex(a, b, c)] = chunk;
                     }
                 }
             }

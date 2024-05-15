@@ -6,6 +6,7 @@ using SimpleChunks.DataGeneration;
 using SimpleChunks.MeshGeneration;
 using Unity.Collections;
 using UnityEngine;
+using Utilities.Jobs;
 using Utilities.Math;
 using Utilities.Threading.Extensions;
 using Zenject;
@@ -17,10 +18,8 @@ namespace SimpleChunks
         private Transform _chunksRoot;
         private MeshGenerator _meshGenerator;
         private BasicChunkSettings _basicChunkSettings;
-        private List<(IChunk ChunkComponent, GameObject ChunkGameObject)> _chunksList
-            = new List<(IChunk ChunkComponent, GameObject ChunkGameObject)>();
         private GameObject _chunkPrefabGO;
-        private IChunksContainer _activeChunksContainer;
+        private ChunksContainer _activeChunksContainer;
         private IChunkDataProvider _chunksDataProvider;           
         private ChunkCoordinatesCalculator _chunkCoordinatesCalculator;
         private DiContainer _diContainer;
@@ -34,7 +33,7 @@ namespace SimpleChunks
             ChunkCoordinatesCalculator chunkCoordinatesCalculator,
             Transform chunksRoot,
             MeshGenerator meshGenerator,
-            IChunksContainer chunksContainer,
+            ChunksContainer chunksContainer,
             IChunkDataProvider chunkDataProvider,
             IChunk chunkPrefab)
         {
@@ -101,17 +100,24 @@ namespace SimpleChunks
             IReadOnlyList<IChunk> chunksGameObjects
                 = CreateChunksGameObject(chunkPositionsArray);
 
-            List<ThreedimensionalNativeArray<VoxelData>> chunksData
+            NativeParallelHashMap<int, UnsafeNativeArray<VoxelData>> chunksData
                 = await _chunksDataProvider.GenerateChunksRawData(
                     chunkPositionsArray, cancellationToken);
 
             InitializeChunks(chunksGameObjects, chunkPositionsArray, chunksData);
 
             MeshData[] chunksMeshData = await _meshGenerator
-                .GenerateMeshDataForChunks(chunksData, cancellationToken)
+                .GenerateMeshDataForChunks(chunkPositionsArray, chunksData.AsReadOnly(), cancellationToken)
                 .OnException(ex => Debug.LogException(ex));
 
             ApplyChunksMeshData(chunksMeshData, chunksGameObjects);
+
+
+            foreach (var meshData in chunksMeshData)
+            {
+                meshData.Dispose();
+            }
+            chunksData.Dispose();
         }
 
         private IReadOnlyList<IChunk> CreateChunksGameObject(
@@ -121,32 +127,35 @@ namespace SimpleChunks
 
             foreach (var loadingPos in generatingChunksLocalPositions)
             {
-                var pos = loadingPos;
                 GameObject instance = _diContainer.InstantiatePrefab(_chunkPrefabGO, _chunksRoot);
                 IChunk chunk = instance.GetComponent(typeof(IChunk)) as IChunk;
                 _createdChunks.Add(chunk);
-                _chunksList.Add(new(chunk, instance));
-
-                if (!_activeChunksContainer.IsChunkExist(pos.x, pos.y, pos.z))
-                {
-                    _activeChunksContainer.AddChunk(pos.x, pos.y, pos.z, chunk);
-                }
-                else
-                {
-                    throw new Exception("HASH COLLISSION!");
-                }
             }
             return _createdChunks;
         }
 
         private void InitializeChunks(
             IReadOnlyList<IChunk> chunks, 
-            NativeArray<Vector3Int> chunksPositions, 
-            List<ThreedimensionalNativeArray<VoxelData>> chunksData)
+            NativeArray<Vector3Int> chunksPositions,
+            NativeParallelHashMap<int, UnsafeNativeArray<VoxelData>> chunksData)
         {
-            for (int i = 0; i < chunks.Count; i++)
+            var chunkVoxelsSize = _basicChunkSettings.SizeInVoxels;
+            int counter = 0;
+            foreach (var chunkPosition in chunksPositions)
             {
-                chunks[i].InitializeBasicData(chunksPositions[i], chunksData[i]);
+                chunksData.TryGetValue(PositionHasher.GetHashFromPosition(chunkPosition), out var chunkData);
+
+                chunks[counter].InitializeBasicData(
+                    chunksPositions[counter], 
+                    new (chunkData.RestoreAsArray(), chunkVoxelsSize));
+
+                if (_activeChunksContainer.IsValueExist(chunksPositions[counter]))
+                {
+                    throw new ArgumentException($"{nameof(ChunksContainer)} hash collision!");
+                }
+
+                _activeChunksContainer.AddValue(chunksPositions[counter], chunks[counter]);
+                counter++;
             }
         }
 
@@ -164,7 +173,6 @@ namespace SimpleChunks
                 IChunk chunk = chunks[i];
 
                 chunk.ApplyMeshData(chunksMeshData[i]);
-                chunksMeshData[i].Dispose();
 
                 chunk.RootGameObject.transform.localScale
                       = Vector3.one * _basicChunkSettings.Scale;

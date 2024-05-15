@@ -2,14 +2,13 @@
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
-using SimpleChunks.Extensions;
 using Zenject;
 
 namespace SimpleChunks
 {
     public class ChunksDisposer
     {
-        [Inject] private IChunksContainer _activeChunksContainer;
+        [Inject] private ChunksContainer _activeChunksContainer;
 
         public async Task DisposeArea(
             IEnumerable<Vector3Int> disposeArea,
@@ -24,14 +23,14 @@ namespace SimpleChunks
                     return;
                 }
 
-                if (!_activeChunksContainer.IsChunkExist(position))
+                if (!_activeChunksContainer.IsValueExist(position))
                 {
                     continue;
                 }
 
-                IChunk chunk = _activeChunksContainer.GetChunk(position);
+                _activeChunksContainer.TryGetValue(position, out var chunk);
                 MonoBehaviour.Destroy(chunk.RootGameObject);
-                _activeChunksContainer.RemoveChunk(position);
+                _activeChunksContainer.RemoveValue(position);
 
                 if (i % chunksDisposerParams.BatchLength == 0 && chunksDisposerParams.BatchDelay > 0)
                 {

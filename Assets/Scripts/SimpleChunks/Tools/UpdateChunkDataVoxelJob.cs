@@ -12,19 +12,19 @@ namespace SimpleChunks.Tools
     {
         [ReadOnly] public Vector3Int ChunkSize;
         [ReadOnly] public RectPrismInt ChunkDataModel;
-        [ReadOnly] public NativeArray<ChunkPoint> NewVoxels;
+        [ReadOnly] public NativeArray<ChunkPointWithData> NewVoxels;
         [ReadOnly] public NativeParallelHashMap<int, UnsafeNativeArray<VoxelData>>.ReadOnly AffectedChunksDataPointers;
 
         public void Execute(int index)
         {
-            ChunkPoint chunkVoxel = NewVoxels[index];
+            ChunkPointWithData chunkVoxel = NewVoxels[index];
             if (!chunkVoxel.IsInitialized)
             {
                 return;
             }
             
             Vector3Int localChunkPosition = Vector3Int.FloorToInt(chunkVoxel.LocalChunkPosition);
-            Vector3Int localChunkDataPoint = Vector3Int.FloorToInt(chunkVoxel.LocalChunkDataPoint);
+            Vector3Int localChunkDataPoint = Vector3Int.FloorToInt(chunkVoxel.LocalVoxelPosition);
 
             if (ChunkDataModel.IsSurfacePoint(localChunkDataPoint))
             {
@@ -48,7 +48,7 @@ namespace SimpleChunks.Tools
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ApplyVoxelData(Vector3Int localChunkPosition, Vector3Int localChunkDataPoint, VoxelData voxelData)
         {
-            int positionHash = PositionHasher.GetPositionHash(localChunkPosition);
+            int positionHash = PositionHasher.GetHashFromPosition(localChunkPosition);
 
             if (AffectedChunksDataPointers.ContainsKey(positionHash))
             {
