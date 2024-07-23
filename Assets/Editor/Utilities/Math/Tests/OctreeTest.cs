@@ -11,6 +11,7 @@ namespace Utilities.Math.Tests
         [SerializeField] private int _pointerRank;
         [SerializeField] private int _pointerValue = 1;
         [SerializeField] private float _scale = 1f;
+        [SerializeField] private int _applyArrayDelay = 1;
 
         private NativeOctree<int> _octree;
 
@@ -34,7 +35,7 @@ namespace Utilities.Math.Tests
         public async void ApplyArray()
         {
             ThreedimensionalNativeArray<int> sinArray = GenerateSineArray(Vector3Int.one * 16, 2, 1, 0);
-            await _octree.SetDataFromArray(sinArray);
+            await _octree.SetDataFromArray(sinArray, delayInMilliseconds: _applyArrayDelay);
             sinArray.Dispose();
         }
 

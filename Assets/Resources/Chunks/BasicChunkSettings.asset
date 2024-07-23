@@ -12,7 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 18e9a680b8b22bb4fa81a8a8367bcdef, type: 3}
   m_Name: BasicChunkSettings
   m_EditorClassIdentifier: 
-  _width: 16
-  _height: 16
-  _depth: 16
+  _chunkSizeInCubes: {x: 15, y: 15, z: 15}
   _scale: 0.25

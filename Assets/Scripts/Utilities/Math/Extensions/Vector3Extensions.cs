@@ -1,7 +1,9 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 
 namespace Utilities.Math.Extensions
 {
+
     public static class Vector3Extensions
     {
         public static Vector3 GetElementwiseDividedVector(this Vector3 numerator, Vector3 denominator)

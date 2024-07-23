@@ -167,10 +167,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1b7f5de1a70bcbb408f964d1896e3a5f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _pointerPosition: {x: 0, y: 0, z: 0}
+  _pointerPosition: {x: 1, y: 1, z: 1}
   _pointerRank: 0
   _pointerValue: 1
-  _applyTrigger: 0
   _scale: 1
 --- !u!1 &1275063059
 GameObject:

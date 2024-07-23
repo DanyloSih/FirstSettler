@@ -5,9 +5,9 @@ using System;
 namespace Utilities.Math
 {
     [StructLayout(LayoutKind.Explicit)]
-    public struct SubnodesContainer
+    public struct Int32List16<T>
     {
-        public const int CAPACITY = 8;
+        public const int CAPACITY = 16;
 
         [FieldOffset(0)]
         private int _length;
@@ -21,7 +21,7 @@ namespace Utilities.Math
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                unsafe 
+                unsafe
                 {
                     fixed (int* ptr = &ArrayStart)
                     {
@@ -42,7 +42,7 @@ namespace Utilities.Math
             }
         }
 
-        public int Length 
+        public int Length
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _length;
@@ -84,12 +84,12 @@ namespace Utilities.Math
                 {
                     int indexValue = *(ptr + index);
                     for (int i = index + 1; i < _length; i++)
-                    {                    
-                         *(ptr + i - 1) = *(ptr + i);
+                    {
+                        *(ptr + i - 1) = *(ptr + i);
                     }
                     *(ptr + _length - 1) = indexValue;
                 }
-            }    
+            }
             _length--;
         }
 
@@ -120,7 +120,7 @@ namespace Utilities.Math
                 throw new IndexOutOfRangeException();
             }
 
-            UnsafeRemoveAt(index);  
+            UnsafeRemoveAt(index);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -143,7 +143,7 @@ namespace Utilities.Math
                         fixed (int* ptr = &ArrayStart)
                         {
                             int firstHash = *(ptr);
-                            long hashSum 
+                            long hashSum
                                 = firstHash
                                 + *(ptr + 1)
                                 + *(ptr + 2)
@@ -165,7 +165,7 @@ namespace Utilities.Math
         {
             unsafe
             {
-                fixed (int* ptr = &ArrayStart)               
+                fixed (int* ptr = &ArrayStart)
                 {
                     for (int i = 0; i < _length; i++)
                     {

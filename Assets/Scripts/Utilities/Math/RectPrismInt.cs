@@ -6,6 +6,8 @@ namespace Utilities.Math
 {
     public struct RectPrismInt : IShapeInt
     {
+        public const int TYPE_SIZE = sizeof(int) * 9;
+
         public readonly Vector3Int Size;
         public readonly Vector3Int HalfSize;
         public readonly int Width;
@@ -52,7 +54,19 @@ namespace Utilities.Math
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsSurfacePoint(Vector3Int point)
         {
-            return (point.x % Size.x == 0 | point.y % Size.y == 0 | point.z % Size.z == 0);
+            return IsMinSurfacePoint(point) | IsMaxSurfacePoint(point);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool IsMaxSurfacePoint(Vector3Int point)
+        {
+            return point.x == Size.x - 1 | point.y == Size.y - 1 | point.z == Size.z - 1;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool IsMinSurfacePoint(Vector3Int point)
+        {
+            return point.x == 0 | point.y == 0 | point.z == 0;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

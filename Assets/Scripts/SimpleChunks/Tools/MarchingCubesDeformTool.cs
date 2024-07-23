@@ -67,18 +67,18 @@ namespace SimpleChunks.Tools
             }
         }
 
-        private async Task ThrowRayAndDeform(float newVolume)
+        private Task ThrowRayAndDeform(float newVolume)
         {
             if (_marchingCubesChunksEditor.IsAlreadyEditingChunks())
             {
-                return;
+                return Task.CompletedTask;
             }
 
             ChunkRaycastingResult chunkRaycastResult = _raycastPointerToChunk.ThrowRaycast();
 
             if (!chunkRaycastResult.IsChunkHit)
             {
-                return;
+                return Task.CompletedTask;
             }
 
             TaskCompletionSource<bool> taskCompletionSource = new TaskCompletionSource<bool>();
@@ -89,6 +89,8 @@ namespace SimpleChunks.Tools
 
                 return taskCompletionSource;
             });
+
+            return Task.CompletedTask;
         }
 
         private async void Deform(
@@ -99,7 +101,6 @@ namespace SimpleChunks.Tools
             TaskCompletionSource<bool> taskCompletionSource,
             CancellationToken? cancellationToken = null)
         {
-            
             try
             {
                 Vector3Int chunkSize = _basicChunkSettings.SizeInCubes;
@@ -124,15 +125,13 @@ namespace SimpleChunks.Tools
                 ShapeIntArea<RectPrismInt> editingArea = new ShapeIntArea<RectPrismInt>(
                     editingPrism, unscaledGlobalDataPoint - editingPrism.HalfSize);
 
-                NativeList<ChunkPointWithData> chunkPoints = new(editingPrism.Volume, Allocator.Persistent);
-
                 NativeParallelHashMap<long, UnsafeNativeArray<VoxelData>> chunksRawDataInsideEditArea
                     = ChunksMath.GetChunksDataPointersInsideArea(
                         editingArea, chunkSize, _chunksContainer, out NativeList<Vector3Int> affectedPositions);
 
-                DeformMaskJob deformMaskJob = new DeformMaskJob();
+                SphericalDeformMaskJob deformMaskJob = new SphericalDeformMaskJob();
                 deformMaskJob.DeformFactor = deformFactor;
-                deformMaskJob.ChunkVoxelsRect = new RectPrismInt(chunkSize + Vector3Int.one);
+                deformMaskJob.ChunkVoxelsPrism = new RectPrismInt(chunkSize + Vector3Int.one);
                 deformMaskJob.ChunksDataPointersInsideEditArea = chunks;
                 deformMaskJob.ChunkSizeInCubes = chunkSize;
                 deformMaskJob.EditingPrism = editingPrism;
@@ -141,21 +140,22 @@ namespace SimpleChunks.Tools
                 deformMaskJob.Offset = offset;
                 deformMaskJob.Surface = _generationAlgorithmInfo.SurfaceFactor;
                 deformMaskJob.UnscaledGlobalDataPoint = unscaledGlobalDataPoint;
-                deformMaskJob.ChunkPoints = chunkPoints.AsParallelWriter();
 
-                JobHandle deformMaskJobHandler = deformMaskJob.Schedule(editingArea.Shape.Volume, 32);
+                //JobHandle deformMaskJobHandler = deformMaskJob.Schedule(editingArea.Shape.Volume, 32);
+                JobHandle deformMaskJobHandler = deformMaskJob.RunSequential(editingArea.Shape.Volume);
+
                 var result = await AsyncUtilities.WaitWhile(() => !deformMaskJobHandler.IsCompleted, 1, cancellationToken);
                 if (!result.IsWaitedSuccessfully)
                 {
                     taskCompletionSource.SetCanceled();
                     return;
                 }
+                deformMaskJobHandler.Complete();
 
                 await _marchingCubesChunksEditor.UpdateMeshes(
                     affectedPositions.AsArray(), chunksRawDataInsideEditArea.AsReadOnly(), cancellationToken);
 
                 affectedPositions.Dispose();
-                chunkPoints.Dispose();
                 chunksRawDataInsideEditArea.Dispose();
 
                 taskCompletionSource.SetResult(true);

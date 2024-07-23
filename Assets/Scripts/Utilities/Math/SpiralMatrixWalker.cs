@@ -4,6 +4,7 @@ using System.Linq;
 
 namespace Utilities.Math
 {
+
     public struct SpiralMatrixWalker : IMatrixWalker
     {
         public IEnumerable<Vector3Int> WalkMatrix(Vector3Int size)

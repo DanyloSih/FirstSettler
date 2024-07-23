@@ -17,7 +17,7 @@ namespace Utilities.Math
         private readonly int _volume;
         private bool _isInitialized;
         private NativeHashMap<int, OctreeNode<T>> _dataMap;
-        private NativeHashMap<int, SubnodesContainer> _subnodesMap;
+        private NativeHashMap<int, Int32List8> _subnodesMap;
 
         /// <summary>
         /// Determines how many "elementary subnodes" (node with rank 0) can fit inside this node.
@@ -55,7 +55,7 @@ namespace Utilities.Math
             _size = 1 << _maxRank;
             _volume = _size * _size * _size;
             _dataMap = new NativeHashMap<int, OctreeNode<T>>(_volume, Allocator.Persistent);
-            _subnodesMap = new NativeHashMap<int, SubnodesContainer>(_volume, Allocator.Persistent);
+            _subnodesMap = new NativeHashMap<int, Int32List8>(_volume, Allocator.Persistent);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -126,7 +126,8 @@ namespace Utilities.Math
         public async Task SetDataFromArray(
             ThreedimensionalNativeArray<T> array, 
             Vector3Int arrayOffset = new Vector3Int(), 
-            Vector3Int? size = null)
+            Vector3Int? size = null,
+            int delayInMilliseconds = 0)
         {
             Vector3Int realSize = size == null ? array.Size : (Vector3Int)size;
             realSize += arrayOffset;
@@ -139,7 +140,11 @@ namespace Utilities.Math
                     {
                         T value = array.GetValue(x, y, z);
                         SetData(value, 0, new Vector3Int(x, y, z));
-                        await Task.Delay(5);
+
+                        if (delayInMilliseconds > 0)
+                        {
+                            await Task.Delay(delayInMilliseconds);
+                        }
                     }
                 }
             }
@@ -148,11 +153,11 @@ namespace Utilities.Math
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void RemoveSubnodesRecursively(int subnodesKeeperHash)
         {
-            SubnodesContainer subnodes = _subnodesMap[subnodesKeeperHash];
+            Int32List8 subnodes = _subnodesMap[subnodesKeeperHash];
             unsafe
             {
                 int* ptr = &subnodes.ArrayStart;
-                for (int i = 0; i < SubnodesContainer.CAPACITY; i++)
+                for (int i = 0; i < Int32List8.CAPACITY; i++)
                 {
                     int nextHash = *(ptr + i);
                     if (_subnodesMap.ContainsKey(nextHash))
@@ -181,7 +186,7 @@ namespace Utilities.Math
             int parentHash = GetNodeHash(parentRank, parentRoundedPosition);
 
             InitializeSubnodes(parentHash);
-            SubnodesContainer container = _subnodesMap[parentHash];
+            Int32List8 container = _subnodesMap[parentHash];
             if (IsAllDataInContainerEqual(ref container))
             {
                 T data = container.Length < 1 ? defaultData : _dataMap[container.UnsafeGetValueAt(0)].Data;
@@ -202,7 +207,7 @@ namespace Utilities.Math
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool IsAllDataInContainerEqual(ref SubnodesContainer container)
+        private bool IsAllDataInContainerEqual(ref Int32List8 container)
         {
             if (container.Length < 1)
             {
@@ -210,7 +215,7 @@ namespace Utilities.Math
             }
             else
             {
-                if (container.Length != SubnodesContainer.CAPACITY)
+                if (container.Length != Int32List8.CAPACITY)
                 {
                     return false;
                 }
@@ -253,7 +258,7 @@ namespace Utilities.Math
                 Vector3Int pos = RoundVectorToRank(rank + 1, childNode.Position);
                 int parentHash = GetNodeHash(rank + 1, pos);
                 InitializeSubnodes(parentHash);
-                SubnodesContainer subnodes = _subnodesMap[parentHash];
+                Int32List8 subnodes = _subnodesMap[parentHash];
                 if (subnodes.Length > 0)
                 {
                     continue;
@@ -280,7 +285,7 @@ namespace Utilities.Math
             int parentRank = rank + 1;
             int parentRankHash = GetNodeHash(parentRank, RoundVectorToRank(parentRank, position));
             InitializeSubnodes(parentRankHash);
-            SubnodesContainer subnodes = _subnodesMap[parentRankHash];
+            Int32List8 subnodes = _subnodesMap[parentRankHash];
             subnodes.RemoveByValue(nodeHash);
             _subnodesMap[parentRankHash] = subnodes;
         }
@@ -293,7 +298,7 @@ namespace Utilities.Math
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void AddNode(T data, int rank, Vector3Int roundedPosition, ref SubnodesContainer parentSubnodesContainer)
+        private void AddNode(T data, int rank, Vector3Int roundedPosition, ref Int32List8 parentSubnodesContainer)
         {
             int newNodeHash = GetNodeHash(rank, roundedPosition);
             if (_dataMap.ContainsKey(newNodeHash))
@@ -316,10 +321,12 @@ namespace Utilities.Math
             int parentHash = GetNodeHash(parentRank, RoundVectorToRank(parentRank, newNode.Position));
             _dataMap.Add(newNodeHash, newNode);
             InitializeSubnodes(parentHash);
-            SubnodesContainer subnodes = _subnodesMap[parentHash];
+            Int32List8 subnodes = _subnodesMap[parentHash];
             subnodes.AddValue(newNodeHash);
             _subnodesMap[parentHash] = subnodes;
         }
+
+
 
         private OctreeNode<T> FindRootNode(int rank, Vector3Int position, out int rootNodeHash)
         {
@@ -342,7 +349,7 @@ namespace Utilities.Math
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void RemoveSubnodes(ref SubnodesContainer container)
+        private void RemoveSubnodes(ref Int32List8 container)
         {
             unsafe
             {
@@ -362,7 +369,7 @@ namespace Utilities.Math
         {
             if (!_subnodesMap.ContainsKey(subnodesKeeperHash))
             {
-                _subnodesMap.Add(subnodesKeeperHash, new SubnodesContainer());
+                _subnodesMap.Add(subnodesKeeperHash, new Int32List8());
             }
         }
 
