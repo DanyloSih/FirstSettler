@@ -24,35 +24,35 @@ namespace SimpleChunks.Tools
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static NativeParallelHashMap<long, UnsafeNativeArray<VoxelData>> GetChunksDataPointersInsideArea(
             ShapeIntArea<RectPrismInt> area, 
-            Vector3Int chunksSize,
+            Vector3Int chunksSizeInCubes,
             ChunksContainer chunksContainer, 
             out NativeList<Vector3Int> affectedPositions)
         {
             affectedPositions = new NativeList<Vector3Int>(Allocator.Persistent);
-            Vector3Int affectedAreaSize = area.Shape.Size;
-            int maxXChunks = affectedAreaSize.x / chunksSize.x + 1;
-            int maxYChunks = affectedAreaSize.y / chunksSize.y + 1;
-            int maxZChunks = affectedAreaSize.z / chunksSize.z + 1;
-            int maxAffectedChunksCount = maxXChunks * maxYChunks * maxZChunks;
 
             Vector3Int min = area.Anchor;
             Vector3Int max = area.Anchor + area.Shape.Size;
 
             NativeParallelHashMap<long, UnsafeNativeArray<VoxelData>> pointers
-                = new (maxAffectedChunksCount, Allocator.Persistent);
+                = new (8, Allocator.Persistent);
 
-            for (int y = Mathf.FloorToInt((float)min.y / chunksSize.y) * chunksSize.y; y < max.y; y += chunksSize.y)
+            Vector3Int neighboringFactor = new Vector3Int(
+                (min.x % chunksSizeInCubes.x == 0 ? 1 : 0) * -chunksSizeInCubes.x,
+                (min.y % chunksSizeInCubes.y == 0 ? 1 : 0) * -chunksSizeInCubes.y,
+                (min.z % chunksSizeInCubes.z == 0 ? 1 : 0) * -chunksSizeInCubes.z); 
+
+            for (int y = Mathf.FloorToInt((float)min.y / chunksSizeInCubes.y) * chunksSizeInCubes.y + neighboringFactor.y; y < max.y; y += chunksSizeInCubes.y)
             {
-                for (int x = Mathf.FloorToInt((float)min.x / chunksSize.x) * chunksSize.x; x < max.x; x += chunksSize.x)
+                for (int x = Mathf.FloorToInt((float)min.x / chunksSizeInCubes.x) * chunksSizeInCubes.x + neighboringFactor.x; x < max.x; x += chunksSizeInCubes.x)
                 {
-                    for (int z = Mathf.FloorToInt((float)min.z / chunksSize.z) * chunksSize.z; z < max.z; z += chunksSize.z)
+                    for (int z = Mathf.FloorToInt((float)min.z / chunksSizeInCubes.z) * chunksSizeInCubes.z + neighboringFactor.z; z < max.z; z += chunksSizeInCubes.z)
                     {
-                        int localChunkX = x / chunksSize.x;
-                        int localChunkY = y / chunksSize.y;
-                        int localChunkZ = z / chunksSize.z;
+                        int localChunkX = x / chunksSizeInCubes.x;
+                        int localChunkY = y / chunksSizeInCubes.y;
+                        int localChunkZ = z / chunksSizeInCubes.z;
                         long positionHash = PositionLongHasher.GetHashFromPosition(localChunkX, localChunkY, localChunkZ);
                         chunksContainer.TryGetValue(positionHash, out var chunk);
-
+                        
                         if (chunk == null)
                         {
                             continue;

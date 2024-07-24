@@ -141,8 +141,8 @@ namespace SimpleChunks.Tools
                 deformMaskJob.Surface = _generationAlgorithmInfo.SurfaceFactor;
                 deformMaskJob.UnscaledGlobalDataPoint = unscaledGlobalDataPoint;
 
-                //JobHandle deformMaskJobHandler = deformMaskJob.Schedule(editingArea.Shape.Volume, 32);
-                JobHandle deformMaskJobHandler = deformMaskJob.RunSequential(editingArea.Shape.Volume);
+                JobHandle deformMaskJobHandler = deformMaskJob.Schedule(editingArea.Shape.Volume, 32);
+                //JobHandle deformMaskJobHandler = deformMaskJob.RunSequential(editingArea.Shape.Volume);
 
                 var result = await AsyncUtilities.WaitWhile(() => !deformMaskJobHandler.IsCompleted, 1, cancellationToken);
                 if (!result.IsWaitedSuccessfully)
@@ -154,6 +154,8 @@ namespace SimpleChunks.Tools
 
                 await _marchingCubesChunksEditor.UpdateMeshes(
                     affectedPositions.AsArray(), chunksRawDataInsideEditArea.AsReadOnly(), cancellationToken);
+
+                UnityEngine.Debug.Log($"Edit area chunks count: {chunksRawDataInsideEditArea.Count()}");
 
                 affectedPositions.Dispose();
                 chunksRawDataInsideEditArea.Dispose();
