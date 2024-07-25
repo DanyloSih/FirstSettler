@@ -5,7 +5,7 @@ using UnityEngine;
 namespace Utilities.Math
 {
     public struct CopyArrayPartJob<T> : IJobParallelFor
-        where T : struct
+        where T : unmanaged
     {
         [ReadOnly]
         private ThreedimensionalNativeArray<T> _donor;

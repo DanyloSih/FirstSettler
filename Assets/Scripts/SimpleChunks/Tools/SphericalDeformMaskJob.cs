@@ -27,7 +27,7 @@ namespace SimpleChunks.Tools
             float unscaledDistance = Vector3Int.Distance(new Vector3Int(HalfBrushSize, HalfBrushSize, HalfBrushSize) + Offset, pointerInArea);
             float deformForce = 1f - (unscaledDistance / HalfBrushSize);
 
-            //if (unscaledDistance < HalfBrushSize)
+            if (unscaledDistance < HalfBrushSize)
             {
                 ChunkPoint chunkPoint = ChunksMath.GetChunkPoint(UnscaledGlobalDataPoint + pointerInArea, ChunkSizeInCubes);
                 SurfaceVoxelVariantsContainer voxelsContainer = new (chunkPoint, ChunkVoxelsPrism);
@@ -51,8 +51,7 @@ namespace SimpleChunks.Tools
                     return;
                 }
 
-                //data.Volume = Mathf.Clamp01(data.Volume + DeformFactor * deformForce);
-                data.Volume = 0;
+                data.Volume = Mathf.Clamp01(data.Volume + DeformFactor * deformForce);
 
                 for (int i = 0; i < voxelsContainer.Length; i++)
                 {

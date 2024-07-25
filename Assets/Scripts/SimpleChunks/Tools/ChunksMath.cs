@@ -61,7 +61,7 @@ namespace SimpleChunks.Tools
                         unsafe
                         {
                             affectedPositions.Add(new Vector3Int(localChunkX, localChunkY, localChunkZ));
-                            pointers.Add(positionHash, new UnsafeNativeArray<VoxelData>(chunk.ChunkData.RawData));
+                            pointers.Add(positionHash, new UnsafeNativeArray<VoxelData>(chunk.ChunkData.RawData, Allocator.Persistent));
                         };
                     }
                 }

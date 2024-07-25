@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using SimpleChunks.DataGeneration;
 using Unity.Collections;
 using UnityEngine;
-using Utilities.Jobs;
+using Utilities.Math;
 
 namespace SimpleChunks.MeshGeneration
 {

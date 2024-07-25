@@ -13,16 +13,19 @@ namespace SimpleChunks.MeshGeneration
         public int VerticesCount;
         public int IndicesCount;
 
+        private NativeList<int> _sortedIndicesList;
+
         public MeshData(
             NativeArray<Vector3> vertices,
-            NativeArray<int> sortedIndices,
+            NativeList<int> sortedIndices,
             NativeList<SubmeshInfo> submeshesInfo,
             bool isPhysicallyCorrect,
             int verticesCount,
             int indicesCount)
         {
             Vertices = vertices;
-            SortedIndices = sortedIndices;
+            _sortedIndicesList = sortedIndices;
+            SortedIndices = sortedIndices.AsArray();
             SubmeshesInfo = submeshesInfo;
             IsPhysicallyCorrect = isPhysicallyCorrect;
             VerticesCount = verticesCount;
@@ -33,6 +36,7 @@ namespace SimpleChunks.MeshGeneration
         {
             Vertices.Dispose();
             SortedIndices.Dispose();
+            _sortedIndicesList.Dispose();
             SubmeshesInfo.Dispose();
         }
     }

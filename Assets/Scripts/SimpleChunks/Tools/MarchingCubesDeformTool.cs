@@ -155,8 +155,6 @@ namespace SimpleChunks.Tools
                 await _marchingCubesChunksEditor.UpdateMeshes(
                     affectedPositions.AsArray(), chunksRawDataInsideEditArea.AsReadOnly(), cancellationToken);
 
-                UnityEngine.Debug.Log($"Edit area chunks count: {chunksRawDataInsideEditArea.Count()}");
-
                 affectedPositions.Dispose();
                 chunksRawDataInsideEditArea.Dispose();
 

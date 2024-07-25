@@ -7,6 +7,7 @@ using Unity.Collections;
 using Unity.Jobs;
 using UnityEngine;
 using UnityEngine.Rendering;
+using Utilities.Common;
 using Utilities.Jobs;
 using Utilities.Math;
 using Utilities.Shaders;
@@ -37,7 +38,8 @@ namespace SimpleChunks.MeshGeneration
             _chunkSizePrismsBufferManager = new ComputeBufferManager(
                 (count) => BuffersFactory.CreateCompute(count, typeof(RectPrismInt)));
 
-            var chunkSizePrismsBuffer = _chunkSizePrismsBufferManager.GetObjectInstance(
+            // Initialize buffer from _chunkSizePrismsBufferManager
+            ComputeBuffer chunkSizePrismsBuffer = _chunkSizePrismsBufferManager.GetObjectInstance(
                 _chunkSizePrismsProvider.PrismsArray.Length);
             chunkSizePrismsBuffer.SetData(_chunkSizePrismsProvider.PrismsArray);
 
@@ -57,15 +59,20 @@ namespace SimpleChunks.MeshGeneration
                 (count) => new(count, Allocator.Persistent, NativeArrayOptions.UninitializedMemory));
         }
 
-        protected void OnDestroy()
+        protected async void OnDestroy()
         {
-            _chunkSizePrismsBufferManager.Dispose();
-            _chunksDataBufferManager.Dispose();
-            _verticesBufferManager.Dispose();
-            _verticesInfoBufferManager.Dispose();
+            List<Task> tasks = new List<Task>()
+            {
+                _chunkSizePrismsBufferManager.WaitForDisposing(),
+                _chunksDataBufferManager.WaitForDisposing(),
+                _verticesBufferManager.WaitForDisposing(),
+                _verticesInfoBufferManager.WaitForDisposing(),
 
-            _verticesArrayManager.Dispose();
-            _verticesInfoArrayManager.Dispose();
+                _verticesArrayManager.WaitForDisposing(),
+                _verticesInfoArrayManager.WaitForDisposing()
+            };    
+
+            await Task.WhenAll(tasks);
         }
         
         protected override async Task<MeshData[]> OnGenerateMeshDataForChunks(
@@ -73,6 +80,11 @@ namespace SimpleChunks.MeshGeneration
             NativeParallelHashMap<long, UnsafeNativeArray<VoxelData>>.ReadOnly chunksData,
             CancellationToken? cancellationToken = null)
         {
+            if (cancellationToken.IsCanceled())
+            {
+                return new MeshData[0];
+            }
+
             CheckIsGenerating();
 
             int chunksDataCount = positions.Length;
@@ -83,6 +95,10 @@ namespace SimpleChunks.MeshGeneration
             }
 
             RawMeshData rawMeshData = await GenerateMeshData(positions, chunksData, cancellationToken);
+            if (cancellationToken.IsCanceled())
+            {
+                return new MeshData[0];
+            }
 
             int maxVerticesPerChunk = _chunkSizePrismsProvider.CubesPrism.Volume
                 * _generationAlgorithmInfo.MaxVerticesPerMarch;
@@ -118,6 +134,7 @@ namespace SimpleChunks.MeshGeneration
                 fixJob.OutputSubmeshInfos = new NativeList<SubmeshInfo>(5, Allocator.Persistent);
 
                 jobs[i] = fixJob;
+
                 jobHandles[i] = fixJob.Schedule();
             }
 
@@ -128,23 +145,33 @@ namespace SimpleChunks.MeshGeneration
                 handle.Complete();
             }
 
+            MeshData[] result = new MeshData[0];
+
             if (cancellationToken.IsCanceled())
             {
-                return new MeshData[0];
+                for (int i = 0; i < chunksDataCount; i++)
+                {
+                    GPUMeshDataFixJob job = jobs[i];
+                    job.OutputVertices.Dispose();
+                    job.OutputIndices.Dispose();
+                    job.OutputSubmeshInfos.Dispose();
+                }
             }
-
-            MeshData[] result = new MeshData[chunksDataCount];
-
-            for (int i = 0; i < chunksDataCount; i++)
+            else
             {
-                GPUMeshDataFixJob job = jobs[i];
-                result[i] = new MeshData(
-                    job.OutputVertices, 
-                    job.OutputIndices.AsArray(), 
-                    job.OutputSubmeshInfos,
-                    jobsOutput[i][0].IsPhysicallyCorrect,
-                    jobsOutput[i][0].VerticesCount,
-                    jobsOutput[i][0].VerticesCount);
+                result = new MeshData[chunksDataCount];
+
+                for (int i = 0; i < chunksDataCount; i++)
+                {
+                    GPUMeshDataFixJob job = jobs[i];
+                    result[i] = new MeshData(
+                        job.OutputVertices,
+                        job.OutputIndices,
+                        job.OutputSubmeshInfos,
+                        jobsOutput[i][0].IsPhysicallyCorrect,
+                        jobsOutput[i][0].VerticesCount,
+                        jobsOutput[i][0].VerticesCount);
+                }
             }
 
             jobs.Dispose();
@@ -176,6 +203,11 @@ namespace SimpleChunks.MeshGeneration
             NativeParallelHashMap<long, UnsafeNativeArray<VoxelData>>.ReadOnly chunksData,
             CancellationToken? cancellationToken = null)
         {
+            if (cancellationToken.IsCanceled())
+            {
+                return new RawMeshData();
+            }
+
             int chunksCount = positions.Length;
 
             int voxelsCount = _chunkSizePrismsProvider.VoxelsPrism.Volume * chunksCount;

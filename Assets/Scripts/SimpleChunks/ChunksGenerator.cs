@@ -6,7 +6,7 @@ using SimpleChunks.DataGeneration;
 using SimpleChunks.MeshGeneration;
 using Unity.Collections;
 using UnityEngine;
-using Utilities.Jobs;
+using Utilities.Common;
 using Utilities.Math;
 using Utilities.Threading.Extensions;
 using Zenject;
@@ -20,7 +20,8 @@ namespace SimpleChunks
         private BasicChunkSettings _basicChunkSettings;
         private GameObject _chunkPrefabGO;
         private ChunksContainer _activeChunksContainer;
-        private IChunkDataProvider _chunksDataProvider;           
+        private IChunkDataProvider _chunksDataProvider;
+        private SceneStateProvider _sceneStateProvider;
         private ChunkCoordinatesCalculator _chunkCoordinatesCalculator;
         private DiContainer _diContainer;
         private Vector3Int _chunkSize;
@@ -34,6 +35,7 @@ namespace SimpleChunks
             Transform chunksRoot,
             MeshGenerator meshGenerator,
             ChunksContainer chunksContainer,
+            SceneStateProvider sceneStateProvider,
             IChunkDataProvider chunkDataProvider,
             IChunk chunkPrefab)
         {
@@ -41,6 +43,7 @@ namespace SimpleChunks
             _basicChunkSettings = basicChunkSettings;
             _activeChunksContainer = chunksContainer;
             _chunksDataProvider = chunkDataProvider;
+            _sceneStateProvider = sceneStateProvider;
             _chunksRoot = chunksRoot;
             _meshGenerator = meshGenerator;
 
@@ -60,6 +63,11 @@ namespace SimpleChunks
             int batchLength,
             CancellationToken? cancellationToken = null)
         {
+            if (cancellationToken.IsCanceled())
+            {
+                return;
+            }
+
             NativeArray<Vector3Int> batchArray = new NativeArray<Vector3Int>(
                 batchLength, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
 
@@ -77,15 +85,28 @@ namespace SimpleChunks
                     await GenerateBatch(batchArray, cancellationToken).OnException((ex) => { 
                         Debug.LogException(ex); batchArray.Dispose(); 
                     });
+
+                    if (cancellationToken.IsCanceled())
+                    {
+                        batchArray.Dispose();
+                        return;
+                    }
                 }
             }
 
             if(batchStamp != counter)
             {
-                var subArray = batchArray.GetSubArray(0, counter - batchStamp);
-                await GenerateBatch(subArray).OnException((ex) => {
+                NativeArray<Vector3Int> subArray = batchArray.GetSubArray(0, counter - batchStamp);
+                await GenerateBatch(subArray, cancellationToken).OnException((ex) => {
                     Debug.LogException(ex); batchArray.Dispose();
                 });
+
+                if (cancellationToken.IsCanceled())
+                {
+                    subArray.Dispose();
+                    batchArray.Dispose();
+                    return;
+                }
             }
 
             batchArray.Dispose();
@@ -104,20 +125,31 @@ namespace SimpleChunks
                 = await _chunksDataProvider.GenerateChunksRawData(
                     chunkPositionsArray, cancellationToken);
 
+            if (cancellationToken.IsCanceled())
+            {
+                return;
+            }
+
             InitializeChunks(chunksGameObjects, chunkPositionsArray, chunksData);
 
             MeshData[] chunksMeshData = await _meshGenerator
                 .GenerateMeshDataForChunks(chunkPositionsArray, chunksData.AsReadOnly(), cancellationToken)
                 .OnException(ex => Debug.LogException(ex));
 
-            ApplyChunksMeshData(chunksMeshData, chunksGameObjects);
-
+            if (!cancellationToken.IsCanceled())
+            {
+                ApplyChunksMeshData(chunksMeshData, chunksGameObjects);
+            }       
 
             foreach (var meshData in chunksMeshData)
             {
                 meshData.Dispose();
             }
-            chunksData.Dispose();
+
+            if (chunksData.IsCreated)
+            {
+                chunksData.Dispose();
+            }
         }
 
         private IReadOnlyList<IChunk> CreateChunksGameObject(
@@ -147,7 +179,7 @@ namespace SimpleChunks
 
                 chunks[counter].InitializeBasicData(
                     chunksPositions[counter], 
-                    new (chunkData.RestoreAsArray(), chunkVoxelsSize));
+                    new (chunkData, chunkVoxelsSize));
 
                 if (_activeChunksContainer.IsValueExist(chunksPositions[counter]))
                 {

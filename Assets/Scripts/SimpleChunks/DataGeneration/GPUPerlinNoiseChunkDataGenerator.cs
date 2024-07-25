@@ -5,13 +5,14 @@ using System.Threading.Tasks;
 using Unity.Collections;
 using UnityEngine;
 using UnityEngine.Rendering;
-using Utilities.Jobs;
+using Utilities.Common;
 using Utilities.Math;
 using Utilities.Shaders;
 using Utilities.Shaders.Extensions;
 using Utilities.Threading;
 using Utilities.Threading.Extensions;
 using Zenject;
+using static UnityEngine.Mesh;
 
 namespace SimpleChunks.DataGeneration
 {
@@ -49,9 +50,9 @@ namespace SimpleChunks.DataGeneration
             InitializeBuffers();
         }
 
-        protected void OnDisable()
+        protected async void OnDisable()
         {
-            DisposeVoxelsDataBuffer();
+            await DisposeVoxelsDataBuffer();
             DisposeChunksPositionsBuffer();
 
             _heightHashAssociationsBuffer.Dispose();
@@ -63,10 +64,18 @@ namespace SimpleChunks.DataGeneration
             NativeArray<Vector3Int> generatingChunksLocalPositions,
             CancellationToken? cancellationToken = null)
         {
+            if (cancellationToken.IsCanceled())
+            {
+                return new NativeParallelHashMap<long, UnsafeNativeArray<VoxelData>>();
+            }
+
             if (!enabled)
             {
                 throw new System.InvalidOperationException($"Object with name \"{name}\" disabled!");
             }
+
+            int chunksCount = generatingChunksLocalPositions.Length;
+            NativeParallelHashMap<long, UnsafeNativeArray<VoxelData>> result = new(chunksCount, Allocator.Persistent);
 
             InitializeChunksPositionsBuffer(generatingChunksLocalPositions);
 
@@ -74,7 +83,7 @@ namespace SimpleChunks.DataGeneration
 
             InitializeBuffers();
             
-            int chunksCount = generatingChunksLocalPositions.Length;
+            
             CreateVoxelsDataBuffer(voxelsPrismVolume * chunksCount);
 
             int kernelId = _generationComputeShader.FindKernel("GenerateData");
@@ -99,19 +108,18 @@ namespace SimpleChunks.DataGeneration
 
             await AsyncUtilities.WaitWhile(() => !request.done, 1, cancellationToken);
 
-            NativeParallelHashMap<long, UnsafeNativeArray<VoxelData>> result = new(chunksCount, Allocator.Persistent);
-
             if (cancellationToken.IsCanceled())
             {
-                return result;
+                return new NativeParallelHashMap<long, UnsafeNativeArray<VoxelData>>();
             }
 
             for (int i = 0; i < chunksCount; i++)
             {
                 var subArray = _voxelsArray.GetSubArray(i * voxelsPrismVolume, voxelsPrismVolume);
-                NativeArray<VoxelData> subarray = new(subArray, Allocator.Persistent);
+                Allocator subarrayAllocator = Allocator.Persistent;
+                NativeArray<VoxelData> subarray = new(subArray, subarrayAllocator);
                 long positionHash = PositionLongHasher.GetHashFromPosition(generatingChunksLocalPositions[i]);
-                result.Add(positionHash, new UnsafeNativeArray<VoxelData>(subarray));
+                result.Add(positionHash, new UnsafeNativeArray<VoxelData>(subarray, subarrayAllocator));
             }
 
             return result;
@@ -185,18 +193,21 @@ namespace SimpleChunks.DataGeneration
             _voxelsBufferLength = length;
         }
 
-        private void DisposeVoxelsDataBuffer()
+        private async Task DisposeVoxelsDataBuffer()
         {
+            Task arrayDisposing = null, bufferDisposing = null;
             if (_voxelsBuffer != null)
             {
-                _voxelsBuffer.Dispose();
+                bufferDisposing = _voxelsBuffer.WaitForDisposing();
                 _voxelsBuffer = null;
             }
 
-            if (_voxelsArray != null && _voxelsArray.IsCreated)
+            if(_voxelsArray != null && _voxelsArray.IsCreated)
             {
-                _voxelsArray.Dispose();
+                arrayDisposing = _voxelsArray.WaitForDisposing();
             }
+
+            await Task.WhenAll(arrayDisposing, bufferDisposing);
         }
 
         private void InitializeAssociationsBuffer()

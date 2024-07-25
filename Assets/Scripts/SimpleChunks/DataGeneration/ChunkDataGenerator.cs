@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using Unity.Collections;
 using UnityEngine;
-using Utilities.Jobs;
+using Utilities.Math;
 
 namespace SimpleChunks.DataGeneration
 {

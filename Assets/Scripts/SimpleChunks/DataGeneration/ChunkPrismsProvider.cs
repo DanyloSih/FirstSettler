@@ -1,11 +1,10 @@
 ﻿using System;
 using Unity.Collections;
 using Utilities.Math;
-using Zenject;
 
 namespace SimpleChunks.DataGeneration
 {
-    public struct ChunkPrismsProvider : IInitializable, IDisposable
+    public struct ChunkPrismsProvider : IDisposable
     {
         private NativeArray<RectPrismInt> _chunkSizePrisms;
         private RectPrismInt _chunkVoxelsPrism;
@@ -17,6 +16,7 @@ namespace SimpleChunks.DataGeneration
             _chunkSizePrisms = new NativeArray<RectPrismInt>();
             _chunkCubesPrism = new RectPrismInt(basicChunkSettings.SizeInCubes);
             _chunkVoxelsPrism = new RectPrismInt(basicChunkSettings.SizeInVoxels);
+            Initialize();
         }
 
         /// <summary>
@@ -26,19 +26,19 @@ namespace SimpleChunks.DataGeneration
         public NativeArray<RectPrismInt> PrismsArray 
         { 
             get
-            {
-                if (!_chunkSizePrisms.IsCreated)
-                {
-                    Initialize(); 
-                }
-                
+            {               
                 return _chunkSizePrisms;
             }
         }
         public RectPrismInt CubesPrism => _chunkCubesPrism;
         public RectPrismInt VoxelsPrism => _chunkVoxelsPrism;
 
-        public void Initialize()
+        public void Dispose()
+        {
+            _chunkSizePrisms.Dispose();
+        }
+
+        private void Initialize()
         {
             _chunkSizePrisms = new NativeArray<RectPrismInt>(
                 2, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
@@ -46,10 +46,5 @@ namespace SimpleChunks.DataGeneration
             _chunkSizePrisms[0] = _chunkCubesPrism;
             _chunkSizePrisms[1] = _chunkVoxelsPrism;
         }
-
-        public void Dispose()
-        {
-            _chunkSizePrisms.Dispose();
-        }  
     }
 }

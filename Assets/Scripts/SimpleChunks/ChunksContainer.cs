@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using SimpleChunks.DataGeneration;
+using Unity.Collections;
 using Utilities.Jobs;
 using Utilities.Math;
 using Zenject;
@@ -38,7 +39,7 @@ namespace SimpleChunks
         public void AddValue(int x, int y, int z, IChunk chunk)
         {
             long hash = PositionLongHasher.GetHashFromPosition(x, y, z);
-            _nativeParallelHashMapManager.Add(hash, new UnsafeNativeArray<VoxelData>(chunk.ChunkData.RawData));
+            _nativeParallelHashMapManager.Add(hash, new UnsafeNativeArray<VoxelData>(chunk.ChunkData.RawData, Allocator.Persistent));
             _chunks.Add(hash, chunk);
         }
 

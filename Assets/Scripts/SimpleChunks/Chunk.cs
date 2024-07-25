@@ -5,6 +5,7 @@ using Zenject;
 using Utilities.Math;
 using SimpleChunks.DataGeneration;
 using SimpleChunks.MeshGeneration;
+using Utilities.Common;
 
 namespace SimpleChunks
 {
@@ -34,7 +35,12 @@ namespace SimpleChunks
         public Vector3Int LocalPosition { get => _localPosition; }
         public GameObject RootGameObject { get => gameObject; }
         public ThreedimensionalNativeArray<VoxelData> ChunkData { get => _chunkData; }
-      
+
+        public void OnDestroy()
+        {
+            _chunkData.Dispose();
+        }
+
         public void InitializeBasicData(
             Vector3Int chunkLocalPosition,
             ThreedimensionalNativeArray<VoxelData> chunkData)
@@ -133,17 +139,24 @@ namespace SimpleChunks
 
         private void InitializeNames(Vector3Int chunkPosition)
         {
-            name = string.Format(
-                _chunkNameFormat,
-                chunkPosition.x.ToString(),
-                chunkPosition.y.ToString(),
-                chunkPosition.z.ToString());
+            try
+            {
+                name = string.Format(
+                    _chunkNameFormat,
+                    chunkPosition.x.ToString(),
+                    chunkPosition.y.ToString(),
+                    chunkPosition.z.ToString());
 
-            _meshName = string.Format(
-                _meshNameFormat,
-                chunkPosition.x.ToString(),
-                chunkPosition.y.ToString(),
-                chunkPosition.z.ToString());
+                _meshName = string.Format(
+                    _meshNameFormat,
+                    chunkPosition.x.ToString(),
+                    chunkPosition.y.ToString(),
+                    chunkPosition.z.ToString());
+            }
+            catch
+            {
+                return;
+            }
         }
 
         private Bounds CalculateBounds()

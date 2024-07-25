@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 using Utilities.Math;
@@ -53,7 +54,8 @@ namespace SimpleChunks
             UpdateChunksVisibleArea(Vector3Int.FloorToInt(globalChunkPosition));
         }
 
-        private async Task RegenerateArea(IEnumerable<Vector3Int> generateArea, IEnumerable<Vector3Int> disposeArea)
+        private async Task RegenerateArea(
+            IEnumerable<Vector3Int> generateArea, IEnumerable<Vector3Int> disposeArea, CancellationToken? cancellationToken = null)
         {
             if (disposeArea != null)
             {
@@ -61,7 +63,7 @@ namespace SimpleChunks
                     disposeArea, _chunksDisposingParams, GenerationCancellationToken));
             }
 
-            _regenerateTasks.Add(_chunksGenerator.GenerateChunks(generateArea, _chunksBatchLength));
+            _regenerateTasks.Add(_chunksGenerator.GenerateChunks(generateArea, _chunksBatchLength, cancellationToken));
 
             await Task.WhenAll(_regenerateTasks);
             _regenerateTasks.Clear();
@@ -115,7 +117,7 @@ namespace SimpleChunks
 
             if (_previousViewShape == null)
             {
-                AddTaskFunctionToQueue(() => RegenerateArea(currentViewShape.GetEveryPoint(), null), updatePreviousViewShape);
+                AddTaskFunctionToQueue(() => RegenerateArea(currentViewShape.GetEveryPoint(), null, destroyCancellationToken), updatePreviousViewShape);
             }
             //else
             //{

@@ -7,11 +7,12 @@ using UnityEngine;
 namespace Utilities.Math
 {
     public struct ThreedimensionalNativeArray<T> : IDisposable
-        where T : struct
+        where T : unmanaged
     {
         public NativeArray<T> RawData;
         private int _dataAreaStartIndex;
         private int _dataAreaEndIndex;
+        private UnsafeNativeArray<T> _unsafeRawData;
         private readonly int _width;
         private readonly int _height;
         private readonly int _depth;
@@ -41,12 +42,19 @@ namespace Utilities.Math
            
         }
 
+        public ThreedimensionalNativeArray(UnsafeNativeArray<T> unsafeRawData, Vector3Int size, int startIndex = 0) 
+            : this(unsafeRawData.RestoreAsArray(), size, startIndex)
+        {
+            _unsafeRawData = unsafeRawData;
+        }
+
         /// <param name="rawData"></param>
         /// <param name="size"></param>
         /// <param name="startIndex">Determines from which element in the <paramref name="rawData"/> starts data area
         /// for this object.</param>
         public ThreedimensionalNativeArray(NativeArray<T> rawData, Vector3Int size, int startIndex = 0)
         {
+            _unsafeRawData = new UnsafeNativeArray<T>();
             _width = size.x;
             _height = size.y;
             _depth = size.z;
@@ -147,10 +155,15 @@ namespace Utilities.Math
 
         public void Dispose()
         {
+            if (_unsafeRawData.IsCreated)
+            {
+                _unsafeRawData.Dispose();
+            }
+
             if (RawData.IsCreated)
             {
                 RawData.Dispose();
-            }
+            }  
         }
     }
 }
