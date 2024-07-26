@@ -36,16 +36,23 @@ namespace SimpleChunks.Tools
             NativeParallelHashMap<long, UnsafeNativeArray<VoxelData>> pointers
                 = new (8, Allocator.Persistent);
 
-            Vector3Int neighboringFactor = new Vector3Int(
+            Vector3Int startChunkPosition = new Vector3Int(
+               Mathf.FloorToInt((float)min.x / chunksSizeInCubes.x) * chunksSizeInCubes.x,
+               Mathf.FloorToInt((float)min.y / chunksSizeInCubes.y) * chunksSizeInCubes.y,
+               Mathf.FloorToInt((float)min.z / chunksSizeInCubes.z) * chunksSizeInCubes.z);
+
+            Vector3Int negativeNeighboringFactor = new Vector3Int(
                 (min.x % chunksSizeInCubes.x == 0 ? 1 : 0) * -chunksSizeInCubes.x,
                 (min.y % chunksSizeInCubes.y == 0 ? 1 : 0) * -chunksSizeInCubes.y,
-                (min.z % chunksSizeInCubes.z == 0 ? 1 : 0) * -chunksSizeInCubes.z); 
+                (min.z % chunksSizeInCubes.z == 0 ? 1 : 0) * -chunksSizeInCubes.z);
 
-            for (int y = Mathf.FloorToInt((float)min.y / chunksSizeInCubes.y) * chunksSizeInCubes.y + neighboringFactor.y; y < max.y; y += chunksSizeInCubes.y)
+            startChunkPosition += negativeNeighboringFactor;
+
+            for (int y = startChunkPosition.y; y < max.y; y += chunksSizeInCubes.y)
             {
-                for (int x = Mathf.FloorToInt((float)min.x / chunksSizeInCubes.x) * chunksSizeInCubes.x + neighboringFactor.x; x < max.x; x += chunksSizeInCubes.x)
+                for (int x = startChunkPosition.x; x < max.x; x += chunksSizeInCubes.x)
                 {
-                    for (int z = Mathf.FloorToInt((float)min.z / chunksSizeInCubes.z) * chunksSizeInCubes.z + neighboringFactor.z; z < max.z; z += chunksSizeInCubes.z)
+                    for (int z = startChunkPosition.z; z < max.z; z += chunksSizeInCubes.z)
                     {
                         int localChunkX = x / chunksSizeInCubes.x;
                         int localChunkY = y / chunksSizeInCubes.y;

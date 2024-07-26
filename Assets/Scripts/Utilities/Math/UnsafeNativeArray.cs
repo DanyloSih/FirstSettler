@@ -60,11 +60,10 @@ namespace Utilities.Math
 
         public void Dispose()
         {
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
             UnsafeUtility.FreeTracked(Pointer, Allocator);
+
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
             AtomicSafetyHandle.Release(_safetyHandle);
-#else
-            UnsafeUtility.Free(Pointer, Allocator);
 #endif
             IsCreated = false;
         }

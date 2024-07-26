@@ -13,6 +13,17 @@ float Amplitude;
 float MaxHeight;
 float MinHeight;
 
+float GetHeight(float2 noisePosition)
+{
+    return MinHeight + ClassicNoise(noisePosition / Frequency) * MaxHeight;
+}
+
+float GetVolume(float3 globalVoxelPos)
+{
+    float mainHeight = GetHeight(globalVoxelPos.xz);
+    return clamp((mainHeight - globalVoxelPos.y) * 0.5, 0, 1);
+}
+
 [numthreads(1, 4, 1)]
 void GenerateData (uint3 id : SV_DispatchThreadID)
 {    
@@ -33,20 +44,9 @@ void GenerateData (uint3 id : SV_DispatchThreadID)
     int3 globalVoxelPos = globalChunkPos + localVoxelPos;
     int i = chunkId * chunkVoxelsPrism.Volume + voxelIndex;
      
-    float heightThreshold = MinHeight + ClassicNoise(float2(globalVoxelPos.x, globalVoxelPos.z) / Frequency) * MaxHeight;
-    
-        //, Amplitude, Frequency, Persistence, Octaves) * MaxHeight;
-    
-    //float heightThreshold = sin((float)globalVoxelPos.x / 16) * 8;
-    
     VoxelData voxel;
-    voxel.Volume = 0;
+    voxel.Volume = GetVolume(globalVoxelPos);
     voxel.MaterialHash = GetMaterialKeyHashByHeight(globalVoxelPos.y);
-    
-    if (globalVoxelPos.y < heightThreshold)
-    {
-        voxel.Volume = 1;
-    } 
     
     ChunkData[i] = voxel;
 }

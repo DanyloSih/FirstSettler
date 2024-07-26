@@ -20,6 +20,8 @@ namespace SimpleChunks.MeshGeneration
 {
     public class GPUMarchingCubesMeshGenerator : MeshGenerator, IInitializable
     {
+        private const int MESH_GENERATION_ATTEMPTS = 10;
+
         [Inject] private ChunkPrismsProvider _chunkSizePrismsProvider;
         [Inject] private MaterialKeyAndUnityMaterialAssociations _materialAssociations;
         [Inject] private GenerationAlgorithmInfo _generationAlgorithmInfo;
@@ -93,8 +95,28 @@ namespace SimpleChunks.MeshGeneration
                 throw new ArgumentException($"{nameof(positions)} length " +
                     $"must be equal to {nameof(chunksData)} length.");
             }
+            int attempts = 0;
+            RawMeshData rawMeshData = new RawMeshData();
 
-            RawMeshData rawMeshData = await GenerateMeshData(positions, chunksData, cancellationToken);
+            while (true)
+            {
+                try
+                {
+                    rawMeshData = await GenerateMeshData(positions, chunksData, cancellationToken);
+                    break;
+                }
+                catch (InvalidOperationException)
+                {
+                    attempts++;
+                    Debug.LogWarning($"Can't generate meshData, attempt: {attempts}");
+                    if (attempts >= MESH_GENERATION_ATTEMPTS)
+                    {
+                        throw new InvalidOperationException(
+                            $"Can't generate mesh after {MESH_GENERATION_ATTEMPTS} attempts!");
+                    }
+                }
+            }
+
             if (cancellationToken.IsCanceled())
             {
                 return new MeshData[0];
