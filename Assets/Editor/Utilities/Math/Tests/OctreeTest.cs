@@ -25,17 +25,24 @@ namespace Utilities.Math.Tests
             _octree.Dispose();
         }
 
-        [Button]
         public void SetData()
         {
-            _octree.SetData(_pointerValue, _pointerRank, _pointerPosition);
+            _octree.Insert(OctreeNode<int>.FromGlobalPosition(_pointerValue, _pointerRank, _pointerPosition));
         }
 
-        [Button]
+        public void GetData()
+        {
+            if (_octree.TryGetNodeByGlobalPosition(_pointerPosition, out var node))
+            {
+                Debug.Log($"Data: {node.Data}, Rank: {node.Rank}, RankPosition: {node.RankPosition}");
+            }
+        }
+
         public async void ApplyArray()
         {
             ThreedimensionalNativeArray<int> sinArray = GenerateSineArray(Vector3Int.one * 16, 2, 1, 0);
-            await _octree.SetDataFromArray(sinArray, delayInMilliseconds: _applyArrayDelay);
+            await _octree.SetDataFromArray(
+                sinArray, delayInMilliseconds: _applyArrayDelay, cancellationToken: _octree.DisposingCancellationToken);
             sinArray.Dispose();
         }
 
@@ -58,7 +65,7 @@ namespace Utilities.Math.Tests
                 for (int i = 0; i < nodes.Length; i++)
                 {
                     OctreeNode<int> node = nodes[i];
-                    DrawWireCube(node.Position + position, node.Rank, node.Data % 2 == 0 ? Color.red : Color.green);
+                    DrawWireCube(node.GlobalPosition + position, node.Rank, node.Data % 2 == 0 ? Color.red : Color.green);
                 }
             }
             nodes.Dispose();
@@ -87,7 +94,7 @@ namespace Utilities.Math.Tests
         {
             int dimensionSize = 1 << rank;
             Vector3 size = Vector3.one * (dimensionSize * _scale);
-            Vector3 center = size / 2 + position;
+            Vector3 center = size / 2 + position * _scale;
             Gizmos.color = color;
             Gizmos.DrawWireCube(center, size);
         }

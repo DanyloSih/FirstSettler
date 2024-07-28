@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 using Unity.Collections;
 using UnityEngine;
@@ -7,17 +8,16 @@ using UnityEngine;
 namespace Utilities.Math
 {
     public struct NativeOctree<T> : IDisposable
-        where T : unmanaged
+        where T : unmanaged, IEquatable<T>
     {
-        public const int POSITION_LIMIT = 511;
-        public const int HALF_POSITION_LIMIT = POSITION_LIMIT / 2;
-        private readonly int _maxRank;
-        private readonly OctreeNode<T> _rootNode;
+        private T _defaultData;
+        private readonly byte _maxRank;
         private readonly int _size;
-        private readonly int _volume;
+        private readonly RectPrismInt _nodesLayerRectPrism;
+        private readonly RectPrismInt _octreeRectPrism;
+        private readonly CancellationTokenSource _disposingCancellationSource;
         private bool _isInitialized;
-        private NativeHashMap<int, OctreeNode<T>> _dataMap;
-        private NativeHashMap<int, Int32List8> _subnodesMap;
+        private NativeHashMap<OctreeNode<T>, T> _data;
 
         /// <summary>
         /// Determines how many "elementary subnodes" (node with rank 0) can fit inside this node.
@@ -30,15 +30,10 @@ namespace Utilities.Math
         /// <summary>
         /// <inheritdoc cref="OctreeNode{T}.Rank"/>
         /// </summary>
-        public int MaxRank
+        public byte MaxRank
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _maxRank;
-        }
-        public OctreeNode<T> RootNode
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _rootNode;
         }
         public bool IsInitialized 
         {
@@ -46,30 +41,60 @@ namespace Utilities.Math
             get => _isInitialized; 
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public NativeOctree(T defaultData, OctreeRank maxRank)
+        public CancellationToken DisposingCancellationToken
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _disposingCancellationSource.Token;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public NativeOctree(T defaultData, OctreeRank octreeRank)
+        {
+            _defaultData = defaultData;
+            _maxRank = (byte)octreeRank;
             _isInitialized = true;
-            _maxRank = (int)maxRank;
-            _rootNode = new OctreeNode<T>(defaultData, _maxRank, Vector3Int.zero);
             _size = 1 << _maxRank;
-            _volume = _size * _size * _size;
-            _dataMap = new NativeHashMap<int, OctreeNode<T>>(_volume, Allocator.Persistent);
-            _subnodesMap = new NativeHashMap<int, Int32List8>(_volume, Allocator.Persistent);
+            _nodesLayerRectPrism = new RectPrismInt(new Vector3Int(2, 2, 2));
+            _octreeRectPrism = new RectPrismInt(Vector3Int.one * _size);
+            _disposingCancellationSource = new CancellationTokenSource();
+            _data = new NativeHashMap<OctreeNode<T>, T>(8, Allocator.Persistent) 
+            {
+                { new OctreeNode<T>(defaultData, _maxRank, Vector3Int.zero) , defaultData }
+            };
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Dispose()
         {
+            _disposingCancellationSource.Cancel();
             _isInitialized = false;
-            _dataMap.Dispose();
-            _subnodesMap.Dispose();
+            _data.Dispose();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool TryGetNodeByGlobalPosition(Vector3Int globalNodePosition, out OctreeNode<T> node)
+        {
+            if (!_octreeRectPrism.IsContainsPoint(globalNodePosition))
+            {
+                node = new OctreeNode<T>();
+                return false;
+            }
+
+            var startNode = OctreeNode<T>.FromGlobalPosition(_defaultData, 0, globalNodePosition);
+
+            if (_data.ContainsKey(startNode))
+            {
+                node = new OctreeNode<T>(_data[startNode], startNode.Rank, startNode.RankPosition);
+                return true;
+            }
+
+            return TryFindParentNode(startNode, out node);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public NativeArray<OctreeNode<T>> GetNodes(Allocator allocator)
         {
-            return _dataMap.GetValueArray(allocator);
+            return _data.GetKeyArray(allocator);
         }
 
         /// <param name="rank">Rank of overriding node, min 0 (inclusive), 
@@ -78,48 +103,36 @@ namespace Utilities.Math
         /// <param name="position">Position inside overriding node.</param>
         /// <param name="data">Data of overriding node.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void SetData(T data, int rank, Vector3Int position)
+        public void Insert(OctreeNode<T> newNode)
         {
-            if (rank > _maxRank)
+            if (!_octreeRectPrism.IsContainsPoint(newNode.GlobalPosition))
             {
                 return;
             }
-            position = RoundVectorToRank(rank, position);
-            int parentRank = rank + 1;
-            OctreeNode<T> newNode = new OctreeNode<T>(data, rank, position);
-            int newNodeHash = GetNodeHash(newNode);
 
-            OctreeNode<T> rootNode = FindRootNode(rank + 1, position, out int rootNodeHash);
+            RemoveAllSubnodesInsideNode(newNode);
 
-            if (!_dataMap.ContainsKey(newNodeHash))
+            if (newNode.Rank >= _maxRank)
             {
-                if (rank != _maxRank)
-                {                  
-                    if (_dataMap.ContainsKey(rootNodeHash) && rootNode.Data.GetHashCode() == data.GetHashCode())
-                    {
-                        return;
-                    }
-                    SplitNodesFromRootToChild(rootNode, newNode);
-                }
+                SetNode(new OctreeNode<T>(newNode.Data, _maxRank, Vector3Int.zero));
+                return;
+            }
 
-                AddNode(newNode, newNodeHash);
+            if (TryFindParentNode(newNode, out var parentNode))
+            {
+                if (!parentNode.Data.Equals(newNode.Data))
+                {
+                    _data.Remove(parentNode);
+                    SplitNodes(newNode, parentNode);
+                }
             }
             else
             {
-                OctreeNode<T> previousNode = _dataMap[newNodeHash];
-                if (previousNode.Data.GetHashCode() == newNode.Data.GetHashCode())
+                if (!TryMergeNodes(newNode))
                 {
-                    return;
+                    SetNode(newNode);
                 }
-                _dataMap[newNodeHash] = newNode;
             }
-
-            if (_subnodesMap.ContainsKey(newNodeHash))
-            {
-                RemoveSubnodesRecursively(newNodeHash);
-            }
-
-            CollapseIdenticalData(rootNode.Data, parentRank, position); 
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -127,7 +140,8 @@ namespace Utilities.Math
             ThreedimensionalNativeArray<T> array, 
             Vector3Int arrayOffset = new Vector3Int(), 
             Vector3Int? size = null,
-            int delayInMilliseconds = 0)
+            int delayInMilliseconds = 0,
+            CancellationToken? cancellationToken = null)
         {
             Vector3Int realSize = size == null ? array.Size : (Vector3Int)size;
             realSize += arrayOffset;
@@ -139,7 +153,12 @@ namespace Utilities.Math
                     for (int z = arrayOffset.z; z < realSize.z; z++)
                     {
                         T value = array.GetValue(x, y, z);
-                        SetData(value, 0, new Vector3Int(x, y, z));
+                        if (cancellationToken != null && cancellationToken.Value.IsCancellationRequested)
+                        {
+                            return;
+                        }
+
+                        Insert(new OctreeNode<T>(value, 0, new Vector3Int(x, y, z)));
 
                         if (delayInMilliseconds > 0)
                         {
@@ -150,246 +169,166 @@ namespace Utilities.Math
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void RemoveSubnodesRecursively(int subnodesKeeperHash)
+        private void SetNode(OctreeNode<T> node)
         {
-            Int32List8 subnodes = _subnodesMap[subnodesKeeperHash];
-            unsafe
+            if (_data.ContainsKey(node))
             {
-                int* ptr = &subnodes.ArrayStart;
-                for (int i = 0; i < Int32List8.CAPACITY; i++)
-                {
-                    int nextHash = *(ptr + i);
-                    if (_subnodesMap.ContainsKey(nextHash))
-                    {
-                        RemoveSubnodesRecursively(nextHash);
-                    }
-                }
+                _data[node] = node.Data;
             }
-
-            RemoveSubnodes(ref subnodes);
-            _subnodesMap[subnodesKeeperHash] = subnodes;
-        }
-
-        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
-        //private SubnodesContainer GenerateSubnodes(int rank, Vector3Int position)
-        //{
-        //    Vector3Int roundedPosition = RoundVectorToRank(rank, position);
-            
-
-        //}
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void CollapseIdenticalData(T defaultData, int parentRank, Vector3Int position)
-        {
-            Vector3Int parentRoundedPosition = RoundVectorToRank(parentRank, position);
-            int parentHash = GetNodeHash(parentRank, parentRoundedPosition);
-
-            InitializeSubnodes(parentHash);
-            Int32List8 container = _subnodesMap[parentHash];
-            if (IsAllDataInContainerEqual(ref container))
+            else
             {
-                T data = container.Length < 1 ? defaultData : _dataMap[container.UnsafeGetValueAt(0)].Data;
-                RemoveSubnodes(ref container);
-                _subnodesMap[parentHash] = container;
-                AddNode(new OctreeNode<T>(data, parentRank, parentRoundedPosition), parentHash);
-                if (parentRank >= _maxRank)
-                {
-                    if (_dataMap.ContainsKey(parentHash))
-                    {
-                        RemoveNode(parentHash, parentRank, position);
-                    }
-
-                    return;
-                }
-                CollapseIdenticalData(defaultData, parentRank + 1, position);
+                _data.Add(node, node.Data);
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool IsAllDataInContainerEqual(ref Int32List8 container)
+        private bool TryMergeNodes(OctreeNode<T> newNode)
         {
-            if (container.Length < 1)
+            if (newNode.Rank < 0 || newNode.Rank >= _maxRank)
             {
+                return false;
+            }
+
+            // "Virtual" means it doesn't have to actually exist in _data.
+            int virtualParentRank = newNode.Rank + 1;
+            OctreeNode<T> virtualParent = OctreeNode<T>.FromGlobalPosition(newNode.Data, virtualParentRank, newNode.GlobalPosition);
+
+            OctreeNode<T> firstSubnode = OctreeNode<T>.FromGlobalPosition(newNode.Data, newNode.Rank, virtualParent.GlobalPosition);
+            NativeArray<OctreeNode<T>> subnodes = new NativeArray<OctreeNode<T>>(_nodesLayerRectPrism.Volume, Allocator.Temp);
+
+            bool isMergable = true;
+            for (int i = 0; i < _nodesLayerRectPrism.Volume; i++)
+            {
+                Vector3Int offset = _nodesLayerRectPrism.IndexToPoint(i);
+                OctreeNode<T> currentSubnode = new OctreeNode<T>(firstSubnode.Data, firstSubnode.Rank, firstSubnode.RankPosition + offset);
+
+                if (!currentSubnode.Equals(newNode))
+                {
+                    if (!_data.ContainsKey(currentSubnode) || !_data[currentSubnode].Equals(newNode.Data))
+                    {
+                        isMergable = false;
+                        break;
+                    }
+                }
+
+                subnodes[i] = currentSubnode;
+            }
+
+            if (isMergable)
+            {
+                for (int i = 0; i < subnodes.Length; i++)
+                {
+                    OctreeNode<T> subnode = subnodes[i];
+                    _data.Remove(subnode);
+                }
+                subnodes.Dispose();
+                _data.Add(virtualParent, virtualParent.Data);
+                TryMergeNodes(virtualParent);
                 return true;
             }
             else
             {
-                if (container.Length != Int32List8.CAPACITY)
-                {
-                    return false;
-                }
-
-                unsafe
-                {
-                    fixed(int* ptr = &container.ArrayStart)
-                    {
-                        int firstDataHash = _dataMap[*(ptr)].Data.GetHashCode();
-                        for (int i = 1; i < container.Length; i++)
-                        {
-                            if (firstDataHash != _dataMap[*(ptr + i)].Data.GetHashCode())
-                            {
-                                return false;
-                            }
-                        }
-                    }
-                    return true;
-                }
-            }
+                subnodes.Dispose();
+                return false;
+            }   
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void SplitNodesFromRootToChild(OctreeNode<T> rootNode, OctreeNode<T> childNode)
+        /// <summary>
+        /// Splits <paramref name="parentNode"/> into subnodes up to the .Rank of the <paramref name="newNode"/> and add subnodes to _data. <br/> 
+        /// Does not remove parentNode from _data .
+        /// </summary>
+        private void SplitNodes(OctreeNode<T> newNode, OctreeNode<T> parentNode)
         {
-            if (rootNode.Rank < childNode.Rank)
+            int currentRank = parentNode.Rank - 1;
+
+            if(currentRank < newNode.Rank)
             {
                 return;
             }
 
-            T rootData = rootNode.Data;
-            int rootHash = GetNodeHash(rootNode);
-            if (_dataMap.ContainsKey(rootHash))
-            {
-                RemoveNode(rootHash, rootNode.Rank, rootNode.Position);
-            }
+            OctreeNode<T> firstSubnode = OctreeNode<T>.FromGlobalPosition(parentNode.Data, currentRank, parentNode.GlobalPosition);
 
-            for (int rank = rootNode.Rank - 1; rank >= childNode.Rank; rank--)
+            for (int i = 0; i < _nodesLayerRectPrism.Volume; i++)
             {
-                Vector3Int pos = RoundVectorToRank(rank + 1, childNode.Position);
-                int parentHash = GetNodeHash(rank + 1, pos);
-                InitializeSubnodes(parentHash);
-                Int32List8 subnodes = _subnodesMap[parentHash];
-                if (subnodes.Length > 0)
+                Vector3Int offset = _nodesLayerRectPrism.IndexToPoint(i);
+                OctreeNode<T> currentSubnode = new OctreeNode<T>(firstSubnode.Data, firstSubnode.Rank, firstSubnode.RankPosition + offset);
+
+                if(currentSubnode.Equals(OctreeNode<T>.FromGlobalPosition(newNode.Data, currentRank, newNode.GlobalPosition)))
                 {
-                    continue;
-                }
-                int size = 1 << rank;
-                AddNode(rootData, rank, new Vector3Int(pos.x, pos.y, pos.z), ref subnodes);
-                AddNode(rootData, rank, new Vector3Int(pos.x + size, pos.y, pos.z), ref subnodes);
-                AddNode(rootData, rank, new Vector3Int(pos.x, pos.y + size, pos.z), ref subnodes);
-                AddNode(rootData, rank, new Vector3Int(pos.x + size, pos.y + size, pos.z), ref subnodes);
-                AddNode(rootData, rank, new Vector3Int(pos.x, pos.y, pos.z + size), ref subnodes);
-                AddNode(rootData, rank, new Vector3Int(pos.x + size, pos.y, pos.z + size), ref subnodes);
-                AddNode(rootData, rank, new Vector3Int(pos.x, pos.y + size, pos.z + size), ref subnodes);
-                AddNode(rootData, rank, new Vector3Int(pos.x + size, pos.y + size, pos.z + size), ref subnodes);
-                _subnodesMap[parentHash] = subnodes;
-
-                RemoveNode(rank, childNode.Position);
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void RemoveNode(int nodeHash, int rank, Vector3Int position)
-        {
-            _dataMap.Remove(nodeHash);
-            int parentRank = rank + 1;
-            int parentRankHash = GetNodeHash(parentRank, RoundVectorToRank(parentRank, position));
-            InitializeSubnodes(parentRankHash);
-            Int32List8 subnodes = _subnodesMap[parentRankHash];
-            subnodes.RemoveByValue(nodeHash);
-            _subnodesMap[parentRankHash] = subnodes;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void RemoveNode(int rank, Vector3Int position)
-        {
-            int nodeHash = GetNodeHash(rank, RoundVectorToRank(rank, position));
-            RemoveNode(nodeHash, rank, position);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void AddNode(T data, int rank, Vector3Int roundedPosition, ref Int32List8 parentSubnodesContainer)
-        {
-            int newNodeHash = GetNodeHash(rank, roundedPosition);
-            if (_dataMap.ContainsKey(newNodeHash))
-            {
-                throw new InvalidOperationException("PIZDEC!");
-            }
-            _dataMap.Add(newNodeHash, new OctreeNode<T>(data, rank, roundedPosition));
-            parentSubnodesContainer.AddValue(newNodeHash);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void AddNode(OctreeNode<T> newNode, int newNodeHash)
-        {
-            if (_dataMap.ContainsKey(newNodeHash))
-            {
-                throw new InvalidOperationException("PIZDEC!");
-            }
-
-            int parentRank = newNode.Rank + 1;
-            int parentHash = GetNodeHash(parentRank, RoundVectorToRank(parentRank, newNode.Position));
-            _dataMap.Add(newNodeHash, newNode);
-            InitializeSubnodes(parentHash);
-            Int32List8 subnodes = _subnodesMap[parentHash];
-            subnodes.AddValue(newNodeHash);
-            _subnodesMap[parentHash] = subnodes;
-        }
-
-
-
-        private OctreeNode<T> FindRootNode(int rank, Vector3Int position, out int rootNodeHash)
-        {
-            if (rank >= _maxRank)
-            {
-                Vector3Int rootNodePosition = RoundVectorToRank(_maxRank, position);
-                rootNodeHash = GetNodeHash(_maxRank, rootNodePosition);
-                return new OctreeNode<T>(_rootNode.Data, _rootNode.Rank, rootNodePosition);
-            }
-
-            rootNodeHash = GetNodeHash(rank, RoundVectorToRank(rank, position));
-            if (_dataMap.ContainsKey(rootNodeHash))
-            {
-                return _dataMap[rootNodeHash];
-            }
-            else
-            {
-                return FindRootNode(rank + 1, position, out rootNodeHash);
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void RemoveSubnodes(ref Int32List8 container)
-        {
-            unsafe
-            {
-                fixed (int* ptr = &container.ArrayStart)
-                { 
-                    for (int i = 0; i < container.Length; i++)
+                    if (currentRank == newNode.Rank)
                     {
-                        _dataMap.Remove(*(ptr + i));
+                        _data.Add(newNode, newNode.Data);
+                    }
+                    else
+                    {
+                        SplitNodes(newNode, currentSubnode);
                     }
                 }
+                else
+                {
+                    _data.Add(currentSubnode, currentSubnode.Data);
+                }
             }
-            container.Clear();
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void InitializeSubnodes(int subnodesKeeperHash)
+        /// <summary>
+        /// Recursively removes all possible nodes within the passed node.
+        /// </summary>
+        private void RemoveAllSubnodesInsideNode(OctreeNode<T> node)
         {
-            if (!_subnodesMap.ContainsKey(subnodesKeeperHash))
+            int subrank = node.Rank - 1;
+            if (subrank < 0)
             {
-                _subnodesMap.Add(subnodesKeeperHash, new Int32List8());
+                return;
+            }
+
+            OctreeNode<T> firstSubnode = OctreeNode<T>.FromGlobalPosition(node.Data, (byte)subrank, node.GlobalPosition);       
+
+            for (int i = 0; i < _nodesLayerRectPrism.Volume; i++)
+            {
+                Vector3Int offset = _nodesLayerRectPrism.IndexToPoint(i);
+                OctreeNode<T> currentSubnode = new OctreeNode<T>(firstSubnode.Data, firstSubnode.Rank, firstSubnode.RankPosition + offset);
+                if (_data.ContainsKey(currentSubnode))
+                {
+                    _data.Remove(currentSubnode);
+                }
+                else
+                {
+                    RemoveAllSubnodesInsideNode(currentSubnode);
+                }
             }
         }
+
+        /// <summary>
+        /// Return first existing node that "contains" <paramref name="target"/>
+        /// </summary>
+        private bool TryFindParentNode(OctreeNode<T> target, out OctreeNode<T> parent)
+        {
+            parent = new OctreeNode<T>();
+
+            if (target.Rank >= _maxRank)
+            {
+                return false;
+            }
+
+            T data = target.Data;
+            Vector3Int globalPos = target.GlobalPosition;
+
+            for (int i = target.Rank + 1; i <= _maxRank; i++)
+            {
+                OctreeNode<T> currentNode = OctreeNode<T>.FromGlobalPosition(data, i, globalPos);
+                if (_data.ContainsKey(currentNode))
+                {
+                    currentNode.Data = _data[currentNode];
+                    parent = currentNode;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
 
 #region Static
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int GetNodeHash(int rank, Vector3Int nodePosition)
-        {
-            int rankFormated = (rank & 15) << 28;
-            int xFormated = ((nodePosition.x + HALF_POSITION_LIMIT) & POSITION_LIMIT) << 19;
-            int yFormated = ((nodePosition.y + HALF_POSITION_LIMIT) & POSITION_LIMIT) << 10;
-            int zFormated = (nodePosition.z + HALF_POSITION_LIMIT) & POSITION_LIMIT;
-            return rankFormated | xFormated | yFormated | zFormated;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int GetNodeHash(OctreeNode<T> node)
-        {
-            return GetNodeHash(node.Rank, node.Position);
-        }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3Int RoundVectorToRank(int rank, Vector3Int roundingVector)
         {

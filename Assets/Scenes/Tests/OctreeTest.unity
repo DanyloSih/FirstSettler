@@ -171,6 +171,7 @@ MonoBehaviour:
   _pointerRank: 0
   _pointerValue: 1
   _scale: 1
+  _applyArrayDelay: 1
 --- !u!1 &1275063059
 GameObject:
   m_ObjectHideFlags: 0

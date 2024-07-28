@@ -49,6 +49,11 @@ public class OctreeTestEditor : Editor
             ((OctreeTest)target).SetData();
         }
 
+        if (GUILayout.Button("Get Data"))
+        {
+            ((OctreeTest)target).GetData();
+        }
+
         if (GUILayout.Button("Apply Array"))
         {
             ((OctreeTest)target).ApplyArray();

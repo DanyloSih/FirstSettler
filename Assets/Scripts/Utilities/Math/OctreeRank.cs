@@ -1,6 +1,6 @@
 ﻿namespace Utilities.Math
 {
-    public enum OctreeRank
+    public enum OctreeRank : byte
     {
         /// <summary>
         /// Size = 2
@@ -29,6 +29,10 @@
         /// <summary>
         /// Size = 128
         /// </summary>
-        Rank7 = 7
+        Rank7 = 7,
+        /// <summary>
+        /// Size = 256
+        /// </summary>
+        Rank8 = 8
     }
 }
