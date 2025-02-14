@@ -1,3 +1,6 @@
 [submodule "Assets/SimpleBootstrap"]
 	path = Assets/SimpleBootstrap
 	url = git@github.com:DanyloSih/SimpleBootstrap.git
+[submodule "Assets/Plugins/SimpleBootstrap"]
+	path = Assets/Plugins/SimpleBootstrap
+	url = git@github.com:DanyloSih/SimpleBootstrap.git
